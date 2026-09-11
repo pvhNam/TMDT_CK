@@ -1,0 +1,4 @@
+<resources>
+    <!-- Keep the supplied light design consistent in both system modes. -->
+    <style name="Theme.TMDT" parent="Base.Theme.TMDT" />
+</resources>
