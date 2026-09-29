@@ -1,4 +1,4 @@
-package com.example.tmdt;
+package com.example.tmdt.common;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -8,14 +8,14 @@ import android.graphics.RectF;
 import android.view.View;
 
 /** Small, density-independent line icons in the visual style of the reference. */
-final class LineIcon extends View {
+public final class LineIcon extends View {
     private final String kind;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
     private final RectF bounds = new RectF();
     private final int color;
 
-    LineIcon(Context context, String kind, int color) {
+    public LineIcon(Context context, String kind, int color) {
         super(context);
         this.kind = kind;
         this.color = color;

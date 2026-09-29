@@ -1,4 +1,4 @@
-package com.example.tmdt;
+package com.example.tmdt.student.home;
 
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -8,17 +8,22 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import java.text.Normalizer;
 import java.util.Locale;
+import com.example.tmdt.R;
+import com.example.tmdt.MainActivity;
+import com.example.tmdt.common.LineIcon;
+import com.example.tmdt.common.Ui;
+import com.example.tmdt.data.Tutor;
 
-final class HomeScreen {
+public final class HomeScreen {
     private final MainActivity activity;
     private final Ui ui;
     private LinearLayout results, subjects;
     private EditText search;
     private String subject="";
 
-    HomeScreen(MainActivity activity) { this.activity=activity; this.ui=activity.ui; }
+    public HomeScreen(MainActivity activity) { this.activity=activity; this.ui=activity.ui; }
 
-    View build() {
+    public View build() {
         LinearLayout root=ui.column();
         LinearLayout body=ui.body(root);
         LinearLayout greeting=ui.row(); ui.weight(greeting,ui.text("Chào Nam!",16,Ui.INK,false));
@@ -33,8 +38,14 @@ final class HomeScreen {
         ui.weight(searchBox,search); ui.add(body,searchBox); ui.space(body,12);
         HorizontalScrollView horizontal=new HorizontalScrollView(activity); horizontal.setHorizontalScrollBarEnabled(false);
         subjects=ui.row(); horizontal.addView(subjects); ui.add(body,horizontal); renderSubjects(); ui.space(body,18);
-        DesignImage banner=new DesignImage(activity,2); ui.add(body,banner);
+        View banner=banner(); ui.add(body,banner);
         ui.clickable(banner,()->{subject=""; search.setText(""); renderSubjects(); results.requestFocus();});
+        ui.space(body,12);
+        // Entry to screen 37 · Tìm lớp học nhóm (member 3).
+        LinearLayout groups=ui.row(); groups.setPadding(ui.dp(14),ui.dp(12),ui.dp(12),ui.dp(12)); ui.surface(groups,Ui.PALE,10,0);
+        groups.addView(ui.icon(R.drawable.ic_users,24,Ui.BLUE)); ui.gap(groups,12);
+        ui.weight(groups,ui.text("Lớp học nhóm · Học cùng bạn, chia sẻ học phí",15,Ui.INK,false));
+        groups.addView(ui.icon(R.drawable.ic_right,18,Ui.INK)); ui.clickable(groups,()->activity.show("groups")); ui.add(body,groups);
         ui.space(body,24);
         LinearLayout title=ui.row(); ui.weight(title,ui.text("Gia sư nổi bật",20,Ui.INK,true));
         android.widget.TextView more=ui.text("Xem thêm  ›",13,Ui.BLUE,false); more.setGravity(android.view.Gravity.CENTER);
@@ -48,6 +59,16 @@ final class HomeScreen {
             public void afterTextChanged(Editable s){}
         });
         return root;
+    }
+
+    /** "Tìm gia sư phù hợp" banner with the home-books illustration of the design. */
+    private View banner() {
+        LinearLayout banner=ui.row(); banner.setPadding(ui.dp(16),ui.dp(22),ui.dp(7),ui.dp(10)); banner.setMinimumHeight(ui.dp(154)); ui.surface(banner,Ui.PALE,11,0);
+        LinearLayout text=ui.column(); ui.add(text,ui.text("Tìm gia sư phù hợp",21,Ui.INK,true)); ui.space(text,8);
+        ui.add(text,ui.text("Linh hoạt thời gian học",16,Ui.MUTED,false)); ui.weight(banner,text);
+        banner.addView(ui.art(R.drawable.illus_home_books,126,120));
+        banner.setContentDescription("Tìm gia sư phù hợp. Linh hoạt thời gian học.");
+        return banner;
     }
 
     private void renderSubjects() {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "cap.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:pathData="M2 16L24 6L46 16L24 26L2 16ZM10 20V34C20 42 28 42 38 34V20M46 16V36Z"
+        android:fillColor="#FF006BFF"/>
+    <path android:pathData="M46 16L24 6L2 16L24 26L46 16ZM46 16V36M10 20V34C20 42 28 42 38 34V20"
+        android:strokeColor="#FF006BFF"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

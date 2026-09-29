@@ -1,16 +1,20 @@
-package com.example.tmdt;
+package com.example.tmdt.student.booking;
 
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
+import com.example.tmdt.MainActivity;
+import com.example.tmdt.common.LineIcon;
+import com.example.tmdt.common.Ui;
+import com.example.tmdt.data.Tutor;
 
-final class ProfileScreen {
+public final class ProfileScreen {
     private final MainActivity activity;
     private final Ui ui;
     private final Tutor tutor;
-    ProfileScreen(MainActivity activity,Tutor tutor){this.activity=activity;this.ui=activity.ui;this.tutor=tutor;}
+    public ProfileScreen(MainActivity activity,Tutor tutor){this.activity=activity;this.ui=activity.ui;this.tutor=tutor;}
 
-    View build() {
+    public View build() {
         LinearLayout root=ui.column();
         ui.header(root,"Hồ sơ gia sư",activity::back,ui.iconButton(activity.favorite(tutor)?"heart_filled":"heart",
                 activity.favorite(tutor)?"Bỏ lưu gia sư":"Lưu gia sư",()->activity.toggleFavorite(tutor)));

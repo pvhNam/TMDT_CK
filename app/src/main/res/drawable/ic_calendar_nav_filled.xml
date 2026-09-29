@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "nav_calendar_active.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M5 3V7ZM19 3V7ZM3 9H21ZM3 5H21V21H3V5ZM7 13H10ZM14 13H17Z"
+        android:fillColor="#FF006BFF"/>
+    <path android:pathData="M5 3V7M19 3V7M3 9H21M7 13H10M14 13H17M3 5H21V21H3V5Z"
+        android:strokeColor="#FF006BFF"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>
