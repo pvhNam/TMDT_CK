@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="page_schedule">Lịch học</string>
+    <string name="page_messages">Tin nhắn</string>
+    <string name="feature_unavailable">Chức năng này hiện chưa khả dụng.</string>
+    <string name="return_home">Về trang chủ</string>
+</resources>

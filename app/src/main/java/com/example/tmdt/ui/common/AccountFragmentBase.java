@@ -3,10 +3,8 @@ package com.example.tmdt.ui.common;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.text.method.PasswordTransformationMethod;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -56,14 +54,6 @@ public abstract class AccountFragmentBase extends Fragment {
             public void afterTextChanged(Editable editable){}
         });
     }
-    protected void password(EditText input,CheckBox toggle,String key) {
-        draft(input,key,"");
-        toggle.setOnCheckedChangeListener((button,checked)->{
-            int selection=input.getSelectionStart();
-            input.setTransformationMethod(checked?null:PasswordTransformationMethod.getInstance());
-            input.setSelection(Math.max(0,selection));
-        });
-    }
     protected String text(EditText input) { return input.getText().toString().trim(); }
     protected boolean check(EditText input,boolean valid,int error) {
         if(valid)return true;input.setError(getString(error));input.requestFocus();return false;
@@ -82,4 +72,3 @@ public abstract class AccountFragmentBase extends Fragment {
         }
     }
 }
-

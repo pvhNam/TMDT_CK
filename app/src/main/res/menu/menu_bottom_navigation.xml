@@ -3,19 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:title="@string/page_home"
-        android:icon="@drawable/ic_home" />
+        android:title="@string/page_home" />
     <item
-        android:id="@+id/nav_login"
-        android:title="@string/page_login"
-        android:icon="@drawable/ic_login" />
+        android:id="@+id/nav_schedule"
+        android:title="@string/page_schedule" />
     <item
-        android:id="@+id/nav_register"
-        android:title="@string/nav_register"
-        android:icon="@drawable/ic_person_add" />
+        android:id="@+id/nav_messages"
+        android:title="@string/page_messages" />
     <item
         android:id="@+id/nav_account"
-        android:title="@string/page_account"
-        android:icon="@drawable/ic_person"
-        android:visible="false" />
+        android:title="@string/page_account" />
 </menu>

@@ -12,7 +12,7 @@ public final class LoginFragment extends AccountFragmentBase {
     @Override protected void bindFields(View view) {
         binding=FragmentLoginBinding.bind(view);
         draft(binding.email,"login.email","");
-        password(binding.password,binding.showPassword,"login.password");
+        draft(binding.password,"login.password","");
         binding.signIn.setOnClickListener(v->{
             if(email(binding.email) && check(binding.password,!binding.password.getText().toString().isEmpty(),R.string.error_password_empty)){
                 host().hideKeyboard();
@@ -26,4 +26,3 @@ public final class LoginFragment extends AccountFragmentBase {
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
 }
-

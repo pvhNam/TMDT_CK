@@ -12,15 +12,27 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
+    <View
+        android:id="@+id/navigation_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#D4E5F8" />
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="84dp"
         android:background="#FFFFFF"
-        android:elevation="8dp"
-        app:itemIconTint="@color/navigation_item"
+        android:elevation="0dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        app:itemIconTint="@null"
+        app:itemIconSize="24dp"
         app:itemTextColor="@color/navigation_item"
-        app:itemActiveIndicatorStyle="@style/NavigationActiveIndicator"
+        app:itemTextAppearanceActive="@style/FigmaNavigationActive"
+        app:itemTextAppearanceInactive="@style/FigmaNavigationInactive"
+        app:itemTextAppearanceActiveBoldEnabled="false"
+        app:itemPaddingTop="19dp"
+        app:itemPaddingBottom="20dp"
         app:itemHorizontalTranslationEnabled="false"
         app:menu="@menu/menu_bottom_navigation"
         app:labelVisibilityMode="labeled" />

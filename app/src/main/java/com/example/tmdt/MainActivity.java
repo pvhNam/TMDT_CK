@@ -20,6 +20,9 @@ import com.example.tmdt.ui.auth.RegisterFragment;
 import com.example.tmdt.ui.home.HomeFragment;
 import com.example.tmdt.ui.profile.AccountFragment;
 import com.example.tmdt.ui.profile.EditAccountFragment;
+import com.example.tmdt.ui.common.NavigationAssets;
+import com.example.tmdt.ui.schedule.ScheduleFragment;
+import com.example.tmdt.ui.messages.MessagesFragment;
 
 /** Hosts independent fragments. Layouts, form handling and Firebase access live outside this activity. */
 public class MainActivity extends AppCompatActivity {
@@ -41,11 +44,13 @@ public class MainActivity extends AppCompatActivity {
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
             keyboardVisible=insets.isVisible(WindowInsetsCompat.Type.ime());
-            binding.bottomNavigation.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);
+            updateNavigationVisibility();
             return WindowInsetsCompat.CONSUMED;
         });
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
+        NavigationAssets.apply(binding.bottomNavigation);
+        binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
@@ -70,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
             case "account":fragment=new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
             case "otp":fragment=new PhoneVerificationFragment();break;
+            case "schedule":fragment=new ScheduleFragment();break;
+            case "messages":fragment=new MessagesFragment();break;
             default:destination="home";fragment=new HomeFragment();
         }
         screen=destination;
@@ -82,8 +89,8 @@ public class MainActivity extends AppCompatActivity {
         if(updatingNavigation)return true;
         if(account.isBusy()||account.isSendingCode())return false;
         String destination;
-        if(itemId==R.id.nav_login)destination="login";
-        else if(itemId==R.id.nav_register)destination="register";
+        if(itemId==R.id.nav_schedule)destination="schedule";
+        else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
         if(!screen.equals(destination)){
@@ -98,19 +105,21 @@ public class MainActivity extends AppCompatActivity {
     }
     private void renderNavigation(){
         updatingNavigation=true;
-        boolean signedIn=account.signedIn();
         android.view.Menu menu=binding.bottomNavigation.getMenu();
-        menu.findItem(R.id.nav_login).setVisible(!signedIn);
-        menu.findItem(R.id.nav_register).setVisible(!signedIn);
-        menu.findItem(R.id.nav_account).setVisible(signedIn);
         for(int i=0;i<menu.size();i++)menu.getItem(i).setEnabled(!account.isBusy()&&!account.isSendingCode());
         int selected=R.id.nav_home;
-        if(!"home".equals(screen)){
-            selected=signedIn?R.id.nav_account:"register".equals(screen)?R.id.nav_register:R.id.nav_login;
-        }
+        if("schedule".equals(screen))selected=R.id.nav_schedule;
+        else if("messages".equals(screen))selected=R.id.nav_messages;
+        else if(!"home".equals(screen))selected=R.id.nav_account;
         menu.findItem(selected).setChecked(true);
-        binding.bottomNavigation.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);
+        updateNavigationVisibility();
         updatingNavigation=false;
+    }
+    private void updateNavigationVisibility(){
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen);
+        int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
+        binding.bottomNavigation.setVisibility(visibility);
+        binding.navigationDivider.setVisibility(visibility);
     }
     public void back(){
         if(account.isBusy())return;hideKeyboard();

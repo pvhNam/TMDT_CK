@@ -14,8 +14,8 @@ public final class RegisterFragment extends AccountFragmentBase {
     @Override protected void bindFields(View view){
         binding=FragmentRegisterBinding.bind(view);
         draft(binding.name,"register.name","");draft(binding.email,"register.email","");draft(binding.phone,"register.phone","");
-        password(binding.password,binding.showPassword,"register.password");
-        password(binding.confirm,binding.showConfirm,"register.confirm");
+        draft(binding.password,"register.password","");
+        draft(binding.confirm,"register.confirm","");
         binding.terms.setChecked(state.acceptedTerms());
         binding.terms.setOnCheckedChangeListener((button,checked)->{state.acceptTerms(checked);binding.terms.setError(null);});
         binding.termsInfo.setOnClickListener(v->new AlertDialog.Builder(requireContext())
@@ -39,4 +39,3 @@ public final class RegisterFragment extends AccountFragmentBase {
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
 }
-
