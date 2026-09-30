@@ -99,6 +99,7 @@ public final class CatalogState extends ViewModel {
             if (teacher.offerings.isEmpty()) {
                 continue;
             }
+
             boolean matchesSubject = subject.isEmpty();
             for (Offering offering : teacher.offerings) {
                 if (offering.subjectId.equals(subject)) {
@@ -108,11 +109,10 @@ public final class CatalogState extends ViewModel {
 
             String teacherName = normalize(teacher.name);
             boolean matchesName = teacherName.contains(keyword);
-            if (matchesSubject && matchesName) {
+            if (matchesName && matchesSubject) {
                 result.add(teacher);
             }
         }
-        result.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
         return result;
     }
     public static String normalize(String value) {

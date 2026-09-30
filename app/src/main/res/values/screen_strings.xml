@@ -118,14 +118,13 @@
     <string
         name="search_hint">Nhập tên gia sư…</string>
     <string name="search_button">Tìm</string>
+    <string name="all_subjects">Tất cả</string>
     <string
         name="search_description">Tìm theo tên gia sư</string>
     <string
         name="catalog_heading">Gia sư đang nhận lớp</string>
     <string
         name="refresh_catalog">Làm mới danh sách</string>
-    <string
-        name="all_subjects">Tất cả</string>
     <string
         name="loading_catalog">Đang tải danh sách gia sư…</string>
     <string
@@ -135,9 +134,9 @@
     <string
         name="empty_search">Chưa tìm thấy gia sư</string>
     <string
-        name="empty_search_caption">Thử tên gia sư khác hoặc xóa bộ lọc môn.</string>
+        name="empty_search_caption">Thử tên gia sư khác hoặc đổi môn học.</string>
     <string
-        name="clear_filter">Xóa bộ lọc</string>
+        name="clear_search">Xóa tìm kiếm và bộ lọc</string>
     <string
         name="retry">Thử lại</string>
     <string
