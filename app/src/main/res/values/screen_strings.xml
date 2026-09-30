@@ -116,9 +116,10 @@
     <string
         name="home_heading">Hôm nay bạn muốn học gì?</string>
     <string
-        name="search_hint">Tìm môn học, gia sư…</string>
+        name="search_hint">Nhập tên gia sư…</string>
+    <string name="search_button">Tìm</string>
     <string
-        name="search_description">Tìm môn học hoặc tên gia sư</string>
+        name="search_description">Tìm theo tên gia sư</string>
     <string
         name="catalog_heading">Gia sư đang nhận lớp</string>
     <string
@@ -134,7 +135,7 @@
     <string
         name="empty_search">Chưa tìm thấy gia sư</string>
     <string
-        name="empty_search_caption">Thử tên hoặc môn học khác để tìm gia sư phù hợp.</string>
+        name="empty_search_caption">Thử tên gia sư khác hoặc xóa bộ lọc môn.</string>
     <string
         name="clear_filter">Xóa bộ lọc</string>
     <string

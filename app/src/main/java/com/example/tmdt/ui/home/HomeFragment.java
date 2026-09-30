@@ -1,8 +1,7 @@
 package com.example.tmdt.ui.home;
 
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.view.inputmethod.EditorInfo;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,17 +28,31 @@ public final class HomeFragment extends Fragment {
         catalog=new ViewModelProvider(requireActivity()).get(CatalogState.class);
         AccountState account=new ViewModelProvider(requireActivity()).get(AccountState.class);
         binding.search.setText(catalog.query());
-        binding.search.setOnEditorActionListener((input,action,event)->{host().hideKeyboard();return true;});
-        binding.search.addTextChangedListener(new TextWatcher(){
-            public void beforeTextChanged(CharSequence s,int start,int count,int after){}
-            public void onTextChanged(CharSequence s,int start,int before,int count){catalog.query(s.toString());renderResults();}
-            public void afterTextChanged(Editable editable){}
+        binding.searchButton.setOnClickListener(v -> searchTeachers());
+        binding.search.setOnEditorActionListener((input, action, event) -> {
+            if (action == EditorInfo.IME_ACTION_SEARCH) {
+                searchTeachers();
+                return true;
+            }
+            return false;
         });
         binding.account.setOnClickListener(v->host().show("account"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
-        binding.clearFilter.setOnClickListener(v->{catalog.subject("");binding.search.setText("");renderSubjects();renderResults();});
+        binding.clearFilter.setOnClickListener(v -> {
+            catalog.subject("");
+            catalog.query("");
+            binding.search.setText("");
+            renderSubjects();
+            renderResults();
+        });
         account.changes().observe(getViewLifecycleOwner(),ignored->binding.greeting.setText(account.profile()==null?getString(R.string.greeting):getString(R.string.greeting_name,account.profile().name)));
         catalog.changes().observe(getViewLifecycleOwner(),ignored->{renderSubjects();renderResults();});
+    }
+    private void searchTeachers() {
+        String name = binding.search.getText().toString();
+        catalog.query(name);
+        host().hideKeyboard();
+        renderResults();
     }
     private MainActivity host(){return (MainActivity)requireActivity();}
     private void renderSubjects(){

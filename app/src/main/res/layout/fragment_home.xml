@@ -34,14 +34,32 @@
             style="@style/ScreenTitle"
             android:text="@string/home_heading"
             android:labelFor="@id/search" />
-        <EditText
-            android:id="@+id/search"
-            style="@style/FormInput"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:hint="@string/search_hint"
-            android:inputType="text"
-            android:imeOptions="actionSearch"
-            android:importantForAutofill="no" />
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <EditText
+                android:id="@+id/search"
+                style="@style/FormInput"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_marginBottom="0dp"
+                android:hint="@string/search_hint"
+                android:contentDescription="@string/search_description"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/search_button"
+                style="@style/PrimaryButton"
+                android:layout_width="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="0dp"
+                android:text="@string/search_button" />
+        </LinearLayout>
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
