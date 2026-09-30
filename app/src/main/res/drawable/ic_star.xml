@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "star.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path android:pathData="M9 0.75L11.55 6L17.25 6.825L13.125 10.875L14.1 16.5L9 13.875L3.9 16.5L4.875 10.875L0.75 6.825L5.7 6L9 0.75Z"
+        android:fillColor="#FFFFB617"
+        android:strokeColor="#FFFFB617"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

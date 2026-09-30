@@ -36,6 +36,7 @@ public final class HomeFragment extends Fragment {
             public void afterTextChanged(Editable editable){}
         });
         binding.account.setOnClickListener(v->host().show("account"));
+        binding.groupClasses.setOnClickListener(v->host().show("groups"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
         binding.clearFilter.setOnClickListener(v->{catalog.subject("");binding.search.setText("");renderSubjects();renderResults();});
         account.changes().observe(getViewLifecycleOwner(),ignored->binding.greeting.setText(account.profile()==null?getString(R.string.greeting):getString(R.string.greeting_name,account.profile().name)));
