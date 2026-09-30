@@ -23,11 +23,14 @@ import com.example.tmdt.ui.profile.EditAccountFragment;
 import com.example.tmdt.ui.common.NavigationAssets;
 import com.example.tmdt.ui.schedule.ScheduleFragment;
 import com.example.tmdt.ui.messages.MessagesFragment;
+import com.example.tmdt.ui.common.ScreenFragment;
 
 /** Hosts independent fragments. Layouts, form handling and Firebase access live outside this activity. */
 public class MainActivity extends AppCompatActivity {
     AccountState account;
     CatalogState catalog;
+    /** Lessons and group classes (member 3). */
+    public Classroom classroom;
     String screen="home";
     private String pendingDestination;
     private ActivityMainBinding binding;
@@ -40,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
         account=new ViewModelProvider(this).get(AccountState.class);
         catalog=new ViewModelProvider(this).get(CatalogState.class);
+        classroom=new Classroom(this,savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
@@ -54,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
-            @Override public void handleOnBackPressed(){if("home".equals(screen))finish();else back();}
+            @Override public void handleOnBackPressed(){if(classroom.root().equals(screen))finish();else back();}
         });
         screen=savedInstanceState==null?"home":savedInstanceState.getString("screen","home");
         show(screen);
@@ -64,11 +68,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     public void show(String destination){
+        destination=classroom.redirect(destination);
         if(!account.signedIn()&&(destination.equals("account")||destination.equals("edit_account")||destination.equals("otp")))destination="login";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
-        Fragment fragment;
-        switch(destination){
+        Fragment fragment=classroom.fragment(destination);
+        if(fragment==null)switch(destination){
             case "login":fragment=new LoginFragment();break;
             case "register":fragment=new RegisterFragment();break;
             case "forgot":fragment=new ForgotPasswordFragment();break;
@@ -81,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
         screen=destination;
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+        if(current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
         if(current==null||!screen.equals(current.getTag()))getSupportFragmentManager().beginTransaction()
                 .setReorderingAllowed(true).replace(R.id.screen_container,fragment,screen).commit();
         renderNavigation();
@@ -111,18 +117,21 @@ public class MainActivity extends AppCompatActivity {
         if("schedule".equals(screen))selected=R.id.nav_schedule;
         else if("messages".equals(screen))selected=R.id.nav_messages;
         else if(!"home".equals(screen))selected=R.id.nav_account;
+        selected=classroom.navigationItem(menu,screen,selected);
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         binding.bottomNavigation.setVisibility(visibility);
         binding.navigationDivider.setVisibility(visibility);
     }
     public void back(){
         if(account.isBusy())return;hideKeyboard();
+        String target=classroom.backTarget(screen);
+        if(target!=null){show(target);return;}
         switch(screen){
             case "register":case "forgot":
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
@@ -145,5 +154,5 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);classroom.save(out);}
 }

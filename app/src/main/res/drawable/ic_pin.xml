@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "pin.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="23dp"
+    android:height="23dp"
+    android:viewportWidth="23"
+    android:viewportHeight="23">
+    <path android:pathData="M11.5 21.0833C11.5 21.0833 18.2083 14.375 18.2083 8.625C18.2083 7.74405 18.0348 6.87172 17.6977 6.05783C17.3606 5.24394 16.8664 4.50442 16.2435 3.88149C15.6206 3.25857 14.8811 2.76443 14.0672 2.42731C13.2533 2.09018 12.381 1.91667 11.5 1.91667C10.619 1.91667 9.74672 2.09018 8.93283 2.42731C8.11894 2.76443 7.37942 3.25857 6.75649 3.88149C6.13357 4.50442 5.63943 5.24394 5.30231 6.05783C4.96518 6.87172 4.79167 7.74405 4.79167 8.625C4.79167 14.375 11.5 21.0833 11.5 21.0833Z"
+        android:strokeColor="#FF06164D"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "clock.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="21dp"
+    android:height="21dp"
+    android:viewportWidth="21"
+    android:viewportHeight="21">
+    <path android:pathData="M10.5 6.125V10.5L14 13.125M19.25 10.5C19.25 12.8206 18.3281 15.0462 16.6872 16.6872C15.0462 18.3281 12.8206 19.25 10.5 19.25C8.17936 19.25 5.95376 18.3281 4.31282 16.6872C2.67187 15.0462 1.75 12.8206 1.75 10.5C1.75 8.17936 2.67187 5.95376 4.31282 4.31282C5.95376 2.67187 8.17936 1.75 10.5 1.75C12.8206 1.75 15.0462 2.67187 16.6872 4.31282C18.3281 5.95376 19.25 8.17936 19.25 10.5Z"
+        android:strokeColor="#FF06164D"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

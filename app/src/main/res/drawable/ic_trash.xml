@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "trash.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="22"
+    android:viewportHeight="22">
+    <path android:pathData="M2.75 4.58333H19.25M7.33333 1.83333H14.6667M4.58333 4.58333L5.5 20.1667H16.5L17.4167 4.58333M9.16667 8.25V16.5M12.8333 8.25V16.5"
+        android:strokeColor="#FFFF364C"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>
