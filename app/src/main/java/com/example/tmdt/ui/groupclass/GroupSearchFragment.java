@@ -25,16 +25,16 @@ public final class GroupSearchFragment extends ScreenFragment {
 
     @Override protected View build() {
         // "Tìm lớp tương tự" on screen 60 opens this list filtered to classes that still have seats.
-        if (activity.similarSubject != null) { maths = activity.similarSubject.equals("Toán"); seats = true; activity.similarSubject = null; }
+        if (classroom.similarSubject != null) { maths = classroom.similarSubject.equals("Toán"); seats = true; classroom.similarSubject = null; }
         LinearLayout root = ui.column();
         ui.title(root,"Lớp học nhóm",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->activity.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
+                ()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
         LinearLayout body = ui.page(root);
         LinearLayout box = ui.row(); box.setPadding(ui.dp(12),0,ui.dp(6),0); ui.surface(box,Ui.PALE,10,Ui.BORDER);
         box.addView(ui.icon(R.drawable.ic_search,22,Ui.MUTED));
         search = ui.entry("Tìm lớp, môn học...",false); search.setBackgroundColor(Color.TRANSPARENT);
         search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
-        search.setOnEditorActionListener((v,id,event)->{activity.hideKeyboard();return true;});
+        search.setOnEditorActionListener((v,id,event)->{classroom.hideKeyboard();return true;});
         ui.weight(box,search); ui.add(body,box); ui.space(body,13);
         filters = ui.row(); ui.add(body,filters); ui.space(body,13);
         results = ui.column(); ui.add(body,results);
@@ -66,7 +66,7 @@ public final class GroupSearchFragment extends ScreenFragment {
 
     private void renderResults() {
         results.removeAllViews(); String query = normalized(search.getText().toString()); int count = 0;
-        for (GroupClass item : activity.store.classes) {
+        for (GroupClass item : classroom.store.classes) {
             if (GroupClass.ENDED.equals(item.status)) continue;
             if (maths && !item.subject.equals("Toán")) continue;
             if (online && !item.mode.equals("Trực tuyến")) continue;
@@ -96,7 +96,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),19,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,item.priceLabel(),19,16,Ui.INK,true)); ui.space(info,3);
         info.addView(availability(item),ui.lp(-2,28)); ui.weight(top,info); ui.add(card,top); ui.space(card,8);
-        ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->activity.openClass(item,item.full()?"full":"join")),41);
+        ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,item.full()?"full":"join")),41);
         return card;
     }
 

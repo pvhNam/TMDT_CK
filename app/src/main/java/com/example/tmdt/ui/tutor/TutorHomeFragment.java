@@ -31,19 +31,19 @@ public final class TutorHomeFragment extends ScreenFragment {
         top.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,63,63,32)); ui.gap(top,15);
         LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào cô Minh Anh!",21,Ui.INK,true)); ui.space(hello,6);
         TextView mode = ui.pill("Chế độ gia sư",14,Ui.BLUE,Ui.PALE);
-        ui.clickable(mode,()->new AlertDialog.Builder(activity).setTitle("Chuyển về chế độ học viên?")
-                .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->activity.setTutorMode(false)).show());
+        ui.clickable(mode,()->new AlertDialog.Builder(classroom.context()).setTitle("Chuyển về chế độ học viên?")
+                .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(false)).show());
         mode.setContentDescription("Chế độ gia sư. Chạm để chuyển về chế độ học viên"); hello.addView(mode,ui.lp(-2,27));
         ui.weight(top,hello);
-        FrameLayout bell = new FrameLayout(activity);
-        bell.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo, có thông báo mới",()->activity.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
-        View dot = new View(activity); ui.surface(dot,Ui.RED,6,0);
+        FrameLayout bell = new FrameLayout(classroom.context());
+        bell.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo, có thông báo mới",()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
+        View dot = new View(classroom.context()); ui.surface(dot,Ui.RED,6,0);
         FrameLayout.LayoutParams dotParams = new FrameLayout.LayoutParams(ui.dp(7),ui.dp(7),Gravity.TOP|Gravity.END); dotParams.setMargins(0,ui.dp(12),ui.dp(12),0);
         bell.addView(dot,dotParams); top.addView(bell); ui.add(body,top); ui.space(body,10);
 
         List<Lesson> pending = new ArrayList<>(), today = new ArrayList<>();
         Set<String> students = new HashSet<>();
-        for (Lesson lesson : activity.lessons) {
+        for (Lesson lesson : classroom.lessons) {
             if (lesson.tutorId != Store.TUTOR) continue;
             if (lesson.pending() && !lesson.started()) pending.add(lesson);
             if (lesson.confirmed() && lesson.date.equals(LocalDate.now().toString())) today.add(lesson);
@@ -51,7 +51,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         }
         int registrations = 0;
         List<GroupClass.Session> classesToday = new ArrayList<>();
-        for (GroupClass item : activity.store.classes) if (item.tutorId == Store.TUTOR) {
+        for (GroupClass item : classroom.store.classes) if (item.tutorId == Store.TUTOR) {
             registrations += item.pendingCount();
             if (!item.active()) continue;
             students.addAll(item.members);
@@ -62,14 +62,14 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.section(body,"Tổng quan giảng dạy",24); ui.space(body,8);
         LinearLayout tiles = ui.row();
         ui.weight(tiles,tile(R.drawable.ic_mail,String.valueOf(pending.size()+registrations),"Yêu cầu mới",()->{allRequests=true;renderRequests(pending);})); ui.gap(tiles,7);
-        ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{activity.teachingDay=LocalDate.now();activity.show("teaching");})); ui.gap(tiles,7);
-        ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->activity.show("classes")));
+        ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
+        ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->classroom.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
 
         sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;renderRequests(pending);});
         requests = ui.column(); ui.add(body,requests); renderRequests(pending); ui.space(body,10);
 
-        sectionTitle(body,"Lịch dạy hôm nay",()->{activity.teachingDay=LocalDate.now();activity.show("teaching");});
+        sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
         if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
@@ -98,12 +98,12 @@ public final class TutorHomeFragment extends ScreenFragment {
                     lesson.dateLabel()+" · "+lesson.timeLabel(),"Chờ xác nhận","Xem yêu cầu",()->respond(lesson)));
             ui.space(requests,10); shown++;
         }
-        for (GroupClass item : activity.store.classes) {
+        for (GroupClass item : classroom.store.classes) {
             if (item.tutorId != Store.TUTOR) continue;
             for (GroupClass.Registration registration : item.registrations) {
                 if (!registration.pending() || (!allRequests && shown == 1)) continue;
                 ui.add(requests,requestCard(Store.studentPhoto(registration.student),registration.student,"Đăng ký lớp "+item.title,
-                        "Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),"Chờ duyệt","Duyệt đăng ký",()->activity.openClass(item,"review")));
+                        "Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),"Chờ duyệt","Duyệt đăng ký",()->classroom.openClass(item,"review")));
                 ui.space(requests,10); shown++;
             }
         }
@@ -129,7 +129,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(lesson.dateLabel()+" · "+lesson.timeLabel(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(lesson.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        View detail = ui.action("Chi tiết",0,Ui.PRIMARY,()->TeachingScheduleFragment.details(activity,lesson)); ui.weightAction(row,detail,34);
+        View detail = ui.action("Chi tiết",0,Ui.PRIMARY,()->TeachingScheduleFragment.details(classroom,lesson)); ui.weightAction(row,detail,34);
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
@@ -141,21 +141,21 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        View detail = ui.action("Xem lớp",0,Ui.PRIMARY,()->activity.openClass(item,"review")); ui.weightAction(row,detail,34);
+        View detail = ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")); ui.weightAction(row,detail,34);
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
     /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
     private void respond(Lesson lesson) {
-        new AlertDialog.Builder(activity).setTitle("Yêu cầu của "+lesson.student)
+        new AlertDialog.Builder(classroom.context()).setTitle("Yêu cầu của "+lesson.student)
                 .setMessage(lesson.title+"\n"+lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total()))
                 .setNeutralButton("Đóng",null)
-                .setNegativeButton("Từ chối",(d,w)->finish(activity.store.rejectRequest(lesson),"Đã từ chối yêu cầu."))
-                .setPositiveButton("Chấp nhận",(d,w)->finish(activity.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy."))
+                .setNegativeButton("Từ chối",(d,w)->finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu."))
+                .setPositiveButton("Chấp nhận",(d,w)->finish(classroom.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy."))
                 .show();
     }
     private void finish(String error, String done) {
-        if (error != null) { activity.dialog("Không thể xử lý yêu cầu",error); return; }
-        activity.show("tutorHome"); activity.notice(done);
+        if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
+        classroom.show("tutorHome"); classroom.notice(done);
     }
 }

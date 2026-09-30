@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ReferenceToolbar">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="titleTextColor">@color/account_ink</item>
+        <item name="titleTextAppearance">@style/ReferenceToolbarTitle</item>
+        <item name="navigationIcon">@drawable/ic_back</item>
+        <item name="navigationContentDescription">@string/back</item>
+        <item name="contentInsetStartWithNavigation">0dp</item>
+    </style>
+    <style name="ReferenceToolbarTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/account_ink</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="ReferenceTitle" parent="ScreenTitle">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/account_ink</item>
+        <item name="android:layout_marginBottom">6dp</item>
+    </style>
+    <style name="ReferenceBody" parent="BodyText">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/account_muted</item>
+        <item name="android:layout_marginBottom">16dp</item>
+    </style>
+    <style name="ReferenceLabel" parent="FieldLabel">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:textColor">@color/account_ink</item>
+    </style>
+    <style name="ReferenceField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginBottom">12dp</item>
+        <item name="hintEnabled">false</item>
+        <item name="boxBackgroundColor">@android:color/white</item>
+        <item name="boxStrokeColor">@color/account_field_stroke</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1dp</item>
+        <item name="boxCornerRadiusTopStart">9dp</item>
+        <item name="boxCornerRadiusTopEnd">9dp</item>
+        <item name="boxCornerRadiusBottomStart">9dp</item>
+        <item name="boxCornerRadiusBottomEnd">9dp</item>
+        <item name="startIconTint">@color/account_ink</item>
+        <item name="endIconTint">@color/account_ink</item>
+        <item name="android:importantForAutofill">no</item>
+    </style>
+    <style name="ReferenceFilledField" parent="ReferenceField">
+        <item name="boxBackgroundColor">@color/account_pale</item>
+    </style>
+    <style name="ReferenceInput">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/account_ink</item>
+        <item name="android:textColorHint">@color/account_muted</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:saveEnabled">false</item>
+    </style>
+    <style name="ReferencePrimary" parent="PrimaryButton">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">9dp</item>
+        <item name="backgroundTint">@color/account_blue</item>
+    </style>
+    <style name="ReferenceOutline" parent="SecondaryButton">
+        <item name="android:layout_height">48dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="cornerRadius">9dp</item>
+        <item name="strokeColor">@color/account_blue</item>
+    </style>
+    <style name="ReferenceFooter" parent="ReferenceOutline">
+        <item name="backgroundTint">@color/account_pale</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:textColor">@color/account_ink</item>
+    </style>
+    <style name="ReferenceLink" parent="TextButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingLeft">0dp</item>
+        <item name="android:paddingRight">0dp</item>
+    </style>
+</resources>

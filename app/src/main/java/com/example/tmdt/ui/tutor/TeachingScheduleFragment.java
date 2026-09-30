@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.example.tmdt.R;
-import com.example.tmdt.MainActivity;
+import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
@@ -30,7 +30,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     @Override protected View build() {
         LinearLayout root = ui.column();
         ui.title(root,"Lịch dạy",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->activity.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
+                ()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
         LinearLayout body = ui.page(root);
         content = ui.column(); ui.add(body,content); render();
         return root;
@@ -38,16 +38,16 @@ public final class TeachingScheduleFragment extends ScreenFragment {
 
     private void render() {
         content.removeAllViews();
-        LocalDate day = activity.teachingDay; boolean month = activity.teachingMonth;
+        LocalDate day = classroom.teachingDay; boolean month = classroom.teachingMonth;
         LinearLayout toggle = ui.row();
-        ui.weight(toggle,ui.choice("Tuần",!month,()->{activity.teachingMonth=false;render();})); ui.gap(toggle,8);
-        ui.weight(toggle,ui.choice("Tháng",month,()->{activity.teachingMonth=true;render();}));
+        ui.weight(toggle,ui.choice("Tuần",!month,()->{classroom.teachingMonth=false;render();})); ui.gap(toggle,8);
+        ui.weight(toggle,ui.choice("Tháng",month,()->{classroom.teachingMonth=true;render();}));
         ui.add(content,toggle); ui.space(content,12);
 
         LinearLayout period = ui.row();
-        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{activity.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);render();}));
+        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);render();}));
         TextView label = ui.text("Tháng "+day.getMonthValue()+", "+day.getYear(),20,Ui.INK,true); label.setGravity(Gravity.CENTER); ui.weight(period,label);
-        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{activity.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}));
+        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}));
         ui.add(content,period);
 
         List<Entry> shown = new ArrayList<>();
@@ -55,12 +55,12 @@ public final class TeachingScheduleFragment extends ScreenFragment {
             LinearLayout strip = ui.row(); LocalDate monday = day.with(DayOfWeek.MONDAY);
             for (int i = 0; i < 7; i++) {
                 LocalDate date = monday.plusDays(i); if (i > 0) ui.gap(strip,5);
-                ui.weight(strip,ui.day(date,date.equals(day),()->{activity.teachingDay=date;render();}));
+                ui.weight(strip,ui.day(date,date.equals(day),()->{classroom.teachingDay=date;render();}));
             }
             ui.add(content,strip); ui.space(content,6);
         }
         for (Lesson lesson : mine()) if (visible(LocalDate.parse(lesson.date),day,month)) shown.add(new Entry(lesson.start(),card(lesson,month)));
-        for (GroupClass item : activity.store.classes)
+        for (GroupClass item : classroom.store.classes)
             if (item.tutorId==Store.TUTOR && item.active())
                 for (GroupClass.Session session : item.sessionList())
                     if (visible(session.date,day,month)) shown.add(new Entry(session.start(),classCard(session,month)));
@@ -103,14 +103,14 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.add(info,ui.text("▣ "+item.mode,15,Ui.INK,false)); ui.weight(row,info);
         ui.add(card,row); ui.space(card,8);
         LinearLayout actions = ui.row(); card.addView(actions,ui.lp(-1,-2));
-        ui.weightAction(actions,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->OpenedClassesFragment.members(activity,item)),40); ui.gap(actions,8);
-        ui.weightAction(actions,ui.action("Xem lớp",0,Ui.PRIMARY,()->activity.openClass(item,"review")),40);
+        ui.weightAction(actions,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->OpenedClassesFragment.members(classroom,item)),40); ui.gap(actions,8);
+        ui.weightAction(actions,ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),40);
         return card;
     }
 
     private List<Lesson> mine() {
         List<Lesson> list = new ArrayList<>();
-        for (Lesson lesson : activity.lessons) if (lesson.tutorId==Store.TUTOR && lesson.active()) list.add(lesson);
+        for (Lesson lesson : classroom.lessons) if (lesson.tutorId==Store.TUTOR && lesson.active()) list.add(lesson);
         list.sort(Comparator.comparing((Lesson lesson)->lesson.date).thenComparingInt(lesson->lesson.hour));
         return list;
     }
@@ -130,7 +130,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
             ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->answer(lesson,false)),40); ui.gap(actions,8);
             ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->answer(lesson,true)),40);
         } else {
-            ui.weightAction(actions,ui.action("Chi tiết",R.drawable.ic_chat,Ui.OUTLINE,()->details(activity,lesson)),40); ui.gap(actions,8);
+            ui.weightAction(actions,ui.action("Chi tiết",R.drawable.ic_chat,Ui.OUTLINE,()->details(classroom,lesson)),40); ui.gap(actions,8);
             View move = lesson.started() ? ui.action("Đã diễn ra",0,Ui.DISABLED,null)
                     : lesson.proposal() ? ui.action("Chờ học viên",0,Ui.DISABLED,null)
                     : ui.action("Đề nghị đổi lịch",0,Ui.PRIMARY,()->propose(lesson));
@@ -140,18 +140,18 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     }
 
     private void answer(Lesson lesson, boolean accept) {
-        String error = accept ? activity.store.acceptRequest(lesson) : activity.store.rejectRequest(lesson);
-        if (error != null) { activity.dialog("Không thể xử lý yêu cầu",error); return; }
-        render(); activity.notice(accept?"Đã chấp nhận buổi học với "+lesson.student+".":"Đã từ chối yêu cầu của "+lesson.student+".");
+        String error = accept ? classroom.store.acceptRequest(lesson) : classroom.store.rejectRequest(lesson);
+        if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
+        render(); classroom.notice(accept?"Đã chấp nhận buổi học với "+lesson.student+".":"Đã từ chối yêu cầu của "+lesson.student+".");
     }
 
     /** Tutor-side lesson summary with a shortcut to message the student. */
-    public static void details(MainActivity activity, Lesson lesson) {
-        new AlertDialog.Builder(activity).setTitle(lesson.title+" · "+lesson.student)
+    public static void details(Classroom classroom, Lesson lesson) {
+        new AlertDialog.Builder(classroom.context()).setTitle(lesson.title+" · "+lesson.student)
                 .setMessage(lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+(lesson.address.isEmpty()?"":"\nĐịa chỉ: "+lesson.address)
                         +"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total())+"\nTrạng thái: "+lesson.statusLabel()
                         +(lesson.proposal()?"\n\nĐề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.":""))
-                .setNeutralButton("Nhắn tin",(dialog,which)->activity.message(lesson.student))
+                .setNeutralButton("Nhắn tin",(dialog,which)->classroom.message(lesson.student))
                 .setPositiveButton("Đóng",null).show();
     }
 
@@ -160,7 +160,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         LinearLayout form = ui.column(); form.setPadding(ui.dp(22),ui.dp(8),ui.dp(22),0);
         ui.label(form,"Ngày mới"); TextView dateValue = ui.value(date[0].format(Lesson.DATE));
         ui.add(form,ui.picker(R.drawable.ic_calendar,dateValue,()->{
-            DatePickerDialog picker = new DatePickerDialog(activity,(view,year,month,day)->{date[0]=LocalDate.of(year,month+1,day);dateValue.setText(date[0].format(Lesson.DATE));},
+            DatePickerDialog picker = new DatePickerDialog(classroom.context(),(view,year,month,day)->{date[0]=LocalDate.of(year,month+1,day);dateValue.setText(date[0].format(Lesson.DATE));},
                     date[0].getYear(),date[0].getMonthValue()-1,date[0].getDayOfMonth());
             picker.getDatePicker().setMinDate(System.currentTimeMillis()-1000); picker.show();
         }));
@@ -176,15 +176,15 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         renderHours[0].run();
         ui.space(form,12); ui.label(form,"Lý do đề xuất"); EditText reason = ui.entry("Ví dụ: Gia sư có lịch công tác.",false);
         reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)}); ui.add(form,reason);
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("Đề nghị đổi lịch").setView(form)
+        AlertDialog dialog = new AlertDialog.Builder(classroom.context()).setTitle("Đề nghị đổi lịch").setView(form)
                 .setNegativeButton("Hủy",null).setPositiveButton("Gửi đề nghị",null).create();
         dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String text = reason.getText().toString().trim();
             if (text.isEmpty()) { reason.setError("Vui lòng nhập lý do"); return; }
-            String error = activity.store.propose(lesson,date[0],hour[0],text);
-            if (error != null) { activity.dialog("Chưa gửi được đề nghị",error); return; }
-            dialog.dismiss(); activity.hideKeyboard(); render();
-            activity.notice("Đã gửi đề nghị. Lịch cũ được giữ cho đến khi học viên đồng ý.");
+            String error = classroom.store.propose(lesson,date[0],hour[0],text);
+            if (error != null) { classroom.dialog("Chưa gửi được đề nghị",error); return; }
+            dialog.dismiss(); classroom.hideKeyboard(); render();
+            classroom.notice("Đã gửi đề nghị. Lịch cũ được giữ cho đến khi học viên đồng ý.");
         }));
         dialog.show();
     }

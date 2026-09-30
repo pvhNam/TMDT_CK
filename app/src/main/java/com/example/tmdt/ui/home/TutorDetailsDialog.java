@@ -42,7 +42,7 @@ public final class TutorDetailsDialog extends DialogFragment {
     /** Opens the booking form (member 3); a tutor teaching several subjects first asks which one. */
     private static void book(MainActivity host,CatalogState catalog,CatalogState.Teacher teacher){
         List<CatalogState.Offering> offerings=new ArrayList<>(teacher.offerings);
-        if(offerings.size()==1){host.openBooking(tutor(catalog,teacher,offerings.get(0)));return;}
+        if(offerings.size()==1){host.classroom.openBooking(tutor(catalog,teacher,offerings.get(0)));return;}
         String[] labels=new String[offerings.size()];
         for(int i=0;i<labels.length;i++){
             CatalogState.Offering offering=offerings.get(i);
@@ -50,7 +50,7 @@ public final class TutorDetailsDialog extends DialogFragment {
                     +" · "+CatalogState.money(offering.price);
         }
         new AlertDialog.Builder(host).setTitle(R.string.choose_subject).setNegativeButton(R.string.close,null)
-                .setItems(labels,(d,which)->host.openBooking(tutor(catalog,teacher,offerings.get(which)))).show();
+                .setItems(labels,(d,which)->host.classroom.openBooking(tutor(catalog,teacher,offerings.get(which)))).show();
     }
     private static Tutor tutor(CatalogState catalog,CatalogState.Teacher teacher,CatalogState.Offering offering){
         return Tutor.fromCatalog(teacher.id,teacher.name,catalog.subjects().get(offering.subjectId),CatalogState.level(offering.level),offering.price);

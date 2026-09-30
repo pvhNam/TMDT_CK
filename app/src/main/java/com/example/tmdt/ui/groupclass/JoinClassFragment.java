@@ -20,9 +20,9 @@ public final class JoinClassFragment extends ScreenFragment {
     private EditText goal;
 
     @Override protected View build() {
-        item = activity.store.groupClass(activity.classId);
+        item = classroom.store.groupClass(classroom.classId);
         Tutor tutor = Tutor.get(item.tutorId);
-        LinearLayout root = ui.column(); ui.header(root,"Đăng ký tham gia lớp",activity::back,null);
+        LinearLayout root = ui.column(); ui.header(root,"Đăng ký tham gia lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(6),ui.dp(11),ui.dp(8),ui.dp(11));
@@ -75,20 +75,20 @@ public final class JoinClassFragment extends ScreenFragment {
     private void submit() {
         String objective = goal.getText().toString().trim();
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu học tập"); goal.requestFocus(); return; }
-        activity.hideKeyboard();
-        if (item.full()) { activity.show("full"); return; }
+        classroom.hideKeyboard();
+        if (item.full()) { classroom.show("full"); return; }
         // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
-        String blocked = activity.store.registrationError(item,Store.STUDENT);
-        if (blocked != null) { activity.dialog("Chưa gửi được đăng ký",blocked); return; }
-        new AlertDialog.Builder(activity).setTitle("Ký quỹ học phí")
+        String blocked = classroom.store.registrationError(item,Store.STUDENT);
+        if (blocked != null) { classroom.dialog("Chưa gửi được đăng ký",blocked); return; }
+        new AlertDialog.Builder(classroom.context()).setTitle("Ký quỹ học phí")
                 .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Xác nhận ký quỹ",(dialog,which)->{
                     // Seats may have run out while the dialog was open.
-                    if (item.full()) { activity.show("full"); return; }
-                    String error = activity.store.register(item,Store.STUDENT,objective);
-                    if (error != null) { activity.dialog("Chưa gửi được đăng ký",error); return; }
-                    activity.show("groups"); activity.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
+                    if (item.full()) { classroom.show("full"); return; }
+                    String error = classroom.store.register(item,Store.STUDENT,objective);
+                    if (error != null) { classroom.dialog("Chưa gửi được đăng ký",error); return; }
+                    classroom.show("groups"); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
                 }).show();
     }
 }

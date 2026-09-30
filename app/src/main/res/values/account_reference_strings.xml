@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ref_email_hint">Nhập email</string>
+    <string name="ref_phone_hint">Nhập số điện thoại</string>
+    <string name="ref_register_footer">Chưa có tài khoản?  <font color="#0878FF"><b>Đăng ký</b></font></string>
+    <string name="ref_login_footer">Đã có tài khoản?  <font color="#0878FF"><b>Đăng nhập</b></font></string>
+    <string name="ref_terms">Tôi đồng ý với <u>Điều khoản sử dụng</u> và <u>Chính sách bảo mật</u></string>
+    <string name="ref_reset_note">Liên kết đặt lại mật khẩu sẽ được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến và thư rác.</string>
+    <string name="ref_change_avatar">Thay ảnh đại diện</string>
+    <string name="ref_select_level">Chọn cấp học</string>
+    <string name="ref_select_region">Chọn khu vực</string>
+    <string-array name="suggested_regions">
+        <item>TP. Hồ Chí Minh</item>
+        <item>Hà Nội</item>
+        <item>Đà Nẵng</item>
+        <item>Cần Thơ</item>
+    </string-array>
+</resources>

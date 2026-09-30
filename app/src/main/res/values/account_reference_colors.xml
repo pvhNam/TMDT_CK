@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="account_ink">#092357</color>
+    <color name="account_muted">#526CA0</color>
+    <color name="account_blue">#0878FF</color>
+    <color name="account_pale">#EEF6FF</color>
+</resources>

@@ -23,8 +23,8 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     private TextView heading, summary, sort;
 
     @Override protected View build() {
-        item = activity.store.groupClass(activity.classId);
-        LinearLayout root = ui.column(); ui.header(root,"Duyệt đăng ký lớp",activity::back,null);
+        item = classroom.store.groupClass(classroom.classId);
+        LinearLayout root = ui.column(); ui.header(root,"Duyệt đăng ký lớp",classroom::back,null);
         LinearLayout body = ui.page(root); ui.space(body,4);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(10),ui.dp(12),ui.dp(10),ui.dp(12));
@@ -44,8 +44,8 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         ui.add(body,ui.text(item.members.isEmpty()?"Lớp chưa có học viên.":String.join(" · ",item.members),15,Ui.MUTED,false));
         if (GroupClass.OPEN.equals(item.status)) {
             ui.space(body,16); LinearLayout actions = ui.row();
-            ui.weightAction(actions,ui.action("Chỉnh sửa lớp",R.drawable.ic_edit,Ui.OUTLINE,()->activity.openClass(item,"openClass")),42); ui.gap(actions,10);
-            ui.weightAction(actions,ui.action("⊘  Đóng tuyển",0,Ui.DANGER,()->OpenedClassesFragment.close(activity,item)),42);
+            ui.weightAction(actions,ui.action("Chỉnh sửa lớp",R.drawable.ic_edit,Ui.OUTLINE,()->classroom.openClass(item,"openClass")),42); ui.gap(actions,10);
+            ui.weightAction(actions,ui.action("⊘  Đóng tuyển",0,Ui.DANGER,()->OpenedClassesFragment.close(classroom,item)),42);
             ui.add(body,actions);
         }
         render();
@@ -81,17 +81,17 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     }
 
     private void accept(GroupClass.Registration registration) {
-        String error = activity.store.accept(item,registration);
-        if (error != null) { activity.dialog("Không thể duyệt thêm",error); return; }
-        activity.show("review"); activity.notice("Đã nhận "+registration.student+" vào lớp.");
+        String error = classroom.store.accept(item,registration);
+        if (error != null) { classroom.dialog("Không thể duyệt thêm",error); return; }
+        classroom.show("review"); classroom.notice("Đã nhận "+registration.student+" vào lớp.");
     }
     private void reject(GroupClass.Registration registration) {
-        new AlertDialog.Builder(activity).setTitle("Từ chối "+registration.student+"?")
+        new AlertDialog.Builder(classroom.context()).setTitle("Từ chối "+registration.student+"?")
                 .setMessage("Tiền ký quỹ của học viên sẽ được hoàn theo quy định (Thành viên 4 xử lý).")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Từ chối",(dialog,which)->{
-                    String error = activity.store.reject(registration);
-                    if (error != null) activity.dialog("Không thể từ chối",error); else { activity.show("review"); activity.notice("Đã từ chối đăng ký."); }
+                    String error = classroom.store.reject(registration);
+                    if (error != null) classroom.dialog("Không thể từ chối",error); else { classroom.show("review"); classroom.notice("Đã từ chối đăng ký."); }
                 }).show();
     }
 }

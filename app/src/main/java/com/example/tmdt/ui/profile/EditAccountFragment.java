@@ -36,9 +36,14 @@ public final class EditAccountFragment extends AccountFragmentBase {
     @Override protected void bindFields(View view){
         binding=FragmentEditAccountBinding.bind(view);populated=false;
         binding.goal.setSingleLine(false);
+        binding.email.setKeyListener(null);
         binding.changeAvatar.setOnClickListener(v->picker.launch("image/*"));
+        binding.camera.setOnClickListener(v->picker.launch("image/*"));
         binding.level.setOnClickListener(v->new AlertDialog.Builder(requireContext()).setTitle(R.string.level)
                 .setItems(R.array.study_levels,(dialog,index)->binding.level.setText(getResources().getStringArray(R.array.study_levels)[index])).show());
+        binding.levelLayout.setEndIconOnClickListener(v->binding.level.performClick());
+        binding.regionLayout.setEndIconOnClickListener(v->new AlertDialog.Builder(requireContext()).setTitle(R.string.region)
+                .setItems(R.array.suggested_regions,(dialog,index)->binding.region.setText(getResources().getStringArray(R.array.suggested_regions)[index])).show());
         binding.save.setOnClickListener(v->save());
     }
     @Override protected void renderState(){
@@ -64,4 +69,3 @@ public final class EditAccountFragment extends AccountFragmentBase {
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;populated=false;}
 }
-

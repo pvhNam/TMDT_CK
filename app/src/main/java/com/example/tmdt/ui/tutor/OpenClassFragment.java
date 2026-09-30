@@ -37,7 +37,7 @@ public final class OpenClassFragment extends ScreenFragment {
 
     /** A new class starts from the defaults; an edited one (UC17) from its saved values. */
     private void start() {
-        started = true; editing = activity.store.groupClass(activity.classId);
+        started = true; editing = classroom.store.groupClass(classroom.classId);
         start = nextClassDay(LocalDate.now().plusDays(1));
         if (editing != null) {
             subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour;
@@ -47,7 +47,7 @@ public final class OpenClassFragment extends ScreenFragment {
 
     @Override protected View build() {
         if (!started) start();
-        LinearLayout root = ui.column(); ui.header(root,editing==null?"Mở lớp nhóm":"Chỉnh sửa lớp",activity::back,null);
+        LinearLayout root = ui.column(); ui.header(root,editing==null?"Mở lớp nhóm":"Chỉnh sửa lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         ui.label(body,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
@@ -56,7 +56,7 @@ public final class OpenClassFragment extends ScreenFragment {
         ui.label(body,"Môn học *");
         subjectMark = ui.text("",30,Ui.INK,true); subjectMark.setGravity(Gravity.CENTER); subjectValue = ui.value("");
         LinearLayout subjectBox = ui.picker(0,subjectValue,this::pickSubject); subjectBox.addView(subjectMark,0,ui.lp(25,-2));
-        subjectBox.addView(new View(activity),1,ui.lp(10,1)); ui.add(body,subjectBox); ui.space(body,11);
+        subjectBox.addView(new View(classroom.context()),1,ui.lp(10,1)); ui.add(body,subjectBox); ui.space(body,11);
 
         ui.label(body,"Hình thức học *"); modeValue = ui.value("");
         LinearLayout modeBox = ui.picker(R.drawable.ic_laptop,modeValue,this::pickMode); modeIcon = (android.widget.ImageView) modeBox.getChildAt(0);
@@ -124,7 +124,7 @@ public final class OpenClassFragment extends ScreenFragment {
     }
 
     private void choose(String title, String[] items, int selected, java.util.function.IntConsumer apply) {
-        new AlertDialog.Builder(activity).setTitle(title)
+        new AlertDialog.Builder(classroom.context()).setTitle(title)
                 .setSingleChoiceItems(items,selected,(dialog,which)->{apply.accept(which);render();dialog.dismiss();})
                 .setNegativeButton("Đóng",null).show();
     }
@@ -150,7 +150,7 @@ public final class OpenClassFragment extends ScreenFragment {
         choose("Giờ học",values,selected,i->hour=START_HOURS[i]);
     }
     private void pickStart() {
-        DatePickerDialog dialog = new DatePickerDialog(activity,(view,year,month,day)->{start=LocalDate.of(year,month+1,day);render();},
+        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),(view,year,month,day)->{start=LocalDate.of(year,month+1,day);render();},
                 start.getYear(),start.getMonthValue()-1,start.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()+24L*60*60*1000-1000); dialog.show();
     }
@@ -163,25 +163,25 @@ public final class OpenClassFragment extends ScreenFragment {
         if (mode.equals("Tại nhà") && place.isEmpty()) { address.setError("Vui lòng nhập địa điểm học"); address.requestFocus(); return; }
         if (fee < 50000 || fee > 10000000) { price.setError("Học phí từ 50.000đ đến 10.000.000đ"); price.requestFocus(); return; }
         if (about.isEmpty()) { description.setError("Vui lòng mô tả lớp học"); description.requestFocus(); return; }
-        if (!start.isAfter(LocalDate.now())) { activity.dialog("Ngày bắt đầu chưa hợp lệ","Ngày bắt đầu cần sau hôm nay."); return; }
+        if (!start.isAfter(LocalDate.now())) { classroom.dialog("Ngày bắt đầu chưa hợp lệ","Ngày bắt đầu cần sau hôm nay."); return; }
         boolean onClassDay = false; for (int day : days) onClassDay |= start.getDayOfWeek().getValue()==day;
-        if (!onClassDay) { activity.dialog("Ngày bắt đầu chưa khớp lịch","Ngày bắt đầu cần rơi vào "+label().split(" · ")[0]+"."); return; }
+        if (!onClassDay) { classroom.dialog("Ngày bắt đầu chưa khớp lịch","Ngày bắt đầu cần rơi vào "+label().split(" · ")[0]+"."); return; }
         if (editing != null && capacity < editing.members.size()) {
-            activity.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
+            classroom.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = activity.store.classClash(Store.TUTOR,days,hour,minutes,start,sessions,editing==null?-1:editing.id);
-        if (clash != null) { activity.dialog("Lịch học bị trùng",clash); return; }
+        String clash = classroom.store.classClash(Store.TUTOR,days,hour,minutes,start,sessions,editing==null?-1:editing.id);
+        if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
-        GroupClass item = editing != null ? editing : new GroupClass(activity.store.nextId(),Store.TUTOR);
+        GroupClass item = editing != null ? editing : new GroupClass(classroom.store.nextId(),Store.TUTOR);
         item.title=title; item.subject=subject; item.level=levelOf(title); item.mode=mode; item.address=mode.equals("Tại nhà")?place:"";
         item.description=about; item.startDate=start.toString(); item.sessions=sessions; item.price=fee; item.capacity=capacity;
         item.days=days; item.hour=hour; item.minutes=minutes;
         if (editing == null) {
             item.status=GroupClass.OPEN; item.art=subject.equals("Tiếng Anh")?2:subject.equals("Toán")?0:1;
-            activity.store.classes.add(item);
+            classroom.store.classes.add(item);
         }
-        activity.store.save(); activity.hideKeyboard(); activity.classTab=0; activity.show("classes");
-        activity.notice(editing==null?"Đã mở lớp \""+title+"\".":"Đã lưu thay đổi của lớp.");
+        classroom.store.save(); classroom.hideKeyboard(); classroom.classTab=0; classroom.show("classes");
+        classroom.notice(editing==null?"Đã mở lớp \""+title+"\".":"Đã lưu thay đổi của lớp.");
     }
     /** The level is taken from the class name ("… lớp 12"), or left general. */
     private String levelOf(String title) {

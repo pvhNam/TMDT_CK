@@ -23,11 +23,11 @@ public final class ScheduleFragment extends ScreenFragment {
 
     @Override protected View build() {
         LinearLayout root=ui.column();ui.title(root,"Lịch học",ui.link("Chế độ gia sư",15,this::tutorMode));
-        ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},activity.scheduleTab,index->{activity.scheduleTab=index;activity.show("schedule");});
+        ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},classroom.scheduleTab,index->{classroom.scheduleTab=index;classroom.show("schedule");});
         LinearLayout content=ui.page(root);ui.space(content,6);
-        int tab=activity.scheduleTab;
+        int tab=classroom.scheduleTab;
         List<Entry> visible=new ArrayList<>();
-        for(Lesson lesson:activity.lessons) {
+        for(Lesson lesson:classroom.lessons) {
             if(!lesson.student.equals(Store.STUDENT))continue;
             boolean include=tab==1?lesson.pending()||Lesson.REJECTED.equals(lesson.status):
                     tab==2?(lesson.confirmed()&&lesson.ended())||Lesson.CANCELLED.equals(lesson.status):
@@ -35,7 +35,7 @@ public final class ScheduleFragment extends ScreenFragment {
             if(include)visible.add(new Entry(lesson.start(),lessonCard(lesson)));
         }
         // Group classes: registrations wait under "Chờ xác nhận"; members see every session under "Sắp tới" or "Đã học".
-        for(GroupClass item:activity.store.classes) {
+        for(GroupClass item:classroom.store.classes) {
             if(tab==1) {
                 for(GroupClass.Registration registration:item.registrations) {
                     if(!registration.student.equals(Store.STUDENT)||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
@@ -59,10 +59,10 @@ public final class ScheduleFragment extends ScreenFragment {
         if(visible.isEmpty()) {
             LinearLayout empty=ui.column();ui.pad(empty,18,32);empty.setGravity(Gravity.CENTER);ui.surface(empty,0xFFF3F8FE,12,0);
             empty.addView(ui.icon(R.drawable.ic_calendar,42,Ui.BLUE));ui.space(empty,16);
-            TextView title=ui.text(activity.scheduleTab==1?"Chưa có yêu cầu đặt học":activity.scheduleTab==2?"Chưa có buổi học đã hoàn thành":"Chưa có lịch học sắp tới",17,Ui.INK,true);
+            TextView title=ui.text(classroom.scheduleTab==1?"Chưa có yêu cầu đặt học":classroom.scheduleTab==2?"Chưa có buổi học đã hoàn thành":"Chưa có lịch học sắp tới",17,Ui.INK,true);
             title.setGravity(Gravity.CENTER);ui.add(empty,title);ui.space(empty,10);
             TextView description=ui.text("Tìm gia sư phù hợp và bắt đầu hành trình học tập của bạn.",14,Ui.MUTED,false);description.setGravity(Gravity.CENTER);
-            ui.add(empty,description);ui.space(empty,18);ui.addAction(empty,ui.action("Tìm gia sư",R.drawable.ic_search,Ui.PRIMARY,()->activity.show("home")),48);
+            ui.add(empty,description);ui.space(empty,18);ui.addAction(empty,ui.action("Tìm gia sư",R.drawable.ic_search,Ui.PRIMARY,()->classroom.show("home")),48);
             ui.add(content,empty);ui.space(content,16);
         }
         ui.space(content,7);ui.add(content,banner());
@@ -78,26 +78,26 @@ public final class ScheduleFragment extends ScreenFragment {
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(lesson.title,lesson.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
         titleRow.addView(ui.lessonStatus(lesson));ui.add(details,titleRow);ui.space(details,2);
-        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->activity.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
+        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,lesson.dateLabel()+" · "+lesson.timeLabel(),18,14,Ui.MUTED,false));
         ui.add(details,ui.fact(lesson.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,lesson.mode+(lesson.trial?" · Học thử":""),18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);
         if(lesson.proposal()&&lesson.confirmed()) {
             ui.space(card,8);LinearLayout proposal=ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch. Chạm để xem.",Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE);
-            ui.clickable(proposal,()->{activity.lessonId=lesson.id;activity.show("reschedule");});ui.add(card,proposal);
+            ui.clickable(proposal,()->{classroom.lessonId=lesson.id;classroom.show("reschedule");});ui.add(card,proposal);
         }
         ui.space(card,9);
         LinearLayout actions=ui.row();
-        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->activity.message(tutor)),38);ui.gap(actions,9);
-        ui.weightAction(actions,ui.action(lesson.needsConfirmation()?"Xác nhận":"Chi tiết",0,Ui.PRIMARY,()->activity.openLesson(lesson)),38);
+        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(tutor)),38);ui.gap(actions,9);
+        ui.weightAction(actions,ui.action(lesson.needsConfirmation()?"Xác nhận":"Chi tiết",0,Ui.PRIMARY,()->classroom.openLesson(lesson)),38);
         ui.add(card,actions);return card;
     }
 
     /** Demo switch to the sample tutor's side, where requests and class registrations are answered. */
     private void tutorMode() {
-        new AlertDialog.Builder(activity).setTitle("Chuyển sang chế độ gia sư?")
+        new AlertDialog.Builder(classroom.context()).setTitle("Chuyển sang chế độ gia sư?")
                 .setMessage("Bạn sẽ xem ứng dụng như cô Minh Anh (tài khoản gia sư mẫu) để duyệt yêu cầu và quản lý lớp nhóm.")
-                .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->activity.setTutorMode(true)).show();
+                .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(true)).show();
     }
 
     /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
@@ -110,15 +110,15 @@ public final class ScheduleFragment extends ScreenFragment {
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(item.title,item.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
         titleRow.addView(status);ui.add(details,titleRow);ui.space(details,2);
-        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->activity.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
+        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,when,18,14,Ui.MUTED,false));
         ui.add(details,ui.fact(R.drawable.ic_users,item.mode+" · Lớp nhóm",18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);ui.space(card,9);
         String summary=note+"\n\n"+item.subject+" · "+item.level+"\nLịch học: "+item.scheduleLabel()+"\nKhai giảng: "+item.startLabel()+" · "+item.sessions+" buổi\n"
                 +item.mode+(item.address.isEmpty()?"":" · "+item.address)+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
         LinearLayout actions=ui.row();
-        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->activity.message(tutor)),38);ui.gap(actions,9);
-        ui.weightAction(actions,ui.action("Chi tiết",0,Ui.PRIMARY,()->activity.dialog(item.title,summary)),38);
+        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(tutor)),38);ui.gap(actions,9);
+        ui.weightAction(actions,ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
         ui.add(card,actions);return card;
     }
 

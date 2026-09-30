@@ -8,6 +8,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.example.tmdt.Classroom;
 import com.example.tmdt.MainActivity;
 
 /**
@@ -16,7 +17,7 @@ import com.example.tmdt.MainActivity;
  * so tabs and filters kept in fields survive while the content follows the saved data.
  */
 public abstract class ScreenFragment extends Fragment {
-    protected MainActivity activity;
+    protected Classroom classroom;
     protected Ui ui;
     private FrameLayout frame;
 
@@ -28,7 +29,7 @@ public abstract class ScreenFragment extends Fragment {
     /** Rebuilds the whole screen from the current data. */
     public void refresh() {
         if (frame == null) return;
-        activity = (MainActivity) requireActivity(); ui = activity.ui;
+        classroom = ((MainActivity) requireActivity()).classroom; ui = classroom.ui;
         frame.removeAllViews(); frame.addView(build(), new FrameLayout.LayoutParams(-1,-1));
     }
     protected abstract View build();

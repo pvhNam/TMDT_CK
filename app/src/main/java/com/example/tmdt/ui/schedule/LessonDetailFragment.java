@@ -16,9 +16,9 @@ public final class LessonDetailFragment extends ScreenFragment {
     private Lesson lesson;
 
     @Override protected View build() {
-        lesson = activity.store.lesson(activity.lessonId);
+        lesson = classroom.store.lesson(classroom.lessonId);
         Tutor tutor = Tutor.get(lesson.tutorId);
-        LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",activity::back,null);
+        LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout summary = ui.row(); summary.setPadding(ui.dp(14),ui.dp(18),ui.dp(12),ui.dp(18)); ui.surface(summary,Ui.PALE,10,0);
@@ -33,7 +33,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         profile.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,73,79,9)); ui.gap(profile,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));
-        info.addView(ui.link("Xem hồ sơ",16,()->activity.openTutor(tutor)),ui.lp(-2,-2));
+        info.addView(ui.link("Xem hồ sơ",16,()->classroom.openTutor(tutor)),ui.lp(-2,-2));
         ui.weight(profile,info); ui.add(body,profile);
 
         LinearLayout table = ui.table();
@@ -55,13 +55,13 @@ public final class LessonDetailFragment extends ScreenFragment {
 
         if (lesson.proposal() && lesson.confirmed()) {
             LinearLayout proposal = ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch sang "+lesson.proposalLabel()+". Chạm để phản hồi.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE);
-            ui.clickable(proposal,()->activity.show("reschedule")); ui.add(body,proposal); ui.space(body,8);
+            ui.clickable(proposal,()->classroom.show("reschedule")); ui.add(body,proposal); ui.space(body,8);
         }
         ui.add(body,ui.note(R.drawable.ic_info,hint(),Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,8);
         ui.addAction(body,mainAction(),49); ui.space(body,12);
-        ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->activity.message(tutor)),48);
+        ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(tutor)),48);
         if (lesson.active() && !lesson.started()) {
-            TextView cancel = ui.link("Hủy buổi học",16,()->activity.show("cancel")); cancel.setTextColor(Ui.RED);
+            TextView cancel = ui.link("Hủy buổi học",16,()->classroom.show("cancel")); cancel.setTextColor(Ui.RED);
             cancel.setGravity(Gravity.CENTER); ui.space(body,6); ui.add(body,cancel);
         }
         return root;
@@ -82,9 +82,9 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.REJECTED.equals(lesson.status)) return ui.action("Yêu cầu bị từ chối",0,Ui.DISABLED,null);
         if (lesson.pending()) return ui.action("Đang chờ gia sư xác nhận",0,Ui.DISABLED,null);
         if (lesson.finished) return ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null);
-        if (lesson.needsConfirmation()) return ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,()->activity.show("confirm"));
+        if (lesson.needsConfirmation()) return ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,()->classroom.show("confirm"));
         if (lesson.roomOpen()) return lesson.mode.equals("Tại nhà") ? ui.action("Buổi học đang diễn ra",0,Ui.DISABLED,null)
-                : ui.action("Vào phòng học",0,Ui.PRIMARY,()->activity.dialog("Phòng học trực tuyến","Phòng học sẽ mở khi ứng dụng được kết nối máy chủ."));
+                : ui.action("Vào phòng học",0,Ui.PRIMARY,()->classroom.dialog("Phòng học trực tuyến","Phòng học sẽ mở khi ứng dụng được kết nối máy chủ."));
         return ui.action("Chưa đến giờ vào học",0,Ui.DISABLED,null);
     }
 }

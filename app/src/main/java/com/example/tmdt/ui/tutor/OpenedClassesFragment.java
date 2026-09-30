@@ -8,7 +8,7 @@ import androidx.appcompat.app.AlertDialog;
 import java.util.ArrayList;
 import java.util.List;
 import com.example.tmdt.R;
-import com.example.tmdt.MainActivity;
+import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
@@ -21,17 +21,17 @@ public final class OpenedClassesFragment extends ScreenFragment {
 
     @Override protected View build() {
         LinearLayout root = ui.column();
-        View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->activity.openClass(null,"openClass"));
+        View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->classroom.openClass(null,"openClass"));
         open.setLayoutParams(ui.lp(104,37));
         ui.title(root,"Lớp đã mở",open);
         String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
         for (int i = 0; i < 3; i++) labels[i] += " ("+mine(STATUSES[i]).size()+")";
-        ui.tabs(root,labels,activity.classTab,index->{activity.classTab=index;activity.show("classes");});
+        ui.tabs(root,labels,classroom.classTab,index->{classroom.classTab=index;classroom.show("classes");});
         LinearLayout body = ui.page(root); ui.space(body,4);
-        List<GroupClass> list = mine(STATUSES[activity.classTab]);
+        List<GroupClass> list = mine(STATUSES[classroom.classTab]);
         for (GroupClass item : list) { ui.add(body,card(item)); ui.space(body,11); }
         if (list.isEmpty()) {
-            ui.add(body,ui.note(R.drawable.ic_info,activity.classTab==0?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới."
+            ui.add(body,ui.note(R.drawable.ic_info,classroom.classTab==0?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới."
                     :"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
         }
         return root;
@@ -39,7 +39,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();
-        for (GroupClass item : activity.store.classes) if (item.tutorId == Store.TUTOR && item.status.equals(status)) list.add(item);
+        for (GroupClass item : classroom.store.classes) if (item.tutorId == Store.TUTOR && item.status.equals(status)) list.add(item);
         return list;
     }
 
@@ -58,14 +58,14 @@ public final class OpenedClassesFragment extends ScreenFragment {
         ui.weight(top,info); ui.add(card,top); ui.space(card,8);
 
         if (GroupClass.OPEN.equals(item.status) && item.pendingCount() > 0) {
-            ui.addAction(card,ui.action("Duyệt đăng ký",0,Ui.PRIMARY,()->activity.openClass(item,"review")),40); ui.space(card,10);
+            ui.addAction(card,ui.action("Duyệt đăng ký",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),40); ui.space(card,10);
             LinearLayout row = ui.row();
-            ui.weightAction(row,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->members(activity,item)),40); ui.gap(row,10);
-            ui.weightAction(row,ui.action("Chỉnh sửa",R.drawable.ic_edit,Ui.OUTLINE,()->activity.openClass(item,"openClass")),40);
+            ui.weightAction(row,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->members(classroom,item)),40); ui.gap(row,10);
+            ui.weightAction(row,ui.action("Chỉnh sửa",R.drawable.ic_edit,Ui.OUTLINE,()->classroom.openClass(item,"openClass")),40);
             ui.add(card,row); ui.space(card,9);
-            ui.addAction(card,ui.action("⊘  Đóng tuyển sinh",0,Ui.DANGER,()->close(activity,item)),38);
+            ui.addAction(card,ui.action("⊘  Đóng tuyển sinh",0,Ui.DANGER,()->close(classroom,item)),38);
         } else {
-            ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->activity.openClass(item,"review")),38);
+            ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,"review")),38);
         }
         return card;
     }
@@ -76,18 +76,18 @@ public final class OpenedClassesFragment extends ScreenFragment {
         return ui.pill("Đã kết thúc",12,Ui.MUTED,0xFFEEF2F7);
     }
 
-    public static void members(MainActivity activity, GroupClass item) {
+    public static void members(Classroom classroom, GroupClass item) {
         StringBuilder list = new StringBuilder();
         for (String member : item.members) list.append("• ").append(member).append('\n');
-        activity.dialog("Thành viên ("+item.members.size()+"/"+item.capacity+")",list.length()==0?"Lớp chưa có học viên.":list.toString().trim());
+        classroom.dialog("Thành viên ("+item.members.size()+"/"+item.capacity+")",list.length()==0?"Lớp chưa có học viên.":list.toString().trim());
     }
 
-    public static void close(MainActivity activity, GroupClass item) {
-        new AlertDialog.Builder(activity).setTitle("Đóng tuyển sinh?")
+    public static void close(Classroom classroom, GroupClass item) {
+        new AlertDialog.Builder(classroom.context()).setTitle("Đóng tuyển sinh?")
                 .setMessage("Lớp \""+item.title+"\" sẽ chuyển sang mục Đang học với "+item.members.size()+" học viên. Các đăng ký đang chờ sẽ không được duyệt thêm.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Đóng tuyển sinh",(dialog,which)->{
-                    activity.store.closeRecruiting(item); activity.classTab=1; activity.show("classes"); activity.notice("Đã đóng tuyển sinh lớp \""+item.title+"\".");
+                    classroom.store.closeRecruiting(item); classroom.classTab=1; classroom.show("classes"); classroom.notice("Đã đóng tuyển sinh lớp \""+item.title+"\".");
                 }).show();
     }
 }

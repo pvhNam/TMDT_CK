@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="NavigationActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">#E8F3FF</item>
+    <style name="FigmaNavigationInactive" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+    <style name="FigmaNavigationActive" parent="FigmaNavigationInactive">
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

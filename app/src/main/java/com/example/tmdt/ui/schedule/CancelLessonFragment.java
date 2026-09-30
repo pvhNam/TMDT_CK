@@ -21,9 +21,9 @@ public final class CancelLessonFragment extends ScreenFragment {
     private CheckBox agree;
 
     @Override protected View build() {
-        lesson = activity.store.lesson(activity.lessonId);
+        lesson = classroom.store.lesson(classroom.lessonId);
         Tutor tutor = Tutor.get(lesson.tutorId);
-        LinearLayout root = ui.column(); ui.header(root,"Hủy buổi học",activity::back,null);
+        LinearLayout root = ui.column(); ui.header(root,"Hủy buổi học",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));
@@ -49,7 +49,7 @@ public final class CancelLessonFragment extends ScreenFragment {
 
         agree = ui.check("Tôi đã đọc điều kiện hủy.",false,null); ui.add(body,agree); ui.space(body,4);
         ui.addAction(body,ui.action("Xác nhận hủy",R.drawable.ic_trash,Ui.DANGER,this::cancel),49); ui.space(body,12);
-        ui.addAction(body,ui.action("Giữ buổi học",0,Ui.PRIMARY,activity::back),50);
+        ui.addAction(body,ui.action("Giữ buổi học",0,Ui.PRIMARY,classroom::back),50);
         return root;
     }
 
@@ -62,10 +62,10 @@ public final class CancelLessonFragment extends ScreenFragment {
     private void cancel() {
         String text = reason == 2 ? other.getText().toString().trim() : REASONS[reason];
         if (text.isEmpty()) { other.setError("Vui lòng nhập lý do hủy"); other.requestFocus(); return; }
-        if (!agree.isChecked()) { activity.dialog("Chưa đọc điều kiện hủy","Hãy đánh dấu \"Tôi đã đọc điều kiện hủy\" trước khi xác nhận."); return; }
-        String error = activity.store.cancel(lesson, text);
-        if (error != null) { activity.dialog("Không thể hủy buổi học",error); return; }
-        activity.hideKeyboard(); activity.show("lesson");
-        activity.notice("Đã hủy buổi học. Yêu cầu hoàn tiền sẽ được xem xét theo điều kiện.");
+        if (!agree.isChecked()) { classroom.dialog("Chưa đọc điều kiện hủy","Hãy đánh dấu \"Tôi đã đọc điều kiện hủy\" trước khi xác nhận."); return; }
+        String error = classroom.store.cancel(lesson, text);
+        if (error != null) { classroom.dialog("Không thể hủy buổi học",error); return; }
+        classroom.hideKeyboard(); classroom.show("lesson");
+        classroom.notice("Đã hủy buổi học. Yêu cầu hoàn tiền sẽ được xem xét theo điều kiện.");
     }
 }

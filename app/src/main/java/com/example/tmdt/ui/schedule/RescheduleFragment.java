@@ -14,13 +14,13 @@ public final class RescheduleFragment extends ScreenFragment {
     private Lesson lesson;
 
     @Override protected View build() {
-        lesson = activity.store.lesson(activity.lessonId);
+        lesson = classroom.store.lesson(classroom.lessonId);
         Tutor tutor = Tutor.get(lesson.tutorId);
-        LinearLayout root = ui.column(); ui.header(root,"Yêu cầu đổi lịch",activity::back,null);
+        LinearLayout root = ui.column(); ui.header(root,"Yêu cầu đổi lịch",classroom::back,null);
         LinearLayout body = ui.page(root);
         if (!lesson.proposal()) {
             ui.add(body,ui.note(R.drawable.ic_info,"Không có đề nghị đổi lịch nào đang chờ. Lịch hiện tại: "+lesson.dateLabel()+" · "+lesson.timeLabel()+".",Ui.PALE,Ui.BLUE,Ui.INK));
-            ui.space(body,16); ui.addAction(body,ui.action("Quay lại buổi học",0,Ui.OUTLINE,activity::back),49);
+            ui.space(body,16); ui.addAction(body,ui.action("Quay lại buổi học",0,Ui.OUTLINE,classroom::back),49);
             return root;
         }
         ui.space(body,6);
@@ -54,12 +54,12 @@ public final class RescheduleFragment extends ScreenFragment {
     }
 
     private void accept() {
-        String error = activity.store.acceptProposal(lesson);
-        if (error != null) { activity.dialog("Chưa đổi được lịch",error); return; }
-        activity.show("lesson"); activity.notice("Đã đổi lịch sang "+lesson.dateLabel()+" · "+lesson.timeLabel()+".");
+        String error = classroom.store.acceptProposal(lesson);
+        if (error != null) { classroom.dialog("Chưa đổi được lịch",error); return; }
+        classroom.show("lesson"); classroom.notice("Đã đổi lịch sang "+lesson.dateLabel()+" · "+lesson.timeLabel()+".");
     }
     private void keep() {
-        activity.store.clearProposal(lesson);
-        activity.show("lesson"); activity.notice("Đã giữ lịch hiện tại. Gia sư sẽ nhận được phản hồi của bạn.");
+        classroom.store.clearProposal(lesson);
+        classroom.show("lesson"); classroom.notice("Đã giữ lịch hiện tại. Gia sư sẽ nhận được phản hồi của bạn.");
     }
 }
