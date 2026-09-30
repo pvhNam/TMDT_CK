@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_register">Đăng ký</string>
+    <string
+        name="page_home">Trang chủ</string>
+    <string
+        name="page_account">Cá nhân</string>
+    <string
+        name="page_login">Đăng nhập</string>
+    <string
+        name="page_register">Đăng ký tài khoản</string>
+    <string
+        name="page_forgot">Quên mật khẩu</string>
+    <string
+        name="page_edit">Chỉnh sửa hồ sơ</string>
+    <string
+        name="page_otp">Xác thực số điện thoại</string>
+    <string
+        name="back">Quay lại</string>
+    <string
+        name="welcome">Chào mừng trở lại</string>
+    <string
+        name="login_caption">Đăng nhập để tiếp tục học tập</string>
+    <string
+        name="register_heading">Tạo tài khoản học viên</string>
+    <string
+        name="register_caption">Bắt đầu hành trình học tập với gia sư phù hợp ngay hôm nay.</string>
+    <string
+        name="email">Email</string>
+    <string
+        name="password">Mật khẩu</string>
+    <string
+        name="confirm_password">Xác nhận mật khẩu</string>
+    <string
+        name="name">Họ và tên</string>
+    <string
+        name="phone">Số điện thoại</string>
+    <string
+        name="address">Địa chỉ</string>
+    <string
+        name="level">Cấp học</string>
+    <string
+        name="region">Khu vực</string>
+    <string
+        name="goal">Mục tiêu học tập</string>
+    <string
+        name="show_password">Hiện mật khẩu</string>
+    <string
+        name="show_confirm">Hiện xác nhận mật khẩu</string>
+    <string
+        name="forgot_link">Quên mật khẩu?</string>
+    <string
+        name="register_link">Chưa có tài khoản? Đăng ký</string>
+    <string
+        name="login_link">Đã có tài khoản? Đăng nhập</string>
+    <string
+        name="create_account">Tạo tài khoản</string>
+    <string
+        name="password_hint">Sử dụng từ 8 đến 128 ký tự.</string>
+    <string
+        name="accept_terms">Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật</string>
+    <string
+        name="terms_link">Điều khoản và chính sách bảo mật</string>
+    <string
+        name="reset_heading">Lấy lại mật khẩu</string>
+    <string
+        name="reset_caption">Nhập email đã đăng ký để nhận liên kết đặt lại mật khẩu.</string>
+    <string
+        name="send_reset">Gửi liên kết</string>
+    <string
+        name="back_login">Quay lại đăng nhập</string>
+    <string
+        name="reset_note">Kiểm tra cả hộp thư đến và thư rác sau khi gửi yêu cầu.</string>
+    <string
+        name="personal_info">Thông tin cá nhân</string>
+    <string
+        name="security">Bảo mật tài khoản</string>
+    <string
+        name="edit_profile">Chỉnh sửa hồ sơ</string>
+    <string
+        name="save_profile">Lưu thay đổi</string>
+    <string
+        name="change_avatar">Thay ảnh đại diện</string>
+    <string
+        name="avatar">Ảnh đại diện</string>
+    <string
+        name="email_fixed">Email đăng nhập không thay đổi tại đây.</string>
+    <string
+        name="reset_password">Đổi mật khẩu qua email</string>
+    <string
+        name="sign_out">Đăng xuất</string>
+    <string
+        name="retry_profile">Tải lại hồ sơ</string>
+    <string
+        name="not_updated">Chưa cập nhật</string>
+    <string
+        name="phone_verification">Xác thực điện thoại</string>
+    <string
+        name="otp_heading">Xác thực số điện thoại</string>
+    <string
+        name="otp_caption">Nhập mã 6 số được gửi đến điện thoại của bạn.</string>
+    <string
+        name="otp_code">Mã OTP</string>
+    <string
+        name="send_otp">Gửi mã OTP</string>
+    <string
+        name="resend_otp">Gửi lại mã</string>
+    <string
+        name="confirm">Xác nhận</string>
+    <string
+        name="change_phone">Đổi số điện thoại</string>
+    <string
+        name="sending_otp">Đang gửi mã…</string>
+    <string
+        name="greeting">Chào bạn!</string>
+    <string
+        name="home_heading">Hôm nay bạn muốn học gì?</string>
+    <string
+        name="search_hint">Tìm môn học, gia sư…</string>
+    <string
+        name="search_description">Tìm môn học hoặc tên gia sư</string>
+    <string
+        name="catalog_heading">Gia sư đang nhận lớp</string>
+    <string
+        name="refresh_catalog">Làm mới danh sách</string>
+    <string
+        name="all_subjects">Tất cả</string>
+    <string
+        name="loading_catalog">Đang tải danh sách gia sư…</string>
+    <string
+        name="empty_catalog">Chưa có gia sư đang nhận lớp</string>
+    <string
+        name="empty_catalog_caption">Hồ sơ gia sư sẽ xuất hiện tại đây khi được duyệt và có môn dạy.</string>
+    <string
+        name="empty_search">Chưa tìm thấy gia sư</string>
+    <string
+        name="empty_search_caption">Thử tên hoặc môn học khác để tìm gia sư phù hợp.</string>
+    <string
+        name="clear_filter">Xóa bộ lọc</string>
+    <string
+        name="retry">Thử lại</string>
+    <string
+        name="offline_catalog">Đang xem dữ liệu đã lưu trên thiết bị.</string>
+    <string
+        name="banner_heading">Tìm gia sư phù hợp</string>
+    <string
+        name="banner_caption">Linh hoạt thời gian học</string>
+    <string
+        name="verified">Đã xác minh</string>
+    <string
+        name="offerings_heading">Môn dạy và học phí</string>
+    <string
+        name="close">Đóng</string>
+    <string
+        name="loading">Đang xử lý…</string>
+    <string
+        name="cancel">Hủy</string>
+    <string
+        name="understood">Đã hiểu</string>
+    <string
+        name="error_email">Vui lòng nhập email hợp lệ</string>
+    <string
+        name="error_name">Họ tên cần từ 2 đến 100 ký tự</string>
+    <string
+        name="error_phone">Nhập số di động Việt Nam hợp lệ (10 số hoặc +84)</string>
+    <string
+        name="error_password">Mật khẩu cần từ 8 đến 128 ký tự</string>
+    <string
+        name="error_password_empty">Vui lòng nhập mật khẩu</string>
+    <string
+        name="error_confirm">Mật khẩu xác nhận không khớp</string>
+    <string
+        name="error_terms">Bạn cần đồng ý điều khoản</string>
+    <string
+        name="error_otp">Mã OTP cần đúng 6 chữ số</string>
+    <string
+        name="role_student">Học viên</string>
+    <string
+        name="role_tutor">Gia sư</string>
+    <string
+        name="role_admin">Quản trị viên</string>
+    <string
+        name="unverified">Chưa xác thực</string>
+    <string
+        name="greeting_name">Chào %1$s!</string>
+    <string
+        name="price_from">Từ %1$s / 90 phút</string>
+    <string
+        name="offering_price">%1$s / buổi 90 phút</string>
+    <string
+        name="subject_level">%1$s · %2$s</string>
+    <string
+        name="experience">%1$d năm kinh nghiệm · %2$s</string>
+    <string
+        name="resend_seconds">Có thể gửi lại sau %1$d giây</string>
+    <string
+        name="verified_phone">Đã xác thực %1$s</string>
+    <string-array
+        name="study_levels">
+        <item>Tiểu học</item>
+        <item>THCS</item>
+        <item>THPT</item>
+        <item>Đại học</item>
+        <item>Người đi làm</item>
+        <item>Khác</item>
+    </string-array>
+</resources>

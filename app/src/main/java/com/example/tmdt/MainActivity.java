@@ -1,167 +1,140 @@
 package com.example.tmdt;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.view.Gravity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
-import org.json.JSONArray;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import com.example.tmdt.databinding.ActivityMainBinding;
+import com.example.tmdt.ui.auth.ForgotPasswordFragment;
+import com.example.tmdt.ui.auth.LoginFragment;
+import com.example.tmdt.ui.auth.PhoneVerificationFragment;
+import com.example.tmdt.ui.auth.RegisterFragment;
+import com.example.tmdt.ui.home.HomeFragment;
+import com.example.tmdt.ui.profile.AccountFragment;
+import com.example.tmdt.ui.profile.EditAccountFragment;
 
+/** Hosts independent fragments. Layouts, form handling and Firebase access live outside this activity. */
 public class MainActivity extends AppCompatActivity {
-    Ui ui;
-    SharedPreferences preferences;
-    final List<Lesson> lessons = new ArrayList<>();
-    String screen = "home";
-    String profileOrigin = "home";
-    int tutorId = 0;
-    int scheduleTab = 0;
-    BookingScreen booking;
-    private FrameLayout container;
-    private LinearLayout navigation;
+    AccountState account;
+    CatalogState catalog;
+    String screen="home";
+    private String pendingDestination;
+    private ActivityMainBinding binding;
+    private boolean updatingNavigation;
+    private boolean keyboardVisible;
 
-    @Override public void onCreate(Bundle savedInstanceState) {
+    @Override public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        setContentView(R.layout.activity_main);
-        ui = new Ui(this);
-        preferences = getSharedPreferences("tutor_demo", MODE_PRIVATE);
-        container = findViewById(R.id.screen_container);
-        navigation = findViewById(R.id.bottom_navigation);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.app_root), (view, insets) -> {
-            Insets safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
-            view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
-            return insets;
+        WindowCompat.setDecorFitsSystemWindows(getWindow(),false);
+        binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
+        account=new ViewModelProvider(this).get(AccountState.class);
+        catalog=new ViewModelProvider(this).get(CatalogState.class);
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
+            Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
+            view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+            keyboardVisible=insets.isVisible(WindowInsetsCompat.Type.ime());
+            binding.bottomNavigation.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);
+            return WindowInsetsCompat.CONSUMED;
         });
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
-        loadLessons();
-        if (savedInstanceState != null) {
-            screen=savedInstanceState.getString("screen","home");
-            profileOrigin=savedInstanceState.getString("profileOrigin","home");
-            tutorId=savedInstanceState.getInt("tutor",0);
-            scheduleTab=savedInstanceState.getInt("tab",0);
-            if ("booking".equals(screen)) booking=new BookingScreen(this,Tutor.ALL[tutorId],savedInstanceState);
-        }
-        getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() {
-                if ("home".equals(screen)) finish(); else back();
-            }
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
+        binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
+        binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
+        getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
+            @Override public void handleOnBackPressed(){if("home".equals(screen))finish();else back();}
         });
+        screen=savedInstanceState==null?"home":savedInstanceState.getString("screen","home");
         show(screen);
+        account.changes().observe(this,ignored->{
+            if(account.destination!=null){String destination=account.destination;account.destination=null;show(destination);}
+            renderNavigation();
+        });
     }
-
-    private void loadLessons() {
-        LocalDate anchor=LocalDate.now().plusDays(4);
-        lessons.add(new Lesson(0,anchor.toString(),19,60,"Trực tuyến","Ôn tập phương trình bậc hai","",false));
-        lessons.add(new Lesson(1,anchor.plusDays(2).toString(),18,60,"Trực tuyến","Luyện giao tiếp hằng ngày","",false));
-        try {
-            JSONArray items=new JSONArray(preferences.getString("requests","[]"));
-            for(int i=0;i<items.length();i++) {
-                try { lessons.add(Lesson.fromJson(items.getJSONObject(i))); }
-                catch (org.json.JSONException | java.time.DateTimeException ignored) { /* Skip an invalid local entry. */ }
-            }
-        } catch (org.json.JSONException ignored) { /* Start with sample lessons if storage is invalid. */ }
-    }
-
-    void openTutor(Tutor tutor) {
-        profileOrigin=screen;
-        tutorId=tutor.id;
-        show("profile");
-    }
-    void openBooking(Tutor tutor) {
-        tutorId=tutor.id; booking=new BookingScreen(this,tutor,null); show("booking");
-    }
-    void back() {
-        hideKeyboard();
-        if("booking".equals(screen)) show("profile");
-        else if("profile".equals(screen)) show(profileOrigin);
-        else show("home");
-    }
-    void show(String destination) {
-        screen=destination;
-        container.removeAllViews();
-        View view;
-        switch(destination) {
-            case "profile": view=new ProfileScreen(this,Tutor.ALL[tutorId]).build(); break;
-            case "booking":
-                if(booking==null) booking=new BookingScreen(this,Tutor.ALL[tutorId],null);
-                view=booking.build(); break;
-            case "schedule": view=new ScheduleScreen(this).build(); break;
-            default: screen="home"; view=new HomeScreen(this).build();
+    public void show(String destination){
+        if(!account.signedIn()&&(destination.equals("account")||destination.equals("edit_account")||destination.equals("otp")))destination="login";
+        if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
+        if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
+        Fragment fragment;
+        switch(destination){
+            case "login":fragment=new LoginFragment();break;
+            case "register":fragment=new RegisterFragment();break;
+            case "forgot":fragment=new ForgotPasswordFragment();break;
+            case "account":fragment=new AccountFragment();break;
+            case "edit_account":fragment=new EditAccountFragment();break;
+            case "otp":fragment=new PhoneVerificationFragment();break;
+            default:destination="home";fragment=new HomeFragment();
         }
-        container.addView(view,new FrameLayout.LayoutParams(-1,-1));
+        screen=destination;
+        Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+        if(current==null||!screen.equals(current.getTag()))getSupportFragmentManager().beginTransaction()
+                .setReorderingAllowed(true).replace(R.id.screen_container,fragment,screen).commit();
         renderNavigation();
     }
-
-    private void renderNavigation() {
-        navigation.removeAllViews();
-        if(!screen.equals("home") && !screen.equals("schedule")) { navigation.setVisibility(View.GONE); return; }
-        navigation.setVisibility(View.VISIBLE); ui.line(navigation);
-        LinearLayout row=ui.row(); ui.pad(row,8,6);
-        String[] labels={"Trang chủ","Lịch học","Tin nhắn","Cá nhân"};
-        String[] icons={"home","calendar","chat","person"};
-        for(int i=0;i<labels.length;i++) {
-            final int index=i;
-            boolean active=(i==0 && screen.equals("home")) || (i==1 && screen.equals("schedule"));
-            int color=active?Ui.BLUE:Ui.MUTED;
-            LinearLayout item=ui.column(); item.setGravity(Gravity.CENTER); item.setMinimumHeight(ui.dp(62));
-            item.addView(new LineIcon(this,icons[i],color),ui.lp(24,24)); ui.space(item,6);
-            item.addView(ui.text(labels[i],11,color,active)); item.setContentDescription(labels[i]); item.setSelected(active);
-            ui.clickable(item,()-> {
-                hideKeyboard();
-                if(index==0) show("home");
-                else if(index==1) show("schedule");
-                else if(index==2) dialog("Tin nhắn","Chưa có cuộc trò chuyện. Chức năng nhắn tin sẽ hoạt động khi ứng dụng được kết nối máy chủ.");
-                else dialog("Hồ sơ của Nam","Tài khoản học viên mẫu\n\nBạn đang xem bản giao diện ứng dụng Gia Sư. Các yêu cầu đặt học hiện được lưu trên thiết bị này.");
-            });
-            ui.weight(row,item);
+    private boolean navigateMenu(int itemId){
+        if(updatingNavigation)return true;
+        if(account.isBusy()||account.isSendingCode())return false;
+        String destination;
+        if(itemId==R.id.nav_login)destination="login";
+        else if(itemId==R.id.nav_register)destination="register";
+        else if(itemId==R.id.nav_account)destination="account";
+        else destination="home";
+        if(!screen.equals(destination)){
+            account.clearFeedback();
+            account.removeDraft("login.password");
+            account.removeDraft("register.password");
+            account.removeDraft("register.confirm");
+            if("edit_account".equals(screen))account.clearDraft();
+            hideKeyboard();show(destination);
         }
-        ui.add(navigation,row);
+        return true;
     }
-
-    boolean favorite(Tutor tutor) { return preferences.getBoolean("favorite_"+tutor.id,false); }
-    void toggleFavorite(Tutor tutor) { preferences.edit().putBoolean("favorite_"+tutor.id,!favorite(tutor)).apply(); show("profile"); }
-    void message(Tutor tutor) { dialog("Nhắn tin với "+tutor.name,"Chức năng trò chuyện đang được chuẩn bị. Bạn có thể thử gửi yêu cầu đặt học trong bản giao diện này."); }
-    void dialog(String title,String message) { new AlertDialog.Builder(this).setTitle(title).setMessage(message).setPositiveButton("Đã hiểu",null).show(); }
-    void hideKeyboard() {
+    private void renderNavigation(){
+        updatingNavigation=true;
+        boolean signedIn=account.signedIn();
+        android.view.Menu menu=binding.bottomNavigation.getMenu();
+        menu.findItem(R.id.nav_login).setVisible(!signedIn);
+        menu.findItem(R.id.nav_register).setVisible(!signedIn);
+        menu.findItem(R.id.nav_account).setVisible(signedIn);
+        for(int i=0;i<menu.size();i++)menu.getItem(i).setEnabled(!account.isBusy()&&!account.isSendingCode());
+        int selected=R.id.nav_home;
+        if(!"home".equals(screen)){
+            selected=signedIn?R.id.nav_account:"register".equals(screen)?R.id.nav_register:R.id.nav_login;
+        }
+        menu.findItem(selected).setChecked(true);
+        binding.bottomNavigation.setVisibility(keyboardVisible?View.GONE:View.VISIBLE);
+        updatingNavigation=false;
+    }
+    public void back(){
+        if(account.isBusy())return;hideKeyboard();
+        switch(screen){
+            case "register":case "forgot":
+                account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
+            case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
+            case "otp":account.clearFeedback();show("account");break;
+            default:account.removeDraft("login.password");show("home");
+        }
+    }
+    @Override protected void onResumeFragments(){
+        super.onResumeFragments();
+        if(pendingDestination!=null){String destination=pendingDestination;pendingDestination=null;show(destination);}
+    }
+    @Override protected void onResume(){
+        super.onResume();
+        if(account!=null&&account.isSendingCode()&&account.signedIn()){
+            account.sendingCode=false;account.sendCode(this,account.verificationPhone(),false);
+        }
+    }
+    public void hideKeyboard(){
         View focus=getCurrentFocus();
-        if(focus!=null) ((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
+        if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    boolean saveRequest(Lesson lesson) {
-        for(Lesson existing:lessons) {
-            int start=lesson.hour*60, end=start+lesson.minutes, otherStart=existing.hour*60, otherEnd=otherStart+existing.minutes;
-            if(existing.date.equals(lesson.date) && start<otherEnd && otherStart<end) {
-                dialog("Lịch học bị trùng","Bạn đã có buổi học hoặc yêu cầu trong khung giờ này. Hãy chọn giờ khác."); return false;
-            }
-        }
-        try {
-            JSONArray requests=new JSONArray();
-            for(Lesson existing:lessons) if(existing.pending) requests.put(existing.toJson());
-            requests.put(lesson.toJson());
-            preferences.edit().putString("requests",requests.toString()).apply();
-            lessons.add(lesson); hideKeyboard(); scheduleTab=1; booking=null; show("schedule");
-            com.google.android.material.snackbar.Snackbar.make(container,"Đã lưu yêu cầu đặt học trên thiết bị",com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show();
-            return true;
-        } catch(org.json.JSONException exception) { dialog("Chưa lưu được yêu cầu","Vui lòng thử lại."); return false; }
-    }
-    @Override protected void onSaveInstanceState(Bundle state) {
-        super.onSaveInstanceState(state);
-        state.putString("screen",screen); state.putString("profileOrigin",profileOrigin);
-        state.putInt("tutor",tutorId); state.putInt("tab",scheduleTab);
-        if(booking!=null && screen.equals("booking")) booking.saveState(state);
-    }
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);}
 }

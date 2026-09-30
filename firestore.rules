@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      function owner() { return request.auth != null && request.auth.uid == userId; }
+      function validProfile() {
+        let d = request.resource.data;
+        return d.keys().hasAll(['ho_ten','email','so_dien_thoai','dia_chi','anh_dai_dien','vai_tro','la_gia_su','trang_thai','created_at','updated_at'])
+          && d.keys().hasOnly(['ho_ten','email','so_dien_thoai','dia_chi','anh_dai_dien','vai_tro','la_gia_su','trang_thai','cap_hoc','khu_vuc','muc_tieu_hoc_tap','created_at','updated_at'])
+          && d.ho_ten is string && d.ho_ten.size() >= 2 && d.ho_ten.size() <= 100
+          && d.email is string && d.email == request.auth.token.email
+          && d.so_dien_thoai is string && d.so_dien_thoai.matches('0[35789][0-9]{8}')
+          && d.dia_chi is string && d.dia_chi.size() <= 255
+          && d.get('cap_hoc','') is string && d.get('cap_hoc','').size() <= 80
+          && d.get('khu_vuc','') is string && d.get('khu_vuc','').size() <= 120
+          && d.get('muc_tieu_hoc_tap','') is string && d.get('muc_tieu_hoc_tap','').size() <= 500
+          && d.anh_dai_dien is string && d.anh_dai_dien.size() <= 90000
+          && d.updated_at == request.time;
+      }
+      allow get: if owner();
+      allow list, delete: if false;
+      allow create: if owner() && validProfile()
+        && request.resource.data.vai_tro == 'STUDENT'
+        && request.resource.data.la_gia_su == false
+        && request.resource.data.trang_thai == 'ACTIVE'
+        && request.resource.data.created_at == request.time;
+      allow update: if owner() && resource.data.trang_thai == 'ACTIVE' && validProfile()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'ho_ten','so_dien_thoai','dia_chi','anh_dai_dien','cap_hoc','khu_vuc','muc_tieu_hoc_tap','updated_at']);
+    }
+    // Only trusted administrators publish catalog records. Private contacts stay in users.
+    match /subjects/{subjectId} {
+      allow read: if resource.data.dang_su_dung == true;
+      allow write: if false;
+    }
+    match /tutor_profiles/{tutorId} {
+      allow read: if resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow write: if false;
+    }
+    match /tutor_subjects/{offeringId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // All other collections, including the removed flows, are denied by default.
+  }
+}

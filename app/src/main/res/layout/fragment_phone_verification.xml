@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.tmdt.ui.auth.PhoneVerificationFragment">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="@string/page_otp"
+        app:titleTextColor="#081F50"
+        app:navigationIcon="@drawable/ic_back"
+        app:navigationContentDescription="@string/back" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <include
+                layout="@layout/view_account_feedback" />
+            <LinearLayout
+                android:id="@+id/form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="116dp"
+                    android:background="@drawable/bg_pale"
+                    android:padding="22dp"
+                    android:src="@drawable/ic_cap"
+                    android:importantForAccessibility="no"
+                    android:layout_marginBottom="20dp" />
+                <TextView
+                    style="@style/ScreenTitle"
+                    android:text="@string/otp_heading"
+                    android:gravity="center" />
+                <TextView
+                    style="@style/BodyText"
+                    android:text="@string/otp_caption"
+                    android:gravity="center"
+                    android:paddingBottom="12dp" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/phone"
+                    android:labelFor="@id/phone" />
+                <EditText
+                    android:id="@+id/phone"
+                    style="@style/FormInput"
+                    android:hint="@string/phone"
+                    android:inputType="phone"
+                    android:maxLength="20"
+                    android:autofillHints="phoneNumber" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/otp_code"
+                    android:labelFor="@id/code" />
+                <EditText
+                    android:id="@+id/code"
+                    style="@style/FormInput"
+                    android:hint="@string/otp_code"
+                    android:inputType="number"
+                    android:maxLength="6"
+                    android:autofillHints="smsOTPCode" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/send"
+                    style="@style/SecondaryButton"
+                    android:text="@string/send_otp"
+                    android:contentDescription="@string/send_otp" />
+                <TextView
+                    android:id="@+id/timer"
+                    style="@style/BodyText"
+                    android:text="@string/sending_otp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/confirm"
+                    style="@style/PrimaryButton"
+                    android:text="@string/confirm"
+                    android:contentDescription="@string/confirm" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/change_phone"
+                    style="@style/TextButton"
+                    android:text="@string/change_phone"
+                    android:contentDescription="@string/change_phone" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sign_in"
+                    style="@style/SecondaryButton"
+                    android:text="@string/back_login"
+                    android:contentDescription="@string/back_login" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

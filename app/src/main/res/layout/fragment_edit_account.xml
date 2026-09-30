@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.tmdt.ui.profile.EditAccountFragment">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="@string/page_edit"
+        app:titleTextColor="#081F50"
+        app:navigationIcon="@drawable/ic_back"
+        app:navigationContentDescription="@string/back" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <include
+                layout="@layout/view_account_feedback" />
+            <LinearLayout
+                android:id="@+id/form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <include
+                    android:id="@+id/avatar"
+                    layout="@layout/view_avatar" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/change_avatar"
+                    style="@style/TextButton"
+                    android:text="@string/change_avatar"
+                    android:contentDescription="@string/change_avatar" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/name"
+                    android:labelFor="@id/name" />
+                <EditText
+                    android:id="@+id/name"
+                    style="@style/FormInput"
+                    android:hint="@string/name"
+                    android:inputType="textCapWords"
+                    android:maxLength="100"
+                    android:autofillHints="personName" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/email" />
+                <TextView
+                    android:id="@+id/email"
+                    style="@style/ProfileValue"
+                    android:text="@string/email" />
+                <TextView
+                    style="@style/BodyText"
+                    android:text="@string/email_fixed" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/phone"
+                    android:labelFor="@id/phone" />
+                <EditText
+                    android:id="@+id/phone"
+                    style="@style/FormInput"
+                    android:hint="@string/phone"
+                    android:inputType="phone"
+                    android:maxLength="20"
+                    android:autofillHints="phoneNumber" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/address"
+                    android:labelFor="@id/address" />
+                <EditText
+                    android:id="@+id/address"
+                    style="@style/FormInput"
+                    android:hint="@string/address"
+                    android:inputType="textCapSentences"
+                    android:maxLength="255"
+                    android:autofillHints="postalAddress" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/level"
+                    android:labelFor="@id/level" />
+                <EditText
+                    android:id="@+id/level"
+                    style="@style/FormInput"
+                    android:hint="@string/level"
+                    android:inputType="text"
+                    android:maxLength="80"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:importantForAutofill="no" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/region"
+                    android:labelFor="@id/region" />
+                <EditText
+                    android:id="@+id/region"
+                    style="@style/FormInput"
+                    android:hint="@string/region"
+                    android:inputType="textCapWords"
+                    android:maxLength="120"
+                    android:importantForAutofill="no" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/goal"
+                    android:labelFor="@id/goal" />
+                <EditText
+                    android:id="@+id/goal"
+                    style="@style/FormInput"
+                    android:hint="@string/goal"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLength="500"
+                    android:gravity="top"
+                    android:minLines="3"
+                    android:importantForAutofill="no" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/save"
+                    style="@style/PrimaryButton"
+                    android:text="@string/save_profile"
+                    android:contentDescription="@string/save_profile" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

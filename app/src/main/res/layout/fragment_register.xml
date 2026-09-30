@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.tmdt.ui.auth.RegisterFragment">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="@string/page_register"
+        app:titleTextColor="#081F50"
+        app:navigationIcon="@drawable/ic_back"
+        app:navigationContentDescription="@string/back" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <include
+                layout="@layout/view_account_feedback" />
+            <LinearLayout
+                android:id="@+id/form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    style="@style/ScreenTitle"
+                    android:text="@string/register_heading" />
+                <TextView
+                    style="@style/BodyText"
+                    android:text="@string/register_caption" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/name"
+                    android:labelFor="@id/name" />
+                <EditText
+                    android:id="@+id/name"
+                    style="@style/FormInput"
+                    android:hint="@string/name"
+                    android:inputType="textCapWords"
+                    android:maxLength="100"
+                    android:autofillHints="personName" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/email"
+                    android:labelFor="@id/email" />
+                <EditText
+                    android:id="@+id/email"
+                    style="@style/FormInput"
+                    android:hint="@string/email"
+                    android:inputType="textEmailAddress"
+                    android:maxLength="254"
+                    android:autofillHints="emailAddress" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/phone"
+                    android:labelFor="@id/phone" />
+                <EditText
+                    android:id="@+id/phone"
+                    style="@style/FormInput"
+                    android:hint="@string/phone"
+                    android:inputType="phone"
+                    android:maxLength="20"
+                    android:autofillHints="phoneNumber" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/password"
+                    android:labelFor="@id/password" />
+                <EditText
+                    android:id="@+id/password"
+                    style="@style/FormInput"
+                    android:hint="@string/password"
+                    android:inputType="textPassword"
+                    android:maxLength="128"
+                    android:autofillHints="newPassword" />
+                <CheckBox
+                    android:id="@+id/show_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/show_password" />
+                <TextView
+                    style="@style/BodyText"
+                    android:text="@string/password_hint" />
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/confirm_password"
+                    android:labelFor="@id/confirm" />
+                <EditText
+                    android:id="@+id/confirm"
+                    style="@style/FormInput"
+                    android:hint="@string/confirm_password"
+                    android:inputType="textPassword"
+                    android:maxLength="128"
+                    android:autofillHints="newPassword" />
+                <CheckBox
+                    android:id="@+id/show_confirm"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/show_confirm" />
+                <CheckBox
+                    android:id="@+id/terms"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/accept_terms" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/terms_info"
+                    style="@style/TextButton"
+                    android:text="@string/terms_link"
+                    android:contentDescription="@string/terms_link" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/register"
+                    style="@style/PrimaryButton"
+                    android:text="@string/create_account"
+                    android:contentDescription="@string/create_account" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sign_in"
+                    style="@style/SecondaryButton"
+                    android:text="@string/login_link"
+                    android:contentDescription="@string/login_link" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

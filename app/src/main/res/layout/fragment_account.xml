@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.tmdt.ui.profile.AccountFragment">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="@string/page_account"
+        app:titleTextColor="#081F50"
+        app:navigationIcon="@drawable/ic_back"
+        app:navigationContentDescription="@string/back" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+            <include
+                layout="@layout/view_account_feedback" />
+            <LinearLayout
+                android:id="@+id/form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:id="@+id/profile_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <include
+                        android:id="@+id/avatar"
+                        layout="@layout/view_avatar" />
+                    <TextView
+                        android:id="@+id/name"
+                        style="@style/ScreenTitle"
+                        android:text="@string/name"
+                        android:gravity="center" />
+                    <TextView
+                        android:id="@+id/role"
+                        style="@style/BodyText"
+                        android:text="@string/role_student"
+                        android:gravity="center" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/edit"
+                        style="@style/SecondaryButton"
+                        android:text="@string/edit_profile"
+                        android:contentDescription="@string/edit_profile" />
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/personal_info" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/email" />
+                    <TextView
+                        android:id="@+id/email"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/phone" />
+                    <TextView
+                        android:id="@+id/phone"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/address" />
+                    <TextView
+                        android:id="@+id/address"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/level" />
+                    <TextView
+                        android:id="@+id/level"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/region" />
+                    <TextView
+                        android:id="@+id/region"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/goal" />
+                    <TextView
+                        android:id="@+id/goal"
+                        style="@style/ProfileValue"
+                        android:text="@string/not_updated" />
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/security" />
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/phone_verification" />
+                    <TextView
+                        android:id="@+id/verification"
+                        style="@style/ProfileValue"
+                        android:text="@string/unverified" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/verify"
+                        style="@style/SecondaryButton"
+                        android:text="@string/page_otp"
+                        android:contentDescription="@string/page_otp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/reset"
+                        style="@style/SecondaryButton"
+                        android:text="@string/reset_password"
+                        android:contentDescription="@string/reset_password" />
+                </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/retry"
+                    style="@style/SecondaryButton"
+                    android:text="@string/retry_profile"
+                    android:contentDescription="@string/retry_profile" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sign_out"
+                    style="@style/TextButton"
+                    android:text="@string/sign_out"
+                    android:contentDescription="@string/sign_out" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
