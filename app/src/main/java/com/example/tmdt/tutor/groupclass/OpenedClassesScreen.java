@@ -62,7 +62,7 @@ public final class OpenedClassesScreen {
         if (GroupClass.OPEN.equals(item.status) && item.pendingCount() > 0) {
             ui.addAction(card,ui.action("Duyệt đăng ký",0,Ui.PRIMARY,()->activity.openClass(item,"review")),40); ui.space(card,10);
             LinearLayout row = ui.row();
-            ui.weightAction(row,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->members(item)),40); ui.gap(row,10);
+            ui.weightAction(row,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->members(activity,item)),40); ui.gap(row,10);
             ui.weightAction(row,ui.action("Chỉnh sửa",R.drawable.ic_edit,Ui.OUTLINE,()->activity.openClass(item,"openClass")),40);
             ui.add(card,row); ui.space(card,9);
             ui.addAction(card,ui.action("⊘  Đóng tuyển sinh",0,Ui.DANGER,()->close(activity,item)),38);
@@ -78,7 +78,7 @@ public final class OpenedClassesScreen {
         return ui.pill("Đã kết thúc",12,Ui.MUTED,0xFFEEF2F7);
     }
 
-    private void members(GroupClass item) {
+    public static void members(MainActivity activity, GroupClass item) {
         StringBuilder list = new StringBuilder();
         for (String member : item.members) list.append("• ").append(member).append('\n');
         activity.dialog("Thành viên ("+item.members.size()+"/"+item.capacity+")",list.length()==0?"Lớp chưa có học viên.":list.toString().trim());

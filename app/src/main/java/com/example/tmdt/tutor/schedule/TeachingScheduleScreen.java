@@ -9,15 +9,18 @@ import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.example.tmdt.R;
 import com.example.tmdt.MainActivity;
 import com.example.tmdt.common.Ui;
+import com.example.tmdt.data.GroupClass;
 import com.example.tmdt.data.Lesson;
 import com.example.tmdt.data.Store;
 import com.example.tmdt.data.Tutor;
+import com.example.tmdt.tutor.groupclass.OpenedClassesScreen;
 
 /** Screen 45 · Lịch dạy gia sư (UC24): week or month view, lesson details and reschedule proposals. */
 public final class TeachingScheduleScreen {
@@ -50,7 +53,7 @@ public final class TeachingScheduleScreen {
         period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{activity.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}));
         ui.add(content,period);
 
-        List<Lesson> shown = new ArrayList<>();
+        List<Entry> shown = new ArrayList<>();
         if (!month) {
             LinearLayout strip = ui.row(); LocalDate monday = day.with(DayOfWeek.MONDAY);
             for (int i = 0; i < 7; i++) {
@@ -58,14 +61,14 @@ public final class TeachingScheduleScreen {
                 ui.weight(strip,ui.day(date,date.equals(day),()->{activity.teachingDay=date;render();}));
             }
             ui.add(content,strip); ui.space(content,6);
-            for (Lesson lesson : mine()) if (lesson.date.equals(day.toString())) shown.add(lesson);
-        } else {
-            for (Lesson lesson : mine()) {
-                LocalDate date = LocalDate.parse(lesson.date);
-                if (date.getYear()==day.getYear() && date.getMonth()==day.getMonth()) shown.add(lesson);
-            }
         }
-        for (Lesson lesson : shown) { ui.add(content,card(lesson,month)); ui.space(content,11); }
+        for (Lesson lesson : mine()) if (visible(LocalDate.parse(lesson.date),day,month)) shown.add(new Entry(lesson.start(),card(lesson,month)));
+        for (GroupClass item : activity.store.classes)
+            if (item.tutorId==Store.TUTOR && item.active())
+                for (GroupClass.Session session : item.sessionList())
+                    if (visible(session.date,day,month)) shown.add(new Entry(session.start(),classCard(session,month)));
+        shown.sort(Comparator.comparing(entry->entry.start));
+        for (Entry entry : shown) { ui.add(content,entry.view); ui.space(content,11); }
         if (shown.isEmpty()) { ui.add(content,ui.note(R.drawable.ic_info,month?"Không có buổi dạy trong tháng này.":"Không có buổi dạy trong ngày này.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(content,11); }
 
         ui.space(content,4); ui.section(content,"Đề nghị thay đổi",19); ui.space(content,6);
@@ -76,6 +79,36 @@ public final class TeachingScheduleScreen {
             ui.space(content,8); proposals++;
         }
         if (proposals == 0) ui.add(content,ui.note(R.drawable.ic_info,"Chưa có đề nghị thay đổi nào.",Ui.PALE,Ui.BLUE,Ui.MUTED));
+    }
+
+    /** The selected day in week view, or any day of the selected month in month view. */
+    private static boolean visible(LocalDate date, LocalDate day, boolean month) {
+        return month ? date.getYear()==day.getYear() && date.getMonth()==day.getMonth() : date.equals(day);
+    }
+
+    /** A card with the time it is sorted by, so lessons and class sessions share one list. */
+    private static final class Entry {
+        final LocalDateTime start; final View view;
+        Entry(LocalDateTime start, View view) { this.start=start; this.view=view; }
+    }
+
+    /** One session of a group class; it follows the class schedule, so it is moved by editing the class, not by a proposal. */
+    private View classCard(GroupClass.Session session, boolean withDate) {
+        GroupClass item = session.groupClass();
+        LinearLayout card = ui.bordered(10); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
+        LinearLayout top = ui.row();
+        ui.weight(top,ui.text((withDate?session.date.format(Lesson.DATE).substring(0,5)+" · ":"")+Lesson.range(item.hour,item.minutes).replace("–"," – "),21,Ui.INK,true));
+        top.addView(ui.pill("Lớp nhóm",14,Ui.BLUE,Ui.PALE)); ui.add(card,top); ui.space(card,4);
+        ui.add(card,ui.text(item.title,21,Ui.INK,true)); ui.space(card,6);
+        LinearLayout row = ui.row(); row.addView(ui.art(item.smallArt(),62,64)); ui.gap(row,12);
+        LinearLayout info = ui.column(); ui.add(info,ui.text("Buổi "+session.number+"/"+item.sessions,14,Ui.MUTED,false)); ui.space(info,4);
+        ui.add(info,ui.text(item.members.size()+"/"+item.capacity+" học viên",18,Ui.INK,true)); ui.space(info,4);
+        ui.add(info,ui.text("▣ "+item.mode,15,Ui.INK,false)); ui.weight(row,info);
+        ui.add(card,row); ui.space(card,8);
+        LinearLayout actions = ui.row(); card.addView(actions,ui.lp(-1,-2));
+        ui.weightAction(actions,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->OpenedClassesScreen.members(activity,item)),40); ui.gap(actions,8);
+        ui.weightAction(actions,ui.action("Xem lớp",0,Ui.PRIMARY,()->activity.openClass(item,"review")),40);
+        return card;
     }
 
     private List<Lesson> mine() {

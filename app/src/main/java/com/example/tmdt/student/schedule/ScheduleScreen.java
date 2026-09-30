@@ -4,12 +4,15 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import com.example.tmdt.R;
 import com.example.tmdt.MainActivity;
 import com.example.tmdt.common.Ui;
+import com.example.tmdt.data.GroupClass;
 import com.example.tmdt.data.Lesson;
 import com.example.tmdt.data.Store;
 import com.example.tmdt.data.Tutor;
@@ -24,17 +27,37 @@ public final class ScheduleScreen {
         LinearLayout root=ui.column();ui.title(root,"Lịch học",null);
         ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},activity.scheduleTab,index->{activity.scheduleTab=index;activity.show("schedule");});
         LinearLayout content=ui.page(root);ui.space(content,6);
-        List<Lesson> visible=new ArrayList<>();
+        int tab=activity.scheduleTab;
+        List<Entry> visible=new ArrayList<>();
         for(Lesson lesson:activity.lessons) {
             if(!lesson.student.equals(Store.STUDENT))continue;
-            boolean include=activity.scheduleTab==1?lesson.pending()||Lesson.REJECTED.equals(lesson.status):
-                    activity.scheduleTab==2?(lesson.confirmed()&&lesson.ended())||Lesson.CANCELLED.equals(lesson.status):
+            boolean include=tab==1?lesson.pending()||Lesson.REJECTED.equals(lesson.status):
+                    tab==2?(lesson.confirmed()&&lesson.ended())||Lesson.CANCELLED.equals(lesson.status):
                     lesson.confirmed()&&!lesson.ended();
-            if(include)visible.add(lesson);
+            if(include)visible.add(new Entry(lesson.start(),lessonCard(lesson)));
         }
-        Comparator<Lesson> order=Comparator.comparing((Lesson lesson)->lesson.date).thenComparingInt(lesson->lesson.hour);
-        visible.sort(activity.scheduleTab==2?order.reversed():order);
-        for(Lesson lesson:visible){ui.add(content,lessonCard(lesson));ui.space(content,11);}
+        // Group classes: registrations wait under "Chờ xác nhận"; members see every session under "Sắp tới" or "Đã học".
+        for(GroupClass item:activity.store.classes) {
+            if(tab==1) {
+                for(GroupClass.Registration registration:item.registrations) {
+                    if(!registration.student.equals(Store.STUDENT)||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
+                    boolean waiting=registration.pending();
+                    visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
+                            waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),
+                            (waiting?"Đăng ký gửi ngày ":"Gia sư đã từ chối đăng ký gửi ngày ")+LocalDate.parse(registration.date).format(Lesson.DATE)+".")));
+                }
+            } else if(item.members.contains(Store.STUDENT)) {
+                for(GroupClass.Session session:item.sessionList()) {
+                    if(tab==2?!session.ended():session.ended()||!item.active())continue;
+                    visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),
+                            ui.pill("Buổi "+session.number+"/"+item.sessions,14,tab==2?Ui.MUTED:Ui.GREEN,tab==2?0xFFEEF2F7:Ui.GREEN_BG),
+                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.")));
+                }
+            }
+        }
+        Comparator<Entry> order=Comparator.comparing(entry->entry.start);
+        visible.sort(tab==2?order.reversed():order);
+        for(Entry entry:visible){ui.add(content,entry.view);ui.space(content,11);}
         if(visible.isEmpty()) {
             LinearLayout empty=ui.column();ui.pad(empty,18,32);empty.setGravity(Gravity.CENTER);ui.surface(empty,0xFFF3F8FE,12,0);
             empty.addView(ui.icon(R.drawable.ic_calendar,42,Ui.BLUE));ui.space(empty,16);
@@ -70,6 +93,34 @@ public final class ScheduleScreen {
         ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->activity.message(tutor)),38);ui.gap(actions,9);
         ui.weightAction(actions,ui.action(lesson.needsConfirmation()?"Xác nhận":"Chi tiết",0,Ui.PRIMARY,()->activity.openLesson(lesson)),38);
         ui.add(card,actions);return card;
+    }
+
+    /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
+    private View classCard(GroupClass item, String when, TextView status, String note) {
+        Tutor tutor=Tutor.ALL[item.tutorId];
+        LinearLayout card=ui.bordered(12);card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
+        LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
+        row.addView(ui.art(item.smallArt(),73,77));ui.gap(row,14);
+        LinearLayout details=ui.column();ui.space(details,4);
+        LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
+        TextView title=ui.text(item.title,item.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
+        titleRow.addView(status);ui.add(details,titleRow);ui.space(details,2);
+        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->activity.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
+        ui.add(details,ui.fact(R.drawable.ic_calendar,when,18,14,Ui.MUTED,false));
+        ui.add(details,ui.fact(R.drawable.ic_users,item.mode+" · Lớp nhóm",18,15,Ui.MUTED,false));
+        ui.weight(row,details);ui.add(card,row);ui.space(card,9);
+        String summary=note+"\n\n"+item.subject+" · "+item.level+"\nLịch học: "+item.scheduleLabel()+"\nKhai giảng: "+item.startLabel()+" · "+item.sessions+" buổi\n"
+                +item.mode+(item.address.isEmpty()?"":" · "+item.address)+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
+        LinearLayout actions=ui.row();
+        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->activity.message(tutor)),38);ui.gap(actions,9);
+        ui.weightAction(actions,ui.action("Chi tiết",0,Ui.PRIMARY,()->activity.dialog(item.title,summary)),38);
+        ui.add(card,actions);return card;
+    }
+
+    /** A card with the time it is sorted by, so lessons and class sessions share one list. */
+    private static final class Entry {
+        final LocalDateTime start; final View view;
+        Entry(LocalDateTime start,View view){this.start=start;this.view=view;}
     }
 
     /** "Sẵn sàng cho buổi học tiếp theo" banner with the calendar illustration of the design. */

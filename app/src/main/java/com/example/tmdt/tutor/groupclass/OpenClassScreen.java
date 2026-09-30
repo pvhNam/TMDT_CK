@@ -168,7 +168,7 @@ public final class OpenClassScreen {
         if (editing != null && capacity < editing.members.size()) {
             activity.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = activity.store.classClash(Store.TUTOR,days,hour,minutes,editing==null?-1:editing.id);
+        String clash = activity.store.classClash(Store.TUTOR,days,hour,minutes,start,sessions,editing==null?-1:editing.id);
         if (clash != null) { activity.dialog("Lịch học bị trùng",clash); return; }
 
         GroupClass item = editing != null ? editing : new GroupClass(activity.store.nextId(),Store.TUTOR);

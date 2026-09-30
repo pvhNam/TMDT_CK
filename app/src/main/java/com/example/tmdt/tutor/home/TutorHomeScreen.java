@@ -54,16 +54,19 @@ public final class TutorHomeScreen {
             if (lesson.confirmed()) students.add(lesson.student);
         }
         int registrations = 0;
+        List<GroupClass.Session> classesToday = new ArrayList<>();
         for (GroupClass item : activity.store.classes) if (item.tutorId == Store.TUTOR) {
             registrations += item.pendingCount();
-            if (!GroupClass.ENDED.equals(item.status)) students.addAll(item.members);
+            if (!item.active()) continue;
+            students.addAll(item.members);
+            for (GroupClass.Session session : item.sessionList()) if (session.date.equals(LocalDate.now())) classesToday.add(session);
         }
         today.sort((a,b)->a.hour-b.hour);
 
         ui.section(body,"Tổng quan giảng dạy",24); ui.space(body,8);
         LinearLayout tiles = ui.row();
         ui.weight(tiles,tile(R.drawable.ic_mail,String.valueOf(pending.size()+registrations),"Yêu cầu mới",()->{allRequests=true;renderRequests(pending);})); ui.gap(tiles,7);
-        ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()),"Buổi hôm nay",()->{activity.teachingDay=LocalDate.now();activity.show("teaching");})); ui.gap(tiles,7);
+        ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{activity.teachingDay=LocalDate.now();activity.show("teaching");})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->activity.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
 
@@ -72,7 +75,8 @@ public final class TutorHomeScreen {
 
         sectionTitle(body,"Lịch dạy hôm nay",()->{activity.teachingDay=LocalDate.now();activity.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
-        if (today.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
+        for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
+        if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
         return root;
     }
 
@@ -130,6 +134,18 @@ public final class TutorHomeScreen {
         ui.add(info,ui.text(lesson.dateLabel()+" · "+lesson.timeLabel(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(lesson.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
         View detail = ui.action("Chi tiết",0,Ui.PRIMARY,()->TeachingScheduleScreen.details(activity,lesson)); ui.weightAction(row,detail,34);
+        ui.add(info,row); ui.weight(card,info); return card;
+    }
+
+    private View classTodayCard(GroupClass item) {
+        LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
+        ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        card.addView(ui.art(item.smallArt(),69,73)); ui.gap(card,13);
+        LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
+        ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
+        ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
+        LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
+        View detail = ui.action("Xem lớp",0,Ui.PRIMARY,()->activity.openClass(item,"review")); ui.weightAction(row,detail,34);
         ui.add(info,row); ui.weight(card,info); return card;
     }
 

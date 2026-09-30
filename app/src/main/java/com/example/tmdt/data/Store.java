@@ -73,12 +73,17 @@ public final class Store {
 
     // Lessons ---------------------------------------------------------------------------------
 
-    /** Returns a message when the slot overlaps the student's own lessons or the tutor's confirmed lessons. */
+    /** Returns a message when the slot overlaps the student's own lessons and classes or the tutor's confirmed lessons and classes. */
     public String conflict(int tutorId, String student, String date, int hour, int minutes, int ignoreId) {
         for (Lesson other : lessons) {
             if (other.id == ignoreId || !other.active() || !other.overlaps(date,hour,minutes)) continue;
             if (other.student.equals(student)) return "Bạn đã có buổi học hoặc yêu cầu trong khung giờ này. Hãy chọn giờ khác.";
             if (other.tutorId == tutorId && other.confirmed()) return "Gia sư đã có lịch dạy trong khung giờ này. Hãy chọn giờ khác.";
+        }
+        for (GroupClass item : classes) {
+            if (!item.active() || !item.meetsAt(date,hour,minutes)) continue;
+            if (item.attends(student)) return "Khung giờ này trùng với lớp nhóm \""+item.title+"\" của bạn. Hãy chọn giờ khác.";
+            if (item.tutorId == tutorId) return "Gia sư đã có lịch dạy lớp nhóm trong khung giờ này. Hãy chọn giờ khác.";
         }
         return null;
     }
@@ -89,6 +94,9 @@ public final class Store {
         for (Lesson other : lessons)
             if (other != lesson && other.tutorId == lesson.tutorId && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minutes))
                 return "Khung giờ này trùng với một buổi dạy đã xác nhận.";
+        for (GroupClass item : classes)
+            if (item.tutorId == lesson.tutorId && item.active() && item.meetsAt(lesson.date,lesson.hour,lesson.minutes))
+                return "Khung giờ này trùng với lớp nhóm \""+item.title+"\".";
         lesson.status = Lesson.CONFIRMED; save(); return null;
     }
     public String rejectRequest(Lesson lesson) {
@@ -130,18 +138,47 @@ public final class Store {
 
     // Group classes ---------------------------------------------------------------------------
 
-    public String classClash(int tutorId, int[] days, int hour, int minutes, int ignoreId) {
-        for (GroupClass other : classes)
-            if (other.id != ignoreId && other.tutorId == tutorId && !GroupClass.ENDED.equals(other.status) && other.clashes(days,hour,minutes))
-                return "Lịch học trùng với lớp \""+other.title+"\" ("+other.scheduleLabel()+").";
+    /**
+     * Checks a new or edited class against the tutor's other classes and confirmed lessons and,
+     * when an existing class is edited (ignoreId), against the lessons and classes of its students.
+     */
+    public String classClash(int tutorId, int[] days, int hour, int minutes, LocalDate start, int sessions, int ignoreId) {
+        GroupClass editing = groupClass(ignoreId);
+        for (GroupClass other : classes) {
+            if (other.id == ignoreId || !other.active() || !other.clashes(days,hour,minutes)) continue;
+            if (other.tutorId == tutorId) return "Lịch học trùng với lớp \""+other.title+"\" ("+other.scheduleLabel()+").";
+            if (editing != null) for (String student : other.members)
+                if (editing.attends(student)) return "Lịch mới trùng với lớp \""+other.title+"\" của học viên "+student+".";
+        }
+        List<LocalDate> dates = GroupClass.dates(start,days,sessions);
+        for (Lesson lesson : lessons) {
+            if (!lesson.active() || lesson.ended() || !GroupClass.overlap(hour,minutes,lesson.hour,lesson.minutes)
+                    || !dates.contains(LocalDate.parse(lesson.date))) continue;
+            if (lesson.tutorId == tutorId && lesson.confirmed())
+                return "Lịch học trùng với buổi dạy \""+lesson.title+"\" của "+lesson.student+" ("+lesson.dateLabel()+" · "+lesson.timeLabel()+").";
+            if (editing != null && editing.attends(lesson.student))
+                return "Lịch mới trùng với buổi học của học viên "+lesson.student+" ("+lesson.dateLabel()+" · "+lesson.timeLabel()+").";
+        }
         return null;
     }
 
-    public String register(GroupClass item, String student, String goal) {
+    /** Why the student cannot register for the class, or null; checked before the deposit and again when saving. */
+    public String registrationError(GroupClass item, String student) {
         if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh.";
         if (item.full()) return "Lớp đã đủ chỗ.";
         if (item.members.contains(student)) return "Bạn đã là thành viên của lớp này.";
         if (item.registrationOf(student) != null) return "Bạn đã gửi đăng ký lớp này và đang chờ gia sư duyệt.";
+        for (Lesson lesson : lessons)
+            if (lesson.student.equals(student) && lesson.active() && !lesson.ended() && item.meetsAt(lesson.date,lesson.hour,lesson.minutes))
+                return "Lớp có buổi trùng với buổi học \""+lesson.title+"\" của bạn ("+lesson.dateLabel()+" · "+lesson.timeLabel()+").";
+        for (GroupClass other : classes)
+            if (other != item && other.active() && other.attends(student) && other.clashes(item.days,item.hour,item.minutes))
+                return "Lớp trùng lịch với lớp \""+other.title+"\" bạn đã đăng ký ("+other.scheduleLabel()+").";
+        return null;
+    }
+    public String register(GroupClass item, String student, String goal) {
+        String error = registrationError(item, student);
+        if (error != null) return error;
         item.registrations.add(new GroupClass.Registration(student, goal, LocalDate.now().toString(), Lesson.PENDING)); save(); return null;
     }
     /** Never accepts more students than the class limit (UC18). */
@@ -160,16 +197,7 @@ public final class Store {
 
     private void seed() {
         LocalDate today = LocalDate.now();
-        lessons.add(sample(0, STUDENT, "Toán lớp 12", today.plusDays(4), 19, "Ôn tập phương trình bậc hai", Lesson.CONFIRMED));
-        Lesson moved = lessons.get(0);
-        moved.proposedDate = today.plusDays(5).toString(); moved.proposedHour = 19; moved.proposalReason = "Gia sư có lịch công tác.";
-        lessons.add(sample(1, STUDENT, "Tiếng Anh giao tiếp", today.plusDays(6), 18, "Luyện giao tiếp hằng ngày", Lesson.CONFIRMED));
-        Lesson done = sample(0, STUDENT, "Toán lớp 12", today.minusDays(2), 19, "Ôn tập phương trình bậc hai", Lesson.CONFIRMED);
-        done.content = "Ôn phương trình bậc hai và luyện bài tập."; lessons.add(done);
-        lessons.add(sample(0, STUDENT, "Toán lớp 12", today.plusDays(8), 19, "Luyện đề chương hàm số", Lesson.PENDING));
-        lessons.add(sample(0, "Minh Khang", "Toán lớp 10", today.plusDays(4), 20, "Củng cố hàm số bậc nhất", Lesson.CONFIRMED));
-        lessons.add(sample(0, "Ngọc Mai", "Toán lớp 12", today, 18, "Luyện đề tích phân", Lesson.CONFIRMED));
-
+        // Classes come first so the sample lessons below can be kept off their time slots.
         GroupClass maths = group(0, "Ôn Toán lớp 12", "Toán", "Lớp 12", 4, 300000, 5, new int[]{6}, 19, 60, 0, GroupClass.OPEN);
         maths.description = "Ôn kiến thức nền và luyện bài tập theo nhóm.";
         maths.members.addAll(Arrays.asList("Lan Anh", "Quốc Bảo", "Thu Trang"));
@@ -187,9 +215,26 @@ public final class Store {
             GroupClass old = group(0, ended[i], "Toán", "Lớp "+(11-i), 4, 250000, 5, new int[]{7}, 8+i*2, 60, 1, GroupClass.ENDED);
             old.startDate = today.minusMonths(2+i).toString(); old.members.addAll(Arrays.asList("Học viên A", "Học viên B", "Học viên C"));
         }
+
+        Lesson moved = sample(0, STUDENT, "Toán lớp 12", today.plusDays(4), 19, "Ôn tập phương trình bậc hai", Lesson.CONFIRMED);
+        sample(1, STUDENT, "Tiếng Anh giao tiếp", today.plusDays(6), 18, "Luyện giao tiếp hằng ngày", Lesson.CONFIRMED);
+        sample(0, STUDENT, "Toán lớp 12", today.minusDays(2), 19, "Ôn tập phương trình bậc hai", Lesson.CONFIRMED)
+                .content = "Ôn phương trình bậc hai và luyện bài tập.";
+        sample(0, STUDENT, "Toán lớp 12", today.plusDays(8), 19, "Luyện đề chương hàm số", Lesson.PENDING);
+        sample(0, "Minh Khang", "Toán lớp 10", today.plusDays(4), 20, "Củng cố hàm số bậc nhất", Lesson.CONFIRMED);
+        sample(0, "Ngọc Mai", "Toán lớp 12", today, 18, "Luyện đề tích phân", Lesson.CONFIRMED);
+        moved.proposedDate = freeDay(0, STUDENT, LocalDate.parse(moved.date).plusDays(1), 19, moved.id).toString();
+        moved.proposedHour = 19; moved.proposalReason = "Gia sư có lịch công tác.";
     }
+    /** Adds a sample lesson; an upcoming one moves to the next day on which it clashes with nothing. */
     private Lesson sample(int tutorId, String student, String title, LocalDate date, int hour, String goal, String status) {
-        return new Lesson(nextId(), tutorId, student, title, date.toString(), hour, 60, "Trực tuyến", goal, "", false, status);
+        if (!date.isBefore(LocalDate.now())) date = freeDay(tutorId, student, date, hour, -1);
+        Lesson lesson = new Lesson(nextId(), tutorId, student, title, date.toString(), hour, 60, "Trực tuyến", goal, "", false, status);
+        lessons.add(lesson); return lesson;
+    }
+    private LocalDate freeDay(int tutorId, String student, LocalDate date, int hour, int ignoreId) {
+        while (conflict(tutorId, student, date.toString(), hour, 60, ignoreId) != null) date = date.plusDays(1);
+        return date;
     }
     private GroupClass group(int tutorId, String title, String subject, String level, int sessions, int price, int capacity,
                              int[] days, int hour, int minutes, int art, String status) {

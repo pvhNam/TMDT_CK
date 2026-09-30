@@ -79,6 +79,9 @@ public final class JoinClassScreen {
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu học tập"); goal.requestFocus(); return; }
         activity.hideKeyboard();
         if (item.full()) { activity.show("full"); return; }
+        // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
+        String blocked = activity.store.registrationError(item,Store.STUDENT);
+        if (blocked != null) { activity.dialog("Chưa gửi được đăng ký",blocked); return; }
         new AlertDialog.Builder(activity).setTitle("Ký quỹ học phí")
                 .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
                 .setNegativeButton("Hủy",null)

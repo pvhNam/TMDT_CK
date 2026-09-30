@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import com.example.tmdt.R;
@@ -31,6 +32,41 @@ public final class GroupClass {
 
     public GroupClass(int id, int tutorId) { this.id=id; this.tutorId=tutorId; }
 
+    /** One meeting of the class; "number" counts from 1 up to the class's number of sessions. */
+    public final class Session {
+        public final LocalDate date;
+        public final int number;
+        Session(LocalDate date, int number) { this.date=date; this.number=number; }
+        public GroupClass groupClass() { return GroupClass.this; }
+        public LocalDateTime start() { return date.atTime(hour,0); }
+        public boolean ended() { return !LocalDateTime.now().isBefore(start().plusMinutes(minutes)); }
+    }
+
+    /** An ended class no longer holds sessions, so it takes no time slot. */
+    public boolean active() { return !ENDED.equals(status); }
+    /** Members and students whose registration is still waiting both keep the class's time slot. */
+    public boolean attends(String student) { return members.contains(student) || registrationOf(student) != null; }
+
+    public List<Session> sessionList() {
+        List<Session> list = new ArrayList<>(); List<LocalDate> dates = dates(LocalDate.parse(startDate),days,sessions);
+        for (int i = 0; i < dates.size(); i++) list.add(new Session(dates.get(i),i+1));
+        return list;
+    }
+    /** The class meets on its weekdays (1 = Monday … 7 = Sunday) from the start date until all sessions are held. */
+    public static List<LocalDate> dates(LocalDate start, int[] days, int count) {
+        List<LocalDate> list = new ArrayList<>(); LocalDate last = start.plusWeeks(count+1);
+        for (LocalDate date = start; list.size() < count && date.isBefore(last); date = date.plusDays(1))
+            for (int day : days) if (date.getDayOfWeek().getValue() == day) { list.add(date); break; }
+        return list;
+    }
+    /** True when one of the class's sessions falls on the date and overlaps the given time. */
+    public boolean meetsAt(String date, int otherHour, int otherMinutes) {
+        return overlap(hour,minutes,otherHour,otherMinutes) && dates(LocalDate.parse(startDate),days,sessions).contains(LocalDate.parse(date));
+    }
+    public static boolean overlap(int hour, int minutes, int otherHour, int otherMinutes) {
+        return hour*60 < otherHour*60+otherMinutes && otherHour*60 < hour*60+minutes;
+    }
+
     public int seatsLeft() { return Math.max(0, capacity - members.size()); }
     public boolean full() { return seatsLeft() == 0; }
     public boolean recruiting() { return OPEN.equals(status) && !full(); }
@@ -56,7 +92,7 @@ public final class GroupClass {
     /** True when both classes meet on a shared weekday at overlapping times. */
     public boolean clashes(int[] otherDays, int otherHour, int otherMinutes) {
         for (int day : days) for (int other : otherDays)
-            if (day == other && hour*60 < otherHour*60+otherMinutes && otherHour*60 < hour*60+minutes) return true;
+            if (day == other && overlap(hour,minutes,otherHour,otherMinutes)) return true;
         return false;
     }
 
