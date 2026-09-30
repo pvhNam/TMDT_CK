@@ -92,22 +92,35 @@ public final class CatalogState extends ViewModel {
         changed();
     }
     public List<Teacher> results() {
-        List<Teacher> result=new ArrayList<>();
-        for(Teacher teacher:teachers.values()) {
-            if(teacher.offerings.isEmpty())continue;
-            boolean matchesSubject=subject.isEmpty();
-            StringBuilder searchable=new StringBuilder(teacher.name+" "+teacher.region);
-            for(Offering offering:teacher.offerings){
-                if(offering.subjectId.equals(subject))matchesSubject=true;
-                searchable.append(' ').append(subjects.get(offering.subjectId)).append(' ').append(level(offering.level));
+        List<Teacher> result = new ArrayList<>();
+        String keyword = normalize(query);
+
+        for (Teacher teacher : teachers.values()) {
+            if (teacher.offerings.isEmpty()) {
+                continue;
             }
-            if(matchesSubject && normalize(searchable.toString()).contains(normalize(query)))result.add(teacher);
+            boolean matchesSubject = subject.isEmpty();
+            for (Offering offering : teacher.offerings) {
+                if (offering.subjectId.equals(subject)) {
+                    matchesSubject = true;
+                }
+            }
+
+            String teacherName = normalize(teacher.name);
+            boolean matchesName = teacherName.contains(keyword);
+            if (matchesSubject && matchesName) {
+                result.add(teacher);
+            }
         }
-        result.sort((a,b)->a.name.compareToIgnoreCase(b.name));return result;
+        result.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        return result;
     }
     public static String normalize(String value) {
-        return Normalizer.normalize(value,Normalizer.Form.NFD).replaceAll("\\p{M}","")
-                .toLowerCase(Locale.ROOT).replace('đ','d').trim();
+        String text = Normalizer.normalize(value, Normalizer.Form.NFD);
+        text = text.replaceAll("\\p{M}", "");
+        text = text.toLowerCase(Locale.ROOT);
+        text = text.replace('đ', 'd');
+        return text.trim();
     }
     public static String level(String value) {
         switch(value){case "TIEU_HOC":return "Tiểu học";case "THCS":return "THCS";
