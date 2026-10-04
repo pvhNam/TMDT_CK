@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "coin.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="22"
+    android:viewportHeight="22">
+    <path android:pathData="M18.3333 4.58333C18.3333 9.16667 3.66667 9.16667 3.66667 4.58333M18.3333 4.58333C18.3333 1.49012e-08 3.66667 1.49012e-08 3.66667 4.58333M18.3333 4.58333V17.4167C18.3333 22 3.66667 22 3.66667 17.4167V4.58333M3.66667 10.0833C3.66667 14.6667 18.3333 14.6667 18.3333 10.0833M3.66667 14.6667C3.66667 19.25 18.3333 19.25 18.3333 14.6667"
+        android:strokeColor="#FF06164D"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

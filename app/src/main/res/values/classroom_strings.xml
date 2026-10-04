@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lessons and group classes (member 3). -->
+<resources>
+    <string name="page_tutor_home">Tổng quan</string>
+    <string name="page_teaching">Lịch dạy</string>
+    <string name="book_lesson">Đặt lịch học</string>
+    <string name="choose_subject">Chọn môn muốn học</string>
+    <string name="group_classes_heading">Lớp học nhóm</string>
+    <string name="group_classes_caption">Học cùng bạn, chia sẻ học phí</string>
+</resources>

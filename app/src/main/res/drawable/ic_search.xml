@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from the Figma asset "search.svg". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="22"
+    android:viewportHeight="22">
+    <path android:pathData="M19.25 19.25L13.75 13.75M15.5833 8.25C15.5833 10.1949 14.8107 12.0602 13.4355 13.4355C12.0602 14.8107 10.1949 15.5833 8.25 15.5833C6.30508 15.5833 4.43982 14.8107 3.06455 13.4355C1.68928 12.0602 0.916667 10.1949 0.916667 8.25C0.916667 6.30508 1.68928 4.43982 3.06455 3.06455C4.43982 1.68928 6.30508 0.916667 8.25 0.916667C10.1949 0.916667 12.0602 1.68928 13.4355 3.06455C14.8107 4.43982 15.5833 6.30508 15.5833 8.25Z"
+        android:strokeColor="#FF46638C"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

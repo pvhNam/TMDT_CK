@@ -96,6 +96,49 @@
                 android:src="@drawable/ic_cap"
                 android:importantForAccessibility="no" />
         </LinearLayout>
+        <LinearLayout
+            android:id="@+id/group_classes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_pale"
+            android:foreground="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="56dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_users"
+                app:tint="#0866F5"
+                android:importantForAccessibility="no" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+                <TextView
+                    style="@style/FieldLabel"
+                    android:layout_marginBottom="2dp"
+                    android:text="@string/group_classes_heading" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="#4D6287"
+                    android:text="@string/group_classes_caption" />
+            </LinearLayout>
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_right"
+                app:tint="#081F50"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
         <TextView
             style="@style/SectionTitle"
             android:text="@string/catalog_heading" />

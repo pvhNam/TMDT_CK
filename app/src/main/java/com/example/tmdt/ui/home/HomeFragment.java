@@ -37,6 +37,7 @@ public final class HomeFragment extends Fragment {
             return false;
         });
         binding.account.setOnClickListener(v->host().show("account"));
+        binding.groupClasses.setOnClickListener(v->host().show("groups"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
         binding.clearSearch.setOnClickListener(v -> {
             catalog.subject("");
