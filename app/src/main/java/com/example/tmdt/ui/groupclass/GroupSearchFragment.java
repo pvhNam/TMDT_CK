@@ -9,7 +9,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +33,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         if (classroom.similarSubject != null) { subject = classroom.similarSubject; seats = true; classroom.similarSubject = null; }
         LinearLayout root = ui.column();
         ui.title(root,"Lớp học nhóm",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
+                ()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         LinearLayout body = ui.page(root);
         LinearLayout box = ui.row(); box.setPadding(ui.dp(12),0,ui.dp(6),0); ui.surface(box,Ui.PALE,10,Ui.BORDER);
         box.addView(ui.icon(R.drawable.ic_search,22,Ui.MUTED));
@@ -82,7 +81,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         choose("Lọc theo hình thức",MODES,Math.max(0,Arrays.asList(MODES).indexOf(mode)),i->mode=i==0?"":MODES[i]);
     }
     private void choose(String title, String[] items, int selected, IntConsumer apply) {
-        new AlertDialog.Builder(classroom.context()).setTitle(title)
+        classroom.ui.dialog().setTitle(title)
                 .setSingleChoiceItems(items,selected,(dialog,which)->{apply.accept(which);renderFilters();renderResults();dialog.dismiss();})
                 .setNegativeButton("Đóng",null).show();
     }

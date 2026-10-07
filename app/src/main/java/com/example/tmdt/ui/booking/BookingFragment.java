@@ -5,11 +5,12 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
@@ -17,24 +18,23 @@ import com.example.tmdt.Tutor;
 
 public final class BookingFragment extends ScreenFragment {
     private Tutor tutor;
-    private LocalDate selectedDate, windowStart;
+    private LocalDate selectedDate;
     private int hour=19, minutes=60;
     private String mode="Trực tuyến", savedGoal, savedAddress="";
     private LinearLayout modes, days, hours, addressBox;
+    private HorizontalScrollView daysScroll;
     private TextView month, durationLabel, subtotal, total;
     private EditText goal, address;
 
     /** Defaults for a new booking, or the draft kept while the trial screen was open or the classroom was recreated. */
     private void start() {
         tutor=Tutor.get(classroom.tutorKey);Bundle state=classroom.bookingDraft;
-        selectedDate=LocalDate.now().plusDays(4);windowStart=selectedDate.minusDays(1);
+        selectedDate=LocalDate.now().plusDays(4);
         // Start on a day without an existing lesson at the default hour.
         while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
-        windowStart=selectedDate.minusDays(1);
         savedGoal="";
         if(state!=null) {
             selectedDate=LocalDate.parse(state.getString("date",selectedDate.toString()));
-            windowStart=LocalDate.parse(state.getString("window",selectedDate.minusDays(1).toString()));
             hour=state.getInt("hour",19);minutes=state.getInt("minutes",60);
             mode=state.getString("mode","Trực tuyến");savedGoal=state.getString("goal",savedGoal);savedAddress=state.getString("address","");
         }
@@ -45,7 +45,7 @@ public final class BookingFragment extends ScreenFragment {
         if(goal!=null) savedGoal=goal.getText().toString();
         if(address!=null) savedAddress=address.getText().toString();
         LinearLayout root=ui.column();ui.header(root,"Đặt lịch học",classroom::back,null);
-        LinearLayout body=ui.body(root);
+        LinearLayout body=ui.page(root);
         LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.surface(summary,Ui.WHITE,10,Ui.BORDER);
         summary.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,71,9));ui.gap(summary,13);
         LinearLayout info=ui.column();ui.add(info,ui.text(tutor.name,17,Ui.INK,true));ui.space(info,6);
@@ -59,13 +59,14 @@ public final class BookingFragment extends ScreenFragment {
         address.setContentDescription("Địa chỉ học tại nhà");address.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS);
         ui.add(addressBox,address);ui.add(body,addressBox);renderModes();ui.space(body,18);
         ui.section(body,"Chọn ngày học",18);
-        month=ui.text("",15,Ui.INK,false);month.setMinimumHeight(ui.dp(34));month.setGravity(Gravity.CENTER_VERTICAL);
+        month=ui.text("",15,Ui.INK,false);month.setMinimumHeight(ui.dp(26));month.setGravity(Gravity.CENTER_VERTICAL);
         ui.clickable(month,this::datePicker);ui.add(body,month);
-        days=ui.row();ui.add(body,days);renderDays();ui.space(body,15);
+        daysScroll=new HorizontalScrollView(classroom.context());daysScroll.setHorizontalScrollBarEnabled(false);
+        days=ui.row();daysScroll.addView(days);ui.add(body,daysScroll);renderDays(true);ui.space(body,15);
         ui.section(body,"Chọn giờ học",18);ui.space(body,8);hours=ui.row();ui.add(body,hours);renderHours();ui.space(body,15);
         LinearLayout duration=ui.row();ui.weight(duration,ui.text("Thời lượng",17,Ui.INK,true));
         durationLabel=ui.value(minutes+" phút");
-        LinearLayout picker=ui.picker(R.drawable.ic_clock,durationLabel,()->new AlertDialog.Builder(classroom.context()).setTitle("Thời lượng buổi học")
+        LinearLayout picker=ui.picker(R.drawable.ic_clock,durationLabel,()->classroom.ui.dialog().setTitle("Thời lượng buổi học")
                 .setSingleChoiceItems(new String[]{"60 phút","90 phút","120 phút"},minutes==60?0:minutes==90?1:2,(dialog,which)->{
                     minutes=new int[]{60,90,120}[which];durationLabel.setText(minutes+" phút");updatePrice();dialog.dismiss();
                 }).setNegativeButton("Đóng",null).show());
@@ -87,27 +88,26 @@ public final class BookingFragment extends ScreenFragment {
 
     private void setMode(String value){mode=value;renderModes();}
     private void renderModes() {
-        modes.removeAllViews();ui.weight(modes,ui.option("Trực tuyến","laptop",mode.equals("Trực tuyến"),()->setMode("Trực tuyến")));
-        ui.gap(modes,10);ui.weight(modes,ui.option("Tại nhà","home",mode.equals("Tại nhà"),()->setMode("Tại nhà")));
+        modes.removeAllViews();ui.weight(modes,ui.option("Trực tuyến",R.drawable.ic_laptop,mode.equals("Trực tuyến"),()->setMode("Trực tuyến")));
+        ui.gap(modes,10);ui.weight(modes,ui.option("Tại nhà",R.drawable.ic_home,mode.equals("Tại nhà"),()->setMode("Tại nhà")));
         addressBox.setVisibility(mode.equals("Tại nhà")?View.VISIBLE:View.GONE);
     }
-    private void renderDays() {
+    private void renderDays(boolean reveal) {
         days.removeAllViews();
-        month.setText("Tháng "+windowStart.getMonthValue()+", "+windowStart.getYear()+"  ⌄");
+        month.setText("Tháng "+selectedDate.getMonthValue()+", "+selectedDate.getYear());
         month.setContentDescription("Chọn ngày trong lịch. "+month.getText());
-        View previous=ui.iconButton(R.drawable.ic_back,Ui.INK,"Năm ngày trước",()->{
-            LocalDate next=windowStart.minusDays(5);windowStart=next.isBefore(LocalDate.now())?LocalDate.now():next;renderDays();
-        });
-        previous.setLayoutParams(ui.lp(28,64));previous.setEnabled(windowStart.isAfter(LocalDate.now()));previous.setAlpha(previous.isEnabled()?1:0.3f);days.addView(previous);
-        for(int i=0;i<5;i++) {
-            LocalDate date=windowStart.plusDays(i);boolean selected=date.equals(selectedDate);
-            ui.weight(days,ui.day(date,selected,()->{selectedDate=date;renderDays();}));if(i<4)ui.gap(days,5);
+        LocalDate first=LocalDate.now(), last=first.plusDays(59);
+        if(selectedDate.plusDays(4).isAfter(last)) last=selectedDate.plusDays(4);
+        int gap=ui.dp(5), cell=(getResources().getDisplayMetrics().widthPixels-ui.dp(32)-4*gap)/5;
+        for(LocalDate date=first;!date.isAfter(last);date=date.plusDays(1)) {
+            LocalDate value=date;if(date.isAfter(first))ui.gap(days,5);
+            days.addView(ui.day(date,date.equals(selectedDate),()->{selectedDate=value;renderDays(false);}),new LinearLayout.LayoutParams(cell,ui.dp(61)));
         }
-        View next=ui.iconButton(R.drawable.ic_right,Ui.INK,"Năm ngày tiếp theo",()->{windowStart=windowStart.plusDays(5);renderDays();});next.setLayoutParams(ui.lp(28,64));days.addView(next);
+        if(reveal){int x=(int)Math.max(0,ChronoUnit.DAYS.between(first,selectedDate)-1)*(cell+gap);daysScroll.post(()->daysScroll.scrollTo(x,0));}
     }
     private void datePicker() {
-        DatePickerDialog dialog=new DatePickerDialog(classroom.context(),(view,year,month,day)->{
-            selectedDate=LocalDate.of(year,month+1,day);windowStart=selectedDate;renderDays();
+        DatePickerDialog dialog=new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{
+            selectedDate=LocalDate.of(year,month+1,day);renderDays(true);
         },selectedDate.getYear(),selectedDate.getMonthValue()-1,selectedDate.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000);dialog.show();
     }
@@ -134,7 +134,7 @@ public final class BookingFragment extends ScreenFragment {
         if(tutor!=null){Bundle state=new Bundle();saveState(state);classroom.bookingDraft=state;}
     }
     private void saveState(Bundle state) {
-        state.putString("date",selectedDate.toString());state.putString("window",windowStart.toString());
+        state.putString("date",selectedDate.toString());
         state.putInt("hour",hour);state.putInt("minutes",minutes);state.putString("mode",mode);
         state.putString("goal",goal==null?savedGoal:goal.getText().toString());
         state.putString("address",address==null?savedAddress:address.getText().toString());

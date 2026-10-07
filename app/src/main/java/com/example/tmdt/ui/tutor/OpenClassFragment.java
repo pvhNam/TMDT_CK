@@ -10,7 +10,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
@@ -123,7 +122,7 @@ public final class OpenClassFragment extends ScreenFragment {
     }
 
     private void choose(String title, String[] items, int selected, java.util.function.IntConsumer apply) {
-        new AlertDialog.Builder(classroom.context()).setTitle(title)
+        classroom.ui.dialog().setTitle(title)
                 .setSingleChoiceItems(items,selected,(dialog,which)->{apply.accept(which);render();dialog.dismiss();})
                 .setNegativeButton("Đóng",null).show();
     }
@@ -149,7 +148,7 @@ public final class OpenClassFragment extends ScreenFragment {
         choose("Giờ học",values,selected,i->hour=START_HOURS[i]);
     }
     private void pickStart() {
-        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),(view,year,month,day)->{start=LocalDate.of(year,month+1,day);render();},
+        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{start=LocalDate.of(year,month+1,day);render();},
                 start.getYear(),start.getMonthValue()-1,start.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()+24L*60*60*1000-1000); dialog.show();
     }
