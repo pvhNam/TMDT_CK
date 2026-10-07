@@ -26,7 +26,6 @@ public final class NavigationAssets {
     private static Drawable icon(BottomNavigationView navigation,String name){
         try {
             SVG svg=SVG.getFromAsset(navigation.getContext().getAssets(),"figma/navigation/"+name+".svg");
-            if(svg.getDocumentWidth()!=24||svg.getDocumentHeight()!=24)throw new IllegalStateException("Unexpected navigation asset dimensions");
             int size=Math.round(24*navigation.getResources().getDisplayMetrics().density);
             Bitmap bitmap=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);
             bitmap.setDensity(navigation.getResources().getDisplayMetrics().densityDpi);
