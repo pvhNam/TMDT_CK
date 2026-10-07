@@ -17,7 +17,6 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 
 /** Screen 34 · Mở lớp nhóm (UC16), also used to edit an open class (UC17). */
 public final class OpenClassFragment extends ScreenFragment {
@@ -116,7 +115,7 @@ public final class OpenClassFragment extends ScreenFragment {
         scheduleValue.setText(label()); startValue.setText(start.format(Lesson.DATE));
     }
     private String label() {
-        GroupClass preview = new GroupClass(0,Store.TUTOR); preview.days=days; preview.hour=hour; preview.minutes=minutes;
+        GroupClass preview = new GroupClass("",classroom.me(),""); preview.days=days; preview.hour=hour; preview.minutes=minutes;
         return preview.scheduleLabel();
     }
     private LocalDate nextClassDay(LocalDate from) {
@@ -169,18 +168,17 @@ public final class OpenClassFragment extends ScreenFragment {
         if (editing != null && capacity < editing.members.size()) {
             classroom.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = classroom.store.classClash(Store.TUTOR,days,hour,minutes,start,sessions,editing==null?-1:editing.id);
+        String clash = classroom.store.classClash(classroom.me(),days,hour,minutes,start,sessions,editing==null?"":editing.id);
         if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
-        GroupClass item = editing != null ? editing : new GroupClass(classroom.store.nextId(),Store.TUTOR);
+        GroupClass item = editing != null ? editing : new GroupClass(classroom.store.newId("group_classes"),classroom.me(),classroom.tutorName());
         item.title=title; item.subject=subject; item.level=levelOf(title); item.mode=mode; item.address=mode.equals("Tại nhà")?place:"";
         item.description=about; item.startDate=start.toString(); item.sessions=sessions; item.price=fee; item.capacity=capacity;
         item.days=days; item.hour=hour; item.minutes=minutes;
         if (editing == null) {
             item.status=GroupClass.OPEN; item.art=subject.equals("Tiếng Anh")?2:subject.equals("Toán")?0:1;
-            classroom.store.classes.add(item);
         }
-        classroom.store.save(); classroom.hideKeyboard(); classroom.classTab=0; classroom.show("classes");
+        classroom.store.saveClass(item); classroom.hideKeyboard(); classroom.classTab=0; classroom.show("classes");
         classroom.notice(editing==null?"Đã mở lớp \""+title+"\".":"Đã lưu thay đổi của lớp.");
     }
     /** The level is taken from the class name ("… lớp 12"), or left general. */

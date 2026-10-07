@@ -8,7 +8,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 12 · Chi tiết buổi học (UC24): lesson facts, the room button and links to confirm, cancel or reschedule. */
@@ -17,7 +16,6 @@ public final class LessonDetailFragment extends ScreenFragment {
 
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
-        Tutor tutor = Tutor.get(lesson.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",classroom::back,null);
         LinearLayout body = ui.page(root);
 
@@ -30,10 +28,10 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.add(body,summary); ui.space(body,11);
 
         LinearLayout profile = ui.row(); profile.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9)); ui.surface(profile,Ui.WHITE,10,Ui.BORDER);
-        profile.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,73,79,9)); ui.gap(profile,13);
-        LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
-        ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));
-        info.addView(ui.link("Xem hồ sơ",16,()->classroom.openTutor(tutor)),ui.lp(-2,-2));
+        profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,79,9)); ui.gap(profile,13);
+        LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
+        ui.add(info,ui.text("Gia sư",15,Ui.MUTED,false));
+        info.addView(ui.link("Xem hồ sơ",16,()->classroom.openTutor(lesson.tutorId,lesson.tutorName)),ui.lp(-2,-2));
         ui.weight(profile,info); ui.add(body,profile);
 
         LinearLayout table = ui.table();
@@ -59,7 +57,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         }
         ui.add(body,ui.note(R.drawable.ic_info,hint(),Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,8);
         ui.addAction(body,mainAction(),49); ui.space(body,12);
-        ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(tutor)),48);
+        ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(lesson.tutorName)),48);
         if (lesson.active() && !lesson.started()) {
             TextView cancel = ui.link("Hủy buổi học",16,()->classroom.show("cancel")); cancel.setTextColor(Ui.RED);
             cancel.setGravity(Gravity.CENTER); ui.space(body,6); ui.add(body,cancel);

@@ -16,7 +16,6 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 19 · Trang chủ gia sư: teaching overview, new requests and today's lessons. */
@@ -25,11 +24,10 @@ public final class TutorHomeFragment extends ScreenFragment {
     private LinearLayout requests;
 
     @Override protected View build() {
-        Tutor tutor = Tutor.get(Store.TUTOR);
         LinearLayout root = ui.column(); LinearLayout body = ui.page(root);
         LinearLayout top = ui.row(); top.setPadding(0,ui.dp(8),0,ui.dp(8));
-        top.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,63,63,32)); ui.gap(top,15);
-        LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào cô Minh Anh!",21,Ui.INK,true)); ui.space(hello,6);
+        top.addView(ui.photo(0,"Ảnh gia sư "+classroom.tutorName(),63,63,32)); ui.gap(top,15);
+        LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào "+classroom.tutorName()+"!",21,Ui.INK,true)); ui.space(hello,6);
         TextView mode = ui.pill("Chế độ gia sư",14,Ui.BLUE,Ui.PALE);
         ui.clickable(mode,()->new AlertDialog.Builder(classroom.context()).setTitle("Chuyển về chế độ học viên?")
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(false)).show());
@@ -44,14 +42,14 @@ public final class TutorHomeFragment extends ScreenFragment {
         List<Lesson> pending = new ArrayList<>(), today = new ArrayList<>();
         Set<String> students = new HashSet<>();
         for (Lesson lesson : classroom.lessons) {
-            if (lesson.tutorId != Store.TUTOR) continue;
+            if (!lesson.tutorId.equals(classroom.me())) continue;
             if (lesson.pending() && !lesson.started()) pending.add(lesson);
             if (lesson.confirmed() && lesson.date.equals(LocalDate.now().toString())) today.add(lesson);
-            if (lesson.confirmed()) students.add(lesson.student);
+            if (lesson.confirmed()) students.add(lesson.studentId);
         }
         int registrations = 0;
         List<GroupClass.Session> classesToday = new ArrayList<>();
-        for (GroupClass item : classroom.store.classes) if (item.tutorId == Store.TUTOR) {
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me())) {
             registrations += item.pendingCount();
             if (!item.active()) continue;
             students.addAll(item.members);
@@ -94,15 +92,15 @@ public final class TutorHomeFragment extends ScreenFragment {
         requests.removeAllViews(); int shown = 0;
         for (Lesson lesson : pending) {
             if (!allRequests && shown == 1) break;
-            ui.add(requests,requestCard(Store.studentPhoto(lesson.student),lesson.student,lesson.title,
+            ui.add(requests,requestCard(0,lesson.studentName,lesson.title,
                     lesson.dateLabel()+" · "+lesson.timeLabel(),"Chờ xác nhận","Xem yêu cầu",()->respond(lesson)));
             ui.space(requests,10); shown++;
         }
         for (GroupClass item : classroom.store.classes) {
-            if (item.tutorId != Store.TUTOR) continue;
+            if (!item.tutorId.equals(classroom.me())) continue;
             for (GroupClass.Registration registration : item.registrations) {
                 if (!registration.pending() || (!allRequests && shown == 1)) continue;
-                ui.add(requests,requestCard(Store.studentPhoto(registration.student),registration.student,"Đăng ký lớp "+item.title,
+                ui.add(requests,requestCard(0,registration.studentName,"Đăng ký lớp "+item.title,
                         "Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),"Chờ duyệt","Duyệt đăng ký",()->classroom.openClass(item,"review")));
                 ui.space(requests,10); shown++;
             }
@@ -124,8 +122,8 @@ public final class TutorHomeFragment extends ScreenFragment {
     private View todayCard(Lesson lesson) {
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.surface(card,Ui.WHITE,10,Ui.BORDER);
-        card.addView(ui.photo(Store.studentPhoto(lesson.student),"Ảnh "+lesson.student,69,73,9)); ui.gap(card,13);
-        LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.student,18,Ui.INK,true)); ui.space(info,5);
+        card.addView(ui.photo(0,"Ảnh "+lesson.studentName,69,73,9)); ui.gap(card,13);
+        LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(lesson.dateLabel()+" · "+lesson.timeLabel(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(lesson.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
@@ -147,7 +145,7 @@ public final class TutorHomeFragment extends ScreenFragment {
 
     /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
     private void respond(Lesson lesson) {
-        new AlertDialog.Builder(classroom.context()).setTitle("Yêu cầu của "+lesson.student)
+        new AlertDialog.Builder(classroom.context()).setTitle("Yêu cầu của "+lesson.studentName)
                 .setMessage(lesson.title+"\n"+lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total()))
                 .setNeutralButton("Đóng",null)
                 .setNegativeButton("Từ chối",(d,w)->finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu."))

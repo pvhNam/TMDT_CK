@@ -13,8 +13,6 @@ import java.time.LocalDateTime;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
-import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 public final class BookingFragment extends ScreenFragment {
@@ -28,12 +26,12 @@ public final class BookingFragment extends ScreenFragment {
 
     /** Defaults for a new booking, or the draft kept while the trial screen was open or the classroom was recreated. */
     private void start() {
-        tutor=Tutor.get(classroom.tutorId);Bundle state=classroom.bookingDraft;
+        tutor=Tutor.get(classroom.tutorKey);Bundle state=classroom.bookingDraft;
         selectedDate=LocalDate.now().plusDays(4);windowStart=selectedDate.minusDays(1);
         // Start on a day without an existing lesson at the default hour.
-        while(classroom.store.conflict(tutor.id,Store.STUDENT,selectedDate.toString(),hour,minutes,-1)!=null) selectedDate=selectedDate.plusDays(1);
+        while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
         windowStart=selectedDate.minusDays(1);
-        savedGoal=tutor.id==0?"Ôn tập phương trình bậc hai":tutor.id==1?"Luyện giao tiếp hằng ngày":"";
+        savedGoal="";
         if(state!=null) {
             selectedDate=LocalDate.parse(state.getString("date",selectedDate.toString()));
             windowStart=LocalDate.parse(state.getString("window",selectedDate.minusDays(1).toString()));
@@ -49,7 +47,7 @@ public final class BookingFragment extends ScreenFragment {
         LinearLayout root=ui.column();ui.header(root,"Đặt lịch học",classroom::back,null);
         LinearLayout body=ui.body(root);
         LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.surface(summary,Ui.WHITE,10,Ui.BORDER);
-        summary.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,72,71,9));ui.gap(summary,13);
+        summary.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,71,9));ui.gap(summary,13);
         LinearLayout info=ui.column();ui.add(info,ui.text(tutor.name,17,Ui.INK,true));ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));ui.space(info,6);
         LinearLayout rating=ui.row();rating.addView(ui.icon(R.drawable.ic_star,18,Ui.GOLD));ui.gap(rating,7);
@@ -127,8 +125,8 @@ public final class BookingFragment extends ScreenFragment {
         String objective=goal.getText().toString().trim(), location=address.getText().toString().trim();
         if(objective.isEmpty()){goal.setError("Vui lòng nhập mục tiêu buổi học");goal.requestFocus();return;}
         if(mode.equals("Tại nhà") && location.isEmpty()){address.setError("Vui lòng nhập địa chỉ học");address.requestFocus();return;}
-        classroom.saveRequest(new Lesson(classroom.store.nextId(),tutor.id,Store.STUDENT,tutor.course,selectedDate.toString(),
-                hour,minutes,mode,objective,mode.equals("Tại nhà")?location:"",false,Lesson.PENDING));
+        classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minutes,mode,objective,
+                mode.equals("Tại nhà")?location:"",false,tutor.price(minutes)));
     }
     /** Keeps the draft when the trial screen replaces this one or the classroom is recreated. */
     @Override public void onPause() {

@@ -12,7 +12,6 @@ import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
@@ -39,7 +38,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();
-        for (GroupClass item : classroom.store.classes) if (item.tutorId == Store.TUTOR && item.status.equals(status)) list.add(item);
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && item.status.equals(status)) list.add(item);
         return list;
     }
 
@@ -78,7 +77,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
 
     public static void members(Classroom classroom, GroupClass item) {
         StringBuilder list = new StringBuilder();
-        for (String member : item.members) list.append("• ").append(member).append('\n');
+        for (String member : item.memberNames()) list.append("• ").append(member).append('\n');
         classroom.dialog("Thành viên ("+item.members.size()+"/"+item.capacity+")",list.length()==0?"Lớp chưa có học viên.":list.toString().trim());
     }
 

@@ -8,7 +8,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
-import com.example.tmdt.Tutor;
 
 /** Screen 60 · Lớp đã đủ chỗ (branch of UC20): registration is disabled before any deposit is taken. */
 public final class ClassFullFragment extends ScreenFragment {
@@ -16,7 +15,6 @@ public final class ClassFullFragment extends ScreenFragment {
 
     @Override protected View build() {
         item = classroom.store.groupClass(classroom.classId);
-        Tutor tutor = Tutor.get(item.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết lớp nhóm",classroom::back,null);
         LinearLayout body = ui.page(root);
 
@@ -26,7 +24,7 @@ public final class ClassFullFragment extends ScreenFragment {
         badge.addView(ui.icon(R.drawable.ic_users_filled,35,Ui.BLUE),new FrameLayout.LayoutParams(ui.dp(35),ui.dp(35),Gravity.CENTER));
         top.addView(badge,ui.lp(62,59)); ui.gap(top,13);
         LinearLayout title = ui.column(); ui.add(title,ui.text(item.title,21,Ui.INK,true)); ui.space(title,8);
-        ui.add(title,ui.text(tutor.name,18,Ui.INK,false)); ui.weight(top,title); ui.add(card,top); ui.space(card,14);
+        ui.add(title,ui.text(item.tutorName,18,Ui.INK,false)); ui.weight(top,title); ui.add(card,top); ui.space(card,14);
         ui.add(card,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),23,16,Ui.INK,false)); ui.space(card,11);
         ui.add(card,ui.fact(R.drawable.ic_coin,item.priceLabel(),23,16,Ui.INK,false)); ui.space(card,11);
         ui.add(card,ui.fact(R.drawable.ic_pin,item.address.isEmpty()?"Học trực tuyến":"Học trực tiếp tại "+item.address,23,14,Ui.INK,false));
@@ -43,7 +41,7 @@ public final class ClassFullFragment extends ScreenFragment {
         ui.add(body,ui.note(R.drawable.ic_info,"Lớp vừa hết chỗ.\nChưa tạo đăng ký hoặc giữ tiền ký quỹ.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(body,15);
         ui.addAction(body,ui.action("Lớp đã đủ chỗ",0,Ui.DISABLED,null),51); ui.space(body,12);
         ui.addAction(body,ui.action("Tìm lớp tương tự",0,Ui.PRIMARY,()->{classroom.similarSubject=item.subject;classroom.show("groups");}),49); ui.space(body,11);
-        ui.addAction(body,ui.action("Nhắn tin cho gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(tutor)),45);
+        ui.addAction(body,ui.action("Nhắn tin cho gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(item.tutorName)),45);
         return root;
     }
 }

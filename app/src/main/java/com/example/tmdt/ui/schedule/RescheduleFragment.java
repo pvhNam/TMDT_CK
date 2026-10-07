@@ -6,8 +6,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
-import com.example.tmdt.Tutor;
 
 /** Screen 55 · Phản hồi đổi lịch (branch of UC24): the student compares both slots and answers the tutor. */
 public final class RescheduleFragment extends ScreenFragment {
@@ -15,7 +13,6 @@ public final class RescheduleFragment extends ScreenFragment {
 
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
-        Tutor tutor = Tutor.get(lesson.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Yêu cầu đổi lịch",classroom::back,null);
         LinearLayout body = ui.page(root);
         if (!lesson.proposal()) {
@@ -28,8 +25,8 @@ public final class RescheduleFragment extends ScreenFragment {
 
         LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(7),ui.dp(7),ui.dp(7),ui.dp(14));
         LinearLayout profile = ui.row();
-        profile.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,91,94,9)); ui.gap(profile,14);
-        LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,23,Ui.INK,true)); ui.space(info,8);
+        profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,91,94,9)); ui.gap(profile,14);
+        LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.tutorName,23,Ui.INK,true)); ui.space(info,8);
         ui.add(info,ui.text(lesson.title,17,Ui.INK,false)); ui.weight(profile,info); ui.add(card,profile); ui.space(card,7);
         ui.add(card,slot("Lịch hiện tại",lesson.dateLabel()+" · "+lesson.timeLabel(),Ui.PALE,Ui.INK)); ui.space(card,12);
         ui.add(card,slot("Lịch đề xuất",lesson.proposalLabel(),Ui.GREEN_BG,Ui.GREEN)); ui.space(card,14);

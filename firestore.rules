@@ -41,6 +41,141 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    // Lessons, group classes and class registrations (member 3).
+    function signedIn() { return request.auth != null; }
+    function stamped() { return request.resource.data.updated_at == request.time; }
+    function changed(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    function account() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function verifiedTutor(uid) {
+      return exists(/databases/$(database)/documents/tutor_profiles/$(uid))
+        && get(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'VERIFIED';
+    }
+    match /lessons/{lessonId} {
+      function validLesson() {
+        let d = request.resource.data;
+        let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
+          'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
+        return d.keys().hasOnly(keys) && d.keys().hasAll(keys)
+          && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
+          && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
+          && d.tieu_de is string && d.tieu_de.size() <= 100
+          && d.bat_dau is timestamp && d.thoi_luong in [30, 45, 60, 90, 120] && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
+          && d.dia_chi is string && d.dia_chi.size() <= 255 && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 300
+          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 10000000
+          && d.trang_thai in ['PENDING', 'CONFIRMED', 'CANCELLED', 'REJECTED'] && d.da_hoan_thanh is bool
+          && d.noi_dung is string && d.noi_dung.size() <= 500 && d.ly_do_huy is string && d.ly_do_huy.size() <= 150
+          && (d.doi_lich_bat_dau == null || d.doi_lich_bat_dau is timestamp) && d.doi_lich_ly_do is string && d.doi_lich_ly_do.size() <= 120
+          && stamped();
+      }
+      function requested() {
+        let d = request.resource.data;
+        return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
+          && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
+          && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
+          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.bat_dau > request.time && d.created_at == request.time
+          && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
+      }
+      function answered() {
+        let d = request.resource.data;
+        return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'PENDING'
+          && d.trang_thai in ['CONFIRMED', 'REJECTED'] && changed(['trang_thai', 'updated_at'])
+          && (d.trang_thai == 'REJECTED' || resource.data.bat_dau > request.time);
+      }
+      function proposed() {
+        let d = request.resource.data;
+        return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
+          && resource.data.doi_lich_bat_dau == null && resource.data.bat_dau > request.time
+          && d.doi_lich_bat_dau is timestamp && d.doi_lich_bat_dau > request.time && d.doi_lich_bat_dau != resource.data.bat_dau
+          && d.doi_lich_ly_do.size() > 0 && changed(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+      }
+      function cancelled() {
+        let d = request.resource.data;
+        return resource.data.student_id == request.auth.uid && resource.data.trang_thai in ['PENDING', 'CONFIRMED']
+          && resource.data.bat_dau > request.time && d.trang_thai == 'CANCELLED' && d.ly_do_huy.size() > 0 && d.doi_lich_bat_dau == null
+          && changed(['trang_thai', 'ly_do_huy', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+      }
+      function moved() {
+        let d = request.resource.data;
+        return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
+          && resource.data.doi_lich_bat_dau != null && resource.data.doi_lich_bat_dau > request.time
+          && d.bat_dau == resource.data.doi_lich_bat_dau && d.doi_lich_bat_dau == null
+          && changed(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+      }
+      function kept() {
+        return resource.data.student_id == request.auth.uid && resource.data.doi_lich_bat_dau != null
+          && request.resource.data.doi_lich_bat_dau == null && changed(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+      }
+      function finished() {
+        return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
+          && resource.data.da_hoan_thanh == false && request.resource.data.da_hoan_thanh == true
+          && request.time >= resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
+          && changed(['da_hoan_thanh', 'updated_at']);
+      }
+      allow read: if signedIn() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
+      allow create: if signedIn() && validLesson() && requested();
+      allow update: if signedIn() && validLesson() && (answered() || proposed() || cancelled() || moved() || kept() || finished());
+    }
+    match /group_classes/{classId} {
+      function validClass() {
+        let d = request.resource.data;
+        let keys = ['tutor_id','ten_gia_su','ten_lop','mon_hoc','cap_hoc','hinh_thuc','dia_chi','mo_ta','ngay_bat_dau','thu','gio','thoi_luong',
+          'so_buoi','hoc_phi','tinh_theo_buoi','suc_chua','thanh_vien','trang_thai','hinh_minh_hoa','created_at','updated_at'];
+        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+          && d.ten_gia_su is string && d.ten_gia_su.size() <= 100
+          && d.ten_lop is string && d.ten_lop.size() > 0 && d.ten_lop.size() <= 60
+          && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 50 && d.cap_hoc is string && d.cap_hoc.size() <= 40
+          && d.hinh_thuc in ['Trực tuyến', 'Tại nhà'] && d.dia_chi is string && d.dia_chi.size() <= 120
+          && (d.hinh_thuc == 'Trực tuyến' || d.dia_chi.size() > 0)
+          && d.mo_ta is string && d.mo_ta.size() > 0 && d.mo_ta.size() <= 200
+          && d.ngay_bat_dau is string && d.ngay_bat_dau.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && d.thu is list && d.thu.size() >= 1 && d.thu.size() <= 7
+          && d.gio is int && d.gio >= 0 && d.gio <= 23 && d.thoi_luong in [60, 90, 120]
+          && d.so_buoi is int && d.so_buoi >= 1 && d.so_buoi <= 12
+          && d.hoc_phi is int && d.hoc_phi >= 50000 && d.hoc_phi <= 10000000 && d.tinh_theo_buoi is bool
+          && d.suc_chua is int && d.suc_chua >= 2 && d.suc_chua <= 10 && d.thanh_vien is list && d.thanh_vien.size() <= d.suc_chua
+          && d.trang_thai in ['OPEN', 'RUNNING', 'ENDED'] && d.hinh_minh_hoa is int
+          && stamped();
+      }
+      allow read: if true;
+      allow create: if signedIn() && validClass() && verifiedTutor(request.auth.uid)
+        && request.resource.data.trang_thai == 'OPEN' && request.resource.data.thanh_vien.size() == 0
+        && request.resource.data.created_at == request.time;
+      allow update: if signedIn() && validClass() && resource.data.tutor_id == request.auth.uid && resource.data.trang_thai != 'ENDED'
+        && !('created_at' in request.resource.data.diff(resource.data).affectedKeys())
+        && (request.resource.data.trang_thai == resource.data.trang_thai || resource.data.trang_thai == 'OPEN'
+          || request.resource.data.trang_thai == 'ENDED')
+        && request.resource.data.thanh_vien.hasAll(resource.data.thanh_vien);
+    }
+    match /class_registrations/{registrationId} {
+      function validRegistration() {
+        let d = request.resource.data;
+        let keys = ['class_id','tutor_id','student_id','ten_hoc_vien','muc_tieu','ngay_gui','trang_thai','created_at','updated_at'];
+        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && registrationId == d.class_id + '_' + d.student_id
+          && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
+          && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 200
+          && d.ngay_gui is string && d.ngay_gui.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && d.trang_thai in ['PENDING', 'CONFIRMED', 'REJECTED'] && stamped();
+      }
+      function applied() {
+        let d = request.resource.data;
+        let c = get(/databases/$(database)/documents/group_classes/$(d.class_id)).data;
+        return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten && d.trang_thai == 'PENDING'
+          && d.tutor_id == c.tutor_id && c.tutor_id != request.auth.uid && c.trang_thai == 'OPEN'
+          && c.thanh_vien.size() < c.suc_chua && !(request.auth.uid in c.thanh_vien);
+      }
+      function reviewed() {
+        let d = request.resource.data;
+        return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'PENDING'
+          && d.trang_thai in ['CONFIRMED', 'REJECTED'] && changed(['trang_thai', 'updated_at'])
+          && (d.trang_thai == 'REJECTED'
+            || d.student_id in getAfter(/databases/$(database)/documents/group_classes/$(d.class_id)).data.thanh_vien);
+      }
+      allow read: if signedIn() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
+      allow create: if signedIn() && validRegistration() && applied() && request.resource.data.created_at == request.time;
+      allow update: if signedIn() && validRegistration()
+        && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at']))
+          || reviewed());
+    }
     // All other collections, including the removed flows, are denied by default.
   }
 }

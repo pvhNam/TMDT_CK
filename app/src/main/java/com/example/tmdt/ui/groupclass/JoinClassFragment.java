@@ -11,8 +11,6 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
-import com.example.tmdt.Tutor;
 
 /** Screen 38 · Đăng ký tham gia lớp (UC20). Seats are checked before any registration or deposit is created. */
 public final class JoinClassFragment extends ScreenFragment {
@@ -21,7 +19,6 @@ public final class JoinClassFragment extends ScreenFragment {
 
     @Override protected View build() {
         item = classroom.store.groupClass(classroom.classId);
-        Tutor tutor = Tutor.get(item.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Đăng ký tham gia lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
 
@@ -30,9 +27,9 @@ public final class JoinClassFragment extends ScreenFragment {
         card.addView(ui.art(item.largeArt(),108,112)); ui.gap(card,14);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,23,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text(item.subject+" · "+item.level,16,Ui.MUTED,false)); ui.space(info,8);
-        LinearLayout teacher = ui.row(); teacher.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,48,50,9)); ui.gap(teacher,11);
-        LinearLayout name = ui.column(); ui.add(name,ui.text(tutor.name,16,Ui.INK,false)); ui.space(name,6);
-        ui.add(name,ui.text("★ "+tutor.rating+" ("+tutor.students+")",15,Ui.INK,false)); ui.weight(teacher,name);
+        LinearLayout teacher = ui.row(); teacher.addView(ui.photo(0,"Ảnh gia sư "+item.tutorName,48,50,9)); ui.gap(teacher,11);
+        LinearLayout name = ui.column(); ui.add(name,ui.text(item.tutorName,16,Ui.INK,false)); ui.space(name,6);
+        ui.add(name,ui.text("Gia sư đã xác minh",15,Ui.MUTED,false)); ui.weight(teacher,name);
         ui.add(info,teacher); ui.weight(card,info); ui.add(body,card); ui.space(body,11);
 
         LinearLayout table = ui.table();
@@ -47,8 +44,8 @@ public final class JoinClassFragment extends ScreenFragment {
         ui.add(body,seats); ui.space(body,14);
         if (!item.description.isEmpty()) { ui.add(body,ui.text(item.description,15,Ui.MUTED,false)); ui.space(body,12); }
 
-        GroupClass.Registration sent = item.registrationOf(Store.STUDENT);
-        boolean member = item.members.contains(Store.STUDENT);
+        GroupClass.Registration sent = item.registrationOf(classroom.me());
+        boolean member = item.members.contains(classroom.me());
         if (!member && sent == null) {
             ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true);
             goal.setMinimumHeight(ui.dp(54)); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
@@ -78,7 +75,7 @@ public final class JoinClassFragment extends ScreenFragment {
         classroom.hideKeyboard();
         if (item.full()) { classroom.show("full"); return; }
         // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
-        String blocked = classroom.store.registrationError(item,Store.STUDENT);
+        String blocked = classroom.store.registrationError(item,classroom.me());
         if (blocked != null) { classroom.dialog("Chưa gửi được đăng ký",blocked); return; }
         new AlertDialog.Builder(classroom.context()).setTitle("Ký quỹ học phí")
                 .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
@@ -86,7 +83,7 @@ public final class JoinClassFragment extends ScreenFragment {
                 .setPositiveButton("Xác nhận ký quỹ",(dialog,which)->{
                     // Seats may have run out while the dialog was open.
                     if (item.full()) { classroom.show("full"); return; }
-                    String error = classroom.store.register(item,Store.STUDENT,objective);
+                    String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective);
                     if (error != null) { classroom.dialog("Chưa gửi được đăng ký",error); return; }
                     classroom.show("groups"); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
                 }).show();
