@@ -40,9 +40,12 @@ public final class ScheduleFragment extends ScreenFragment {
                 for(GroupClass.Registration registration:item.registrations) {
                     if(!registration.student.equals(Store.STUDENT)||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
                     boolean waiting=registration.pending();
+                    String sent=LocalDate.parse(registration.date).format(Lesson.DATE);
+                    // Registrations still waiting when the class stopped recruiting are closed without the tutor's answer.
+                    String note=waiting?"Đăng ký gửi ngày "+sent+".":GroupClass.OPEN.equals(item.status)?"Gia sư đã từ chối đăng ký gửi ngày "+sent+"."
+                            :"Lớp đã đóng tuyển sinh nên đăng ký gửi ngày "+sent+" không được duyệt.";
                     visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
-                            waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),
-                            (waiting?"Đăng ký gửi ngày ":"Gia sư đã từ chối đăng ký gửi ngày ")+LocalDate.parse(registration.date).format(Lesson.DATE)+".")));
+                            waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),note)));
                 }
             } else if(item.members.contains(Store.STUDENT)) {
                 for(GroupClass.Session session:item.sessionList()) {

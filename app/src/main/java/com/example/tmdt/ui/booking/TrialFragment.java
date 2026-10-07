@@ -89,10 +89,8 @@ public final class TrialFragment extends ScreenFragment {
         if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
         String objective = goal.getText().toString().trim();
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu buổi học thử"); goal.requestFocus(); return; }
-        for (Lesson other : classroom.lessons)
-            if (other.trial && other.tutorId==tutor.id && other.student.equals(Store.STUDENT) && other.active()) {
-                classroom.dialog("Đã có buổi học thử","Mỗi học viên được học thử một lần với mỗi gia sư. Xem buổi học thử trong mục Lịch học."); return;
-            }
+        String used = classroom.store.trialError(tutor.id,Store.STUDENT);
+        if (used != null) { classroom.dialog("Đã có buổi học thử",used); return; }
         classroom.saveRequest(new Lesson(classroom.store.nextId(),tutor.id,Store.STUDENT,"Học thử "+tutor.subject,date.toString(),hour,minutes,
                 "Trực tuyến",objective,"",true,Lesson.PENDING));
     }

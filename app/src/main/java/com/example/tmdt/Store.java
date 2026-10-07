@@ -42,6 +42,7 @@ public final class Store {
             // First launch or unreadable storage: start again from the sample data.
             lessons.clear(); classes.clear(); nextId = 1; seed(); importOldRequests(); save();
         }
+        updateClasses();
     }
 
     /** Keeps the booking requests saved by the first version of the app (key "requests"). */
@@ -139,6 +140,14 @@ public final class Store {
         lesson.finished = true; save(); return null;
     }
 
+    /** One trial per student and tutor (UC22); a cancelled or rejected trial can be requested again. */
+    public String trialError(int tutorId, String student) {
+        for (Lesson other : lessons)
+            if (other.trial && other.tutorId == tutorId && other.student.equals(student) && other.active())
+                return "Mỗi học viên được học thử một lần với mỗi gia sư. Xem buổi học thử trong mục Lịch học.";
+        return null;
+    }
+
     // Group classes ---------------------------------------------------------------------------
 
     /**
@@ -186,6 +195,7 @@ public final class Store {
     }
     /** Never accepts more students than the class limit (UC18). */
     public String accept(GroupClass item, GroupClass.Registration registration) {
+        if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh, không thể duyệt thêm.";
         if (!registration.pending()) return "Đăng ký này đã được xử lý.";
         if (item.full()) return "Lớp đã đủ "+item.capacity+" học viên. Không thể duyệt thêm.";
         registration.status = Lesson.CONFIRMED; item.members.add(registration.student); save(); return null;
@@ -194,7 +204,26 @@ public final class Store {
         if (!registration.pending()) return "Đăng ký này đã được xử lý.";
         registration.status = Lesson.REJECTED; save(); return null;
     }
-    public void closeRecruiting(GroupClass item) { item.status = GroupClass.RUNNING; save(); }
+    public void closeRecruiting(GroupClass item) { item.status = GroupClass.RUNNING; closeWaiting(item); save(); }
+
+    /**
+     * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer
+     * recruits closes the registrations still waiting, which frees the students' time slots.
+     */
+    public void updateClasses() {
+        boolean changed = false;
+        for (GroupClass item : classes) {
+            if (item.active() && item.over()) { item.status = GroupClass.ENDED; changed = true; }
+            if (!GroupClass.OPEN.equals(item.status)) changed |= closeWaiting(item);
+        }
+        if (changed) save();
+    }
+    private static boolean closeWaiting(GroupClass item) {
+        boolean changed = false;
+        for (GroupClass.Registration registration : item.registrations)
+            if (registration.pending()) { registration.status = Lesson.REJECTED; changed = true; }
+        return changed;
+    }
 
     // Sample data (names, photos and figures follow the Figma mock-up) -----------------------
 

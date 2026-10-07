@@ -46,6 +46,9 @@ public final class GroupClass {
     /** Members and students whose registration is still waiting both keep the class's time slot. */
     public boolean attends(String student) { return members.contains(student) || registrationOf(student) != null; }
 
+    /** True once the last session has finished. */
+    public boolean over() { List<Session> list = sessionList(); return !list.isEmpty() && list.get(list.size()-1).ended(); }
+
     public List<Session> sessionList() {
         List<Session> list = new ArrayList<>(); List<LocalDate> dates = dates(LocalDate.parse(startDate),days,sessions);
         for (int i = 0; i < dates.size(); i++) list.add(new Session(dates.get(i),i+1));

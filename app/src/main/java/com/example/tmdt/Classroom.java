@@ -25,7 +25,10 @@ import com.example.tmdt.ui.tutor.TeachingScheduleFragment;
 import com.example.tmdt.ui.tutor.TutorHomeFragment;
 import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Lessons and group classes (member 3): the state shared by their screens, their destinations and
@@ -73,6 +76,8 @@ public final class Classroom {
     String root(){return tutorMode?"tutorHome":"home";}
     /** Tutor mode reuses the bottom bar: "Trang chủ" opens the overview and "Lịch học" the teaching schedule. */
     String redirect(String destination){
+        // Class statuses follow the clock, so they are brought up to date before any screen reads them.
+        store.updateClasses();
         if(tutorMode&&"home".equals(destination))return "tutorHome";
         if(tutorMode&&"schedule".equals(destination))return "teaching";
         return missingSelection(destination)?root():destination;
@@ -152,6 +157,13 @@ public final class Classroom {
         tutorId=tutor.id;bookingDraft=null;
         if(!"booking".equals(host.screen)&&!"trial".equals(host.screen))bookingOrigin=host.screen;
         show("booking");
+    }
+    /** Subjects to filter classes by: those published on Firestore, then any other subject an active class uses. */
+    public List<String> subjects(){
+        Set<String> names=new LinkedHashSet<>(host.catalog.subjects().values());
+        for(GroupClass item:store.classes)if(item.active())names.add(item.subject);
+        names.remove("");
+        return new ArrayList<>(names);
     }
     public void openLesson(Lesson lesson){lessonId=lesson.id;show("lesson");}
     public void openClass(GroupClass item,String destination){classId=item==null?-1:item.id;show(destination);}
