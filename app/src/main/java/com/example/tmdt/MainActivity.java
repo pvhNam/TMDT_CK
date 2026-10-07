@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         screen=savedInstanceState==null?"home":savedInstanceState.getString("screen","home");
         show(screen);
         account.changes().observe(this,ignored->{
+            classroom.onAccount();
             if(account.destination!=null){String destination=account.destination;account.destination=null;show(destination);}
             renderNavigation();
         });

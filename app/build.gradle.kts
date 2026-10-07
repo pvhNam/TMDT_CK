@@ -52,8 +52,6 @@ dependencies {
     implementation(libs.navigation.ui)
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
-    // Real org.json for local tests: android.jar only has stubs and Store saves its data as JSON.
-    testImplementation(libs.json)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }

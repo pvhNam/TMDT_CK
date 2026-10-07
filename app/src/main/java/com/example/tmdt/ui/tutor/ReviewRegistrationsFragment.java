@@ -13,7 +13,6 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 
 /** Screen 36 · Duyệt đăng ký lớp (UC18): accept or reject students without exceeding the class limit. */
 public final class ReviewRegistrationsFragment extends ScreenFragment {
@@ -41,7 +40,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         ui.add(body,ui.note(R.drawable.ic_info,"Số học viên được duyệt không vượt quá "+item.capacity+".",Ui.PALE,Ui.BLUE,Ui.MUTED)); ui.space(body,18);
 
         ui.section(body,"Thành viên ("+item.members.size()+"/"+item.capacity+")",20); ui.space(body,6);
-        ui.add(body,ui.text(item.members.isEmpty()?"Lớp chưa có học viên.":String.join(" · ",item.members),15,Ui.MUTED,false));
+        ui.add(body,ui.text(item.members.isEmpty()?"Lớp chưa có học viên.":String.join(" · ",item.memberNames()),15,Ui.MUTED,false));
         if (GroupClass.OPEN.equals(item.status)) {
             ui.space(body,16); LinearLayout actions = ui.row();
             ui.weightAction(actions,ui.action("Chỉnh sửa lớp",R.drawable.ic_edit,Ui.OUTLINE,()->classroom.openClass(item,"openClass")),42); ui.gap(actions,10);
@@ -67,8 +66,8 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     private View card(GroupClass.Registration registration) {
         LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(9),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.photo(Store.studentPhoto(registration.student),"Ảnh "+registration.student,71,78,9)); ui.gap(top,15);
-        LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.student,20,Ui.INK,true));
+        top.addView(ui.photo(0,"Ảnh "+registration.studentName,71,78,9)); ui.gap(top,15);
+        LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.studentName,20,Ui.INK,true));
         nameRow.addView(ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG)); ui.add(info,nameRow); ui.space(info,4);
         ui.add(info,ui.text("Mục tiêu học",14,Ui.MUTED,false)); ui.space(info,5);
         ui.add(info,ui.text(registration.goal,16,Ui.INK,false)); ui.space(info,7);
@@ -83,10 +82,10 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     private void accept(GroupClass.Registration registration) {
         String error = classroom.store.accept(item,registration);
         if (error != null) { classroom.dialog("Không thể duyệt thêm",error); return; }
-        classroom.show("review"); classroom.notice("Đã nhận "+registration.student+" vào lớp.");
+        classroom.show("review"); classroom.notice("Đã nhận "+registration.studentName+" vào lớp.");
     }
     private void reject(GroupClass.Registration registration) {
-        new AlertDialog.Builder(classroom.context()).setTitle("Từ chối "+registration.student+"?")
+        new AlertDialog.Builder(classroom.context()).setTitle("Từ chối "+registration.studentName+"?")
                 .setMessage("Tiền ký quỹ của học viên sẽ được hoàn theo quy định (Thành viên 4 xử lý).")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Từ chối",(dialog,which)->{

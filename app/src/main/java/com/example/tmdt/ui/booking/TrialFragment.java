@@ -12,7 +12,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 39 · Đặt buổi học thử (UC22): a short online lesson at a fixed trial price. */
@@ -26,17 +25,17 @@ public final class TrialFragment extends ScreenFragment {
     private EditText goal;
 
     @Override protected View build() {
-        tutor = Tutor.get(classroom.tutorId);
+        tutor = Tutor.get(classroom.tutorKey);
         if (date == null) {
             // Suggest the first day that is free at the default hour.
             date = LocalDate.now().plusDays(1);
-            while (classroom.store.conflict(tutor.id,Store.STUDENT,date.toString(),hour,minutes,-1) != null) date = date.plusDays(1);
+            while (classroom.store.conflict(tutor.id,classroom.me(),date.toString(),hour,minutes,"") != null) date = date.plusDays(1);
         }
         LinearLayout root = ui.column(); ui.header(root,"Đặt buổi học thử",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(7),ui.dp(9)); ui.surface(card,Ui.WHITE,10,Ui.BORDER);
-        card.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,72,76,9)); ui.gap(card,13);
+        card.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,76,9)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false)); ui.space(info,5);
         LinearLayout rating = ui.row(); rating.addView(ui.icon(R.drawable.ic_star,18,Ui.GOLD)); ui.gap(rating,7);
@@ -89,9 +88,8 @@ public final class TrialFragment extends ScreenFragment {
         if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
         String objective = goal.getText().toString().trim();
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu buổi học thử"); goal.requestFocus(); return; }
-        String used = classroom.store.trialError(tutor.id,Store.STUDENT);
+        String used = classroom.store.trialError(tutor.id,classroom.me());
         if (used != null) { classroom.dialog("Đã có buổi học thử",used); return; }
-        classroom.saveRequest(new Lesson(classroom.store.nextId(),tutor.id,Store.STUDENT,"Học thử "+tutor.subject,date.toString(),hour,minutes,
-                "Trực tuyến",objective,"",true,Lesson.PENDING));
+        classroom.saveRequest(classroom.request(tutor,"Học thử "+tutor.subject,date,hour,minutes,"Trực tuyến",objective,"",true,Lesson.TRIAL_PRICE));
     }
 }

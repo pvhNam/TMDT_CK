@@ -15,20 +15,18 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
-import com.example.tmdt.Tutor;
 
 /** Screen 04 · Lịch học (UC24): the student's upcoming, pending and past lessons. */
 public final class ScheduleFragment extends ScreenFragment {
 
     @Override protected View build() {
-        LinearLayout root=ui.column();ui.title(root,"Lịch học",ui.link("Chế độ gia sư",15,this::tutorMode));
+        LinearLayout root=ui.column();ui.title(root,"Lịch học",classroom.isTutor()?ui.link("Chế độ gia sư",15,this::tutorMode):null);
         ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},classroom.scheduleTab,index->{classroom.scheduleTab=index;classroom.show("schedule");});
         LinearLayout content=ui.page(root);ui.space(content,6);
         int tab=classroom.scheduleTab;
         List<Entry> visible=new ArrayList<>();
         for(Lesson lesson:classroom.lessons) {
-            if(!lesson.student.equals(Store.STUDENT))continue;
+            if(!lesson.studentId.equals(classroom.me()))continue;
             boolean include=tab==1?lesson.pending()||Lesson.REJECTED.equals(lesson.status):
                     tab==2?(lesson.confirmed()&&lesson.ended())||Lesson.CANCELLED.equals(lesson.status):
                     lesson.confirmed()&&!lesson.ended();
@@ -38,7 +36,7 @@ public final class ScheduleFragment extends ScreenFragment {
         for(GroupClass item:classroom.store.classes) {
             if(tab==1) {
                 for(GroupClass.Registration registration:item.registrations) {
-                    if(!registration.student.equals(Store.STUDENT)||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
+                    if(!registration.studentId.equals(classroom.me())||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
                     boolean waiting=registration.pending();
                     String sent=LocalDate.parse(registration.date).format(Lesson.DATE);
                     // Registrations still waiting when the class stopped recruiting are closed without the tutor's answer.
@@ -47,7 +45,7 @@ public final class ScheduleFragment extends ScreenFragment {
                     visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
                             waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),note)));
                 }
-            } else if(item.members.contains(Store.STUDENT)) {
+            } else if(item.members.contains(classroom.me())) {
                 for(GroupClass.Session session:item.sessionList()) {
                     if(tab==2?!session.ended():session.ended()||!item.active())continue;
                     visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),
@@ -73,15 +71,14 @@ public final class ScheduleFragment extends ScreenFragment {
     }
 
     private View lessonCard(Lesson lesson) {
-        Tutor tutor=Tutor.get(lesson.tutorId);
         LinearLayout card=ui.bordered(12);card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
-        row.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,73,77,9));ui.gap(row,14);
+        row.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,77,9));ui.gap(row,14);
         LinearLayout details=ui.column();ui.space(details,4);
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(lesson.title,lesson.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
         titleRow.addView(ui.lessonStatus(lesson));ui.add(details,titleRow);ui.space(details,2);
-        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
+        TextView teacher=ui.text(lesson.tutorName,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(lesson.tutorId,lesson.tutorName));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,lesson.dateLabel()+" · "+lesson.timeLabel(),18,14,Ui.MUTED,false));
         ui.add(details,ui.fact(lesson.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,lesson.mode+(lesson.trial?" · Học thử":""),18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);
@@ -91,21 +88,20 @@ public final class ScheduleFragment extends ScreenFragment {
         }
         ui.space(card,9);
         LinearLayout actions=ui.row();
-        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(tutor)),38);ui.gap(actions,9);
+        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(lesson.tutorName)),38);ui.gap(actions,9);
         ui.weightAction(actions,ui.action(lesson.needsConfirmation()?"Xác nhận":"Chi tiết",0,Ui.PRIMARY,()->classroom.openLesson(lesson)),38);
         ui.add(card,actions);return card;
     }
 
-    /** Demo switch to the sample tutor's side, where requests and class registrations are answered. */
+    /** A tutor account also books lessons as a student; this switches to its teaching side. */
     private void tutorMode() {
         new AlertDialog.Builder(classroom.context()).setTitle("Chuyển sang chế độ gia sư?")
-                .setMessage("Bạn sẽ xem ứng dụng như cô Minh Anh (tài khoản gia sư mẫu) để duyệt yêu cầu và quản lý lớp nhóm.")
+                .setMessage("Bạn sẽ chuyển sang giao diện gia sư để duyệt yêu cầu, xem lịch dạy và quản lý lớp nhóm.")
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(true)).show();
     }
 
     /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
     private View classCard(GroupClass item, String when, TextView status, String note) {
-        Tutor tutor=Tutor.get(item.tutorId);
         LinearLayout card=ui.bordered(12);card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
         row.addView(ui.art(item.smallArt(),73,77));ui.gap(row,14);
@@ -113,14 +109,14 @@ public final class ScheduleFragment extends ScreenFragment {
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(item.title,item.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
         titleRow.addView(status);ui.add(details,titleRow);ui.space(details,2);
-        TextView teacher=ui.text(tutor.name,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(tutor));ui.add(details,teacher);ui.space(details,8);
+        TextView teacher=ui.text(item.tutorName,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(item.tutorId,item.tutorName));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,when,18,14,Ui.MUTED,false));
         ui.add(details,ui.fact(R.drawable.ic_users,item.mode+" · Lớp nhóm",18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);ui.space(card,9);
         String summary=note+"\n\n"+item.subject+" · "+item.level+"\nLịch học: "+item.scheduleLabel()+"\nKhai giảng: "+item.startLabel()+" · "+item.sessions+" buổi\n"
                 +item.mode+(item.address.isEmpty()?"":" · "+item.address)+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
         LinearLayout actions=ui.row();
-        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(tutor)),38);ui.gap(actions,9);
+        ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(item.tutorName)),38);ui.gap(actions,9);
         ui.weightAction(actions,ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
         ui.add(card,actions);return card;
     }

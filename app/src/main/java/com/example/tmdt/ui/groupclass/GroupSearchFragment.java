@@ -19,8 +19,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
-import com.example.tmdt.Store;
-import com.example.tmdt.Tutor;
 
 /** Screen 37 · Tìm lớp học nhóm (UC19): search and filter open group classes. */
 public final class GroupSearchFragment extends ScreenFragment {
@@ -56,6 +54,9 @@ public final class GroupSearchFragment extends ScreenFragment {
     }
 
     /** Subject and mode open a list to choose from (UC19); "Còn chỗ" switches on and off. */
+    /** New data only redraws the results, so the search text and filters stay as they are. */
+    @Override public void refresh() { if (results != null && getView() != null) renderResults(); else super.refresh(); }
+
     private void renderFilters() {
         filters.removeAllViews();
         chip("∑  "+(subject.isEmpty()?"Môn học":subject)+" ⌄","môn học: "+(subject.isEmpty()?"tất cả":subject),!subject.isEmpty(),this::pickSubject);
@@ -97,9 +98,8 @@ public final class GroupSearchFragment extends ScreenFragment {
             if (!subject.isEmpty() && !item.subject.equals(subject)) continue;
             if (!mode.isEmpty() && !item.mode.equals(mode)) continue;
             if (seats && !item.recruiting()) continue;
-            Tutor tutor = Tutor.get(item.tutorId);
-            if (!normalized(item.title+" "+item.subject+" "+item.level+" "+tutor.name).contains(query)) continue;
-            ui.add(results,card(item,tutor)); ui.space(results,13); count++;
+            if (!normalized(item.title+" "+item.subject+" "+item.level+" "+item.tutorName).contains(query)) continue;
+            ui.add(results,card(item)); ui.space(results,13); count++;
         }
         if (count == 0) {
             LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.surface(empty,Ui.PALE,12,0);
@@ -111,13 +111,13 @@ public final class GroupSearchFragment extends ScreenFragment {
         }
     }
 
-    private View card(GroupClass item, Tutor tutor) {
+    private View card(GroupClass item) {
         LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.art(item.largeArt(),99,133)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);
-        LinearLayout teacher = ui.row(); teacher.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,43,44,9)); ui.gap(teacher,12);
-        ui.weight(teacher,ui.text(tutor.name,16,Ui.INK,false)); ui.add(info,teacher); ui.space(info,6);
+        LinearLayout teacher = ui.row(); teacher.addView(ui.photo(0,"Ảnh gia sư "+item.tutorName,43,44,9)); ui.gap(teacher,12);
+        ui.weight(teacher,ui.text(item.tutorName,16,Ui.INK,false)); ui.add(info,teacher); ui.space(info,6);
         ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,19,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),19,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,item.priceLabel(),19,16,Ui.INK,true)); ui.space(info,3);
@@ -127,8 +127,8 @@ public final class GroupSearchFragment extends ScreenFragment {
     }
 
     private TextView availability(GroupClass item) {
-        if (item.members.contains(Store.STUDENT)) return ui.pill("Đã tham gia",14,Ui.GREEN,Ui.GREEN_BG);
-        if (item.registrationOf(Store.STUDENT) != null) return ui.pill("Đã gửi đăng ký",14,Ui.BLUE,Ui.PALE);
+        if (item.members.contains(classroom.me())) return ui.pill("Đã tham gia",14,Ui.GREEN,Ui.GREEN_BG);
+        if (item.registrationOf(classroom.me()) != null) return ui.pill("Đã gửi đăng ký",14,Ui.BLUE,Ui.PALE);
         if (item.full()) return ui.pill("Đã đủ "+item.capacity+"/"+item.capacity+" chỗ",14,Ui.ORANGE,Ui.ORANGE_BG);
         if (!GroupClass.OPEN.equals(item.status)) return ui.pill("Đã đóng tuyển sinh",14,Ui.MUTED,0xFFEEF2F7);
         return ui.pill("Còn "+item.seatsLeft()+"/"+item.capacity+" chỗ",14,Ui.GREEN,Ui.GREEN_BG);

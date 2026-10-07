@@ -19,7 +19,6 @@ import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 45 · Lịch dạy gia sư (UC24): week or month view, lesson details and reschedule proposals. */
@@ -61,7 +60,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         }
         for (Lesson lesson : mine()) if (visible(LocalDate.parse(lesson.date),day,month)) shown.add(new Entry(lesson.start(),card(lesson,month)));
         for (GroupClass item : classroom.store.classes)
-            if (item.tutorId==Store.TUTOR && item.active())
+            if (item.tutorId.equals(classroom.me()) && item.active())
                 for (GroupClass.Session session : item.sessionList())
                     if (visible(session.date,day,month)) shown.add(new Entry(session.start(),classCard(session,month)));
         shown.sort(Comparator.comparing(entry->entry.start));
@@ -71,7 +70,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.space(content,4); ui.section(content,"Đề nghị thay đổi",19); ui.space(content,6);
         int proposals = 0;
         for (Lesson lesson : mine()) if (lesson.proposal()) {
-            ui.add(content,ui.note(R.drawable.ic_clock,"Chờ học viên đồng ý · "+lesson.student+" · "+lesson.title+"\n"
+            ui.add(content,ui.note(R.drawable.ic_clock,"Chờ học viên đồng ý · "+lesson.studentName+" · "+lesson.title+"\n"
                     +lesson.dateLabel()+" "+lesson.timeLabel()+" → "+lesson.proposalLabel(),Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE));
             ui.space(content,8); proposals++;
         }
@@ -110,7 +109,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
 
     private List<Lesson> mine() {
         List<Lesson> list = new ArrayList<>();
-        for (Lesson lesson : classroom.lessons) if (lesson.tutorId==Store.TUTOR && lesson.active()) list.add(lesson);
+        for (Lesson lesson : classroom.lessons) if (lesson.tutorId.equals(classroom.me()) && lesson.active()) list.add(lesson);
         list.sort(Comparator.comparing((Lesson lesson)->lesson.date).thenComparingInt(lesson->lesson.hour));
         return list;
     }
@@ -120,9 +119,9 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         LinearLayout top = ui.row(); ui.weight(top,ui.text((withDate?lesson.dateLabel().substring(0,5)+" · ":"")+lesson.timeLabel().replace("–"," – "),21,Ui.INK,true));
         top.addView(ui.lessonStatus(lesson)); ui.add(card,top); ui.space(card,4);
         ui.add(card,ui.text(lesson.title,21,Ui.INK,true)); ui.space(card,6);
-        LinearLayout student = ui.row(); student.addView(ui.photo(Store.studentPhoto(lesson.student),"Ảnh "+lesson.student,62,64,9)); ui.gap(student,12);
+        LinearLayout student = ui.row(); student.addView(ui.photo(0,"Ảnh "+lesson.studentName,62,64,9)); ui.gap(student,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text("Học viên",14,Ui.MUTED,false)); ui.space(info,4);
-        ui.add(info,ui.text(lesson.student,18,Ui.INK,true)); ui.space(info,4);
+        ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text("▣ "+lesson.mode+(lesson.trial?" · Học thử":""),15,Ui.INK,false)); ui.weight(student,info);
         ui.add(card,student); ui.space(card,8);
         LinearLayout actions = ui.row(); card.addView(actions,ui.lp(-1,-2));
@@ -142,16 +141,16 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     private void answer(Lesson lesson, boolean accept) {
         String error = accept ? classroom.store.acceptRequest(lesson) : classroom.store.rejectRequest(lesson);
         if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
-        render(); classroom.notice(accept?"Đã chấp nhận buổi học với "+lesson.student+".":"Đã từ chối yêu cầu của "+lesson.student+".");
+        render(); classroom.notice(accept?"Đã chấp nhận buổi học với "+lesson.studentName+".":"Đã từ chối yêu cầu của "+lesson.studentName+".");
     }
 
     /** Tutor-side lesson summary with a shortcut to message the student. */
     public static void details(Classroom classroom, Lesson lesson) {
-        new AlertDialog.Builder(classroom.context()).setTitle(lesson.title+" · "+lesson.student)
+        new AlertDialog.Builder(classroom.context()).setTitle(lesson.title+" · "+lesson.studentName)
                 .setMessage(lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+(lesson.address.isEmpty()?"":"\nĐịa chỉ: "+lesson.address)
                         +"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total())+"\nTrạng thái: "+lesson.statusLabel()
                         +(lesson.proposal()?"\n\nĐề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.":""))
-                .setNeutralButton("Nhắn tin",(dialog,which)->classroom.message(lesson.student))
+                .setNeutralButton("Nhắn tin",(dialog,which)->classroom.message(lesson.studentName))
                 .setPositiveButton("Đóng",null).show();
     }
 

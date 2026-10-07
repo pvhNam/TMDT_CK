@@ -8,7 +8,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 54 · Hủy buổi học (branch of UC24). Refunds are only reviewed, never promised in full. */
@@ -22,14 +21,13 @@ public final class CancelLessonFragment extends ScreenFragment {
 
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
-        Tutor tutor = Tutor.get(lesson.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Hủy buổi học",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));
         ui.surface(card,Ui.WHITE,10,Ui.BORDER);
-        card.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,98,106,9)); ui.gap(card,13);
-        LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
+        card.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,98,106,9)); ui.gap(card,13);
+        LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,34);
         ui.add(info,ui.text("▦ "+lesson.dateLabel()+" · "+lesson.timeLabel(),15,Ui.INK,false));
         ui.weight(card,info); ui.add(body,card); ui.space(body,16);

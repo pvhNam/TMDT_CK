@@ -8,7 +8,6 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
-import com.example.tmdt.Store;
 import com.example.tmdt.Tutor;
 
 /** Screen 42 · Xác nhận hoàn thành (UC25). Only the lesson's student can confirm, once, after the lesson ended. */
@@ -18,15 +17,14 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
-        Tutor tutor = Tutor.get(lesson.tutorId);
         LinearLayout root = ui.column(); ui.header(root,"Xác nhận hoàn thành",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.surface(card,Ui.WHITE,10,Ui.BORDER);
-        card.addView(ui.photo(Store.tutorPhoto(tutor.id),"Ảnh gia sư "+tutor.name,100,107,9)); ui.gap(card,13);
-        LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
-        ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false)); ui.space(info,14);
+        card.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,100,107,9)); ui.gap(card,13);
+        LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
+        ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,14);
         ui.add(info,ui.text("▦ "+lesson.dateLabel()+" · "+lesson.timeLabel(),15,Ui.INK,false)); ui.space(info,10);
         info.addView(lesson.finished ? ui.pill("✓ Đã xác nhận hoàn thành",14,Ui.GREEN,Ui.GREEN_BG)
                 : ui.pill("◷ Chờ học viên xác nhận",14,Ui.ORANGE,Ui.ORANGE_BG), ui.lp(-1,33));
@@ -67,7 +65,7 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
     private void confirm() {
         if (!agree.isChecked()) { classroom.dialog("Chưa xác nhận","Hãy đánh dấu \"Tôi xác nhận buổi học đã diễn ra\" trước khi tiếp tục."); return; }
-        String error = classroom.store.confirmFinished(lesson, Store.STUDENT);
+        String error = classroom.store.confirmFinished(lesson, classroom.me());
         if (error != null) { classroom.dialog("Không thể xác nhận",error); return; }
         classroom.show("lesson");
         classroom.dialog("Đã xác nhận hoàn thành","Học phí "+Tutor.money(lesson.total())+" của buổi này sẽ được giải ngân cho gia sư (màn hình 43 do Thành viên 4 phụ trách). Bạn có thể đánh giá gia sư sau buổi học.");
