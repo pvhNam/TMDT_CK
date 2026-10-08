@@ -29,7 +29,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     @Override protected View build() {
         LinearLayout root = ui.column();
         ui.title(root,"Lịch dạy",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
+                ()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         LinearLayout body = ui.page(root);
         content = ui.column(); ui.add(body,content); render();
         return root;
@@ -44,9 +44,9 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.add(content,toggle); ui.space(content,12);
 
         LinearLayout period = ui.row();
-        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);render();}));
+        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);render();}),ui.lp(40,36));
         TextView label = ui.text("Tháng "+day.getMonthValue()+", "+day.getYear(),20,Ui.INK,true); label.setGravity(Gravity.CENTER); ui.weight(period,label);
-        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}));
+        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}),ui.lp(40,36));
         ui.add(content,period);
 
         List<Entry> shown = new ArrayList<>();
@@ -146,7 +146,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
 
     /** Tutor-side lesson summary with a shortcut to message the student. */
     public static void details(Classroom classroom, Lesson lesson) {
-        new AlertDialog.Builder(classroom.context()).setTitle(lesson.title+" · "+lesson.studentName)
+        classroom.ui.dialog().setTitle(lesson.title+" · "+lesson.studentName)
                 .setMessage(lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+(lesson.address.isEmpty()?"":"\nĐịa chỉ: "+lesson.address)
                         +"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total())+"\nTrạng thái: "+lesson.statusLabel()
                         +(lesson.proposal()?"\n\nĐề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.":""))
@@ -159,7 +159,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         LinearLayout form = ui.column(); form.setPadding(ui.dp(22),ui.dp(8),ui.dp(22),0);
         ui.label(form,"Ngày mới"); TextView dateValue = ui.value(date[0].format(Lesson.DATE));
         ui.add(form,ui.picker(R.drawable.ic_calendar,dateValue,()->{
-            DatePickerDialog picker = new DatePickerDialog(classroom.context(),(view,year,month,day)->{date[0]=LocalDate.of(year,month+1,day);dateValue.setText(date[0].format(Lesson.DATE));},
+            DatePickerDialog picker = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{date[0]=LocalDate.of(year,month+1,day);dateValue.setText(date[0].format(Lesson.DATE));},
                     date[0].getYear(),date[0].getMonthValue()-1,date[0].getDayOfMonth());
             picker.getDatePicker().setMinDate(System.currentTimeMillis()-1000); picker.show();
         }));
@@ -175,7 +175,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         renderHours[0].run();
         ui.space(form,12); ui.label(form,"Lý do đề xuất"); EditText reason = ui.entry("Ví dụ: Gia sư có lịch công tác.",false);
         reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)}); ui.add(form,reason);
-        AlertDialog dialog = new AlertDialog.Builder(classroom.context()).setTitle("Đề nghị đổi lịch").setView(form)
+        AlertDialog dialog = classroom.ui.dialog().setTitle("Đề nghị đổi lịch").setView(form)
                 .setNegativeButton("Hủy",null).setPositiveButton("Gửi đề nghị",null).create();
         dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String text = reason.getText().toString().trim();

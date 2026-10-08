@@ -4,7 +4,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.util.ArrayList;
 import java.util.List;
 import com.example.tmdt.R;
@@ -82,7 +81,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
     }
 
     public static void close(Classroom classroom, GroupClass item) {
-        new AlertDialog.Builder(classroom.context()).setTitle("Đóng tuyển sinh?")
+        classroom.ui.dialog().setTitle("Đóng tuyển sinh?")
                 .setMessage("Lớp \""+item.title+"\" sẽ chuyển sang mục Đang học với "+item.members.size()+" học viên. Các đăng ký đang chờ sẽ không được duyệt thêm.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Đóng tuyển sinh",(dialog,which)->{

@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 import com.example.tmdt.R;
 import com.example.tmdt.Lesson;
 
@@ -77,26 +78,22 @@ public final class Ui {
         view.setOnClickListener(v -> action.run()); view.setFocusable(true);
     }
 
+    public AlertDialog.Builder dialog() {
+        return new AlertDialog.Builder(context, R.style.ThemeOverlay_TMDT_Classroom_Dialog) {
+            @Override public AlertDialog show() {
+                AlertDialog dialog = super.show();
+                TextView message = dialog.findViewById(android.R.id.message);
+                if (message != null) message.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
+                return dialog;
+            }
+        };
+    }
+
     public LinearLayout card() { LinearLayout card = column(); pad(card,12,12); surface(card,WHITE,12,BORDER); return card; }
     public ScrollView scroll(LinearLayout parent) {
         ScrollView scroll = new ScrollView(context); scroll.setFillViewport(true); scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false); parent.addView(scroll,new LinearLayout.LayoutParams(-1,0,1)); return scroll;
     }
-    public LinearLayout body(LinearLayout root) {
-        ScrollView scroll = scroll(root); LinearLayout body = column(); pad(body,18,12); scroll.addView(body); return body;
-    }
-
-    public LinearLayout button(String title, String icon, boolean primary, Runnable action) {
-        LinearLayout button = row(); button.setGravity(Gravity.CENTER); button.setMinimumHeight(dp(50)); pad(button,10,9);
-        surface(button,primary?BLUE:WHITE,10,primary?0:BLUE);
-        if (icon != null) { button.addView(new LineIcon(context,icon,primary?WHITE:BLUE),lp(22,22)); gap(button,8); }
-        TextView label = text(title,14,primary?WHITE:BLUE,true); label.setGravity(Gravity.CENTER);
-        button.addView(label,lp(-2,-2)); button.setContentDescription(title);
-        button.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        for(int i=0;i<button.getChildCount();i++) button.getChildAt(i).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        clickable(button,action); return button;
-    }
-
     public View iconButton(String icon, String description, Runnable action) {
         LinearLayout button = row(); button.setGravity(Gravity.CENTER);
         button.addView(new LineIcon(context,icon,INK),lp(23,23)); button.setContentDescription(description);
@@ -124,7 +121,7 @@ public final class Ui {
     }
 
     public LinearLayout footer(LinearLayout root) {
-        line(root); LinearLayout footer = row(); pad(footer,18,12); add(root,footer); return footer;
+        LinearLayout footer = row(); footer.setPadding(dp(16),dp(6),dp(16),dp(12)); add(root,footer); return footer;
     }
 
     public EditText input(String hint) {
@@ -134,13 +131,13 @@ public final class Ui {
         return input;
     }
 
-    public LinearLayout option(String label, String icon, boolean selected, Runnable action) {
-        LinearLayout view = button(label,icon,false,action);
-        surface(view,selected?PALE:WHITE,9,selected?BLUE:BORDER);
-        for(int i=0;i<view.getChildCount();i++) if(view.getChildAt(i) instanceof TextView)
-            ((TextView)view.getChildAt(i)).setTextColor(selected?BLUE:INK);
+    public LinearLayout option(String label, int icon, boolean selected, Runnable action) {
+        LinearLayout view = row(); view.setPadding(dp(16),0,dp(8),0); view.setMinimumHeight(dp(47));
+        surface(view,selected?PALE:WHITE,8,selected?BLUE:BORDER);
+        view.addView(icon(icon,25,selected?BLUE:INK)); gap(view,11);
+        TextView text = text(label,16,selected?BLUE:INK,false); text.setMaxLines(1); weight(view,text);
         view.setSelected(selected); view.setContentDescription(label+(selected?", đã chọn":""));
-        return view;
+        clickable(view,action); return view;
     }
 
     // Components of the Figma file (icons are the exported vectors in res/drawable, tinted per use).
@@ -269,12 +266,13 @@ public final class Ui {
 
     /** Tab row with the blue underline under the selected tab. */
     public LinearLayout tabs(LinearLayout root, String[] labels, int selected, java.util.function.IntConsumer select) {
-        LinearLayout tabs = row(); tabs.setPadding(dp(8),0,dp(8),0);
+        LinearLayout tabs = row();
         for (int i = 0; i < labels.length; i++) {
             int index = i; boolean active = i == selected;
             LinearLayout tab = column(); TextView label = text(labels[i],16,active?BLUE:MUTED,active);
             label.setGravity(Gravity.CENTER); label.setMinHeight(dp(43)); label.setMaxLines(1); add(tab,label);
-            View underline = new View(context); surface(underline,active?BLUE:WHITE,2,0); tab.addView(underline,lp(-1,3));
+            View underline = new View(context); surface(underline,active?BLUE:WHITE,2,0);
+            LinearLayout.LayoutParams under = lp(-1,3); under.setMargins(dp(8),0,dp(8),0); tab.addView(underline,under);
             tab.setSelected(active); tab.setContentDescription(labels[i]+(active?", đang chọn":""));
             clickable(tab,()->select.accept(index)); weight(tabs,tab);
         }

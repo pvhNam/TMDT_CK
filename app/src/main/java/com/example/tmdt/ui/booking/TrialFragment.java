@@ -5,7 +5,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.example.tmdt.R;
@@ -75,12 +74,12 @@ public final class TrialFragment extends ScreenFragment {
         }
     }
     private void pickDate() {
-        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),(view,year,month,day)->{date=LocalDate.of(year,month+1,day);render();},
+        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{date=LocalDate.of(year,month+1,day);render();},
                 date.getYear(),date.getMonthValue()-1,date.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000); dialog.show();
     }
     private void pickDuration() {
-        new AlertDialog.Builder(classroom.context()).setTitle("Thời lượng buổi học thử")
+        classroom.ui.dialog().setTitle("Thời lượng buổi học thử")
                 .setSingleChoiceItems(new String[]{"30 phút","45 phút"},minutes==30?0:1,(dialog,which)->{minutes=DURATIONS[which];render();dialog.dismiss();})
                 .setNegativeButton("Đóng",null).show();
     }

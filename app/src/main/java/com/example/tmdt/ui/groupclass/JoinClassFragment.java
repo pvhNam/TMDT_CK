@@ -4,7 +4,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
@@ -77,7 +76,7 @@ public final class JoinClassFragment extends ScreenFragment {
         // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
         String blocked = classroom.store.registrationError(item,classroom.me());
         if (blocked != null) { classroom.dialog("Chưa gửi được đăng ký",blocked); return; }
-        new AlertDialog.Builder(classroom.context()).setTitle("Ký quỹ học phí")
+        classroom.ui.dialog().setTitle("Ký quỹ học phí")
                 .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Xác nhận ký quỹ",(dialog,which)->{

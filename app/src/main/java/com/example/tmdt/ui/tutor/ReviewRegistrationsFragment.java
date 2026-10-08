@@ -4,7 +4,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +84,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         classroom.show("review"); classroom.notice("Đã nhận "+registration.studentName+" vào lớp.");
     }
     private void reject(GroupClass.Registration registration) {
-        new AlertDialog.Builder(classroom.context()).setTitle("Từ chối "+registration.studentName+"?")
+        classroom.ui.dialog().setTitle("Từ chối "+registration.studentName+"?")
                 .setMessage("Tiền ký quỹ của học viên sẽ được hoàn theo quy định (Thành viên 4 xử lý).")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Từ chối",(dialog,which)->{

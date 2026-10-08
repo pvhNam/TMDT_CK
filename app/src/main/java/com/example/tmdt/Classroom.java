@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.tmdt.ui.booking.BookingFragment;
@@ -151,17 +150,20 @@ public final class Classroom {
             default:return null;
         }
     }
-    /** Tab roots that keep the bottom bar; forms and detail screens hide it like the account forms do. */
     boolean mainScreen(String screen){
-        return "tutorHome".equals(screen)||"teaching".equals(screen)||"classes".equals(screen)||"groups".equals(screen);
+        switch(screen){
+            case "tutorHome":case "teaching":case "classes":case "groups":
+            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":return true;
+            default:return false;
+        }
     }
     /** Labels the bar for the current mode and returns the item to check, or the given default for other screens. */
     int navigationItem(Menu menu,String screen,int fallback){
         menu.findItem(R.id.nav_home).setTitle(tutorMode()?R.string.page_tutor_home:R.string.page_home);
         menu.findItem(R.id.nav_schedule).setTitle(tutorMode()?R.string.page_teaching:R.string.page_schedule);
         switch(screen){
-            case "tutorHome":case "groups":case "classes":return R.id.nav_home;
-            case "teaching":return R.id.nav_schedule;
+            case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":return R.id.nav_home;
+            case "teaching":case "lesson":case "confirm":case "cancel":case "reschedule":return R.id.nav_schedule;
             default:return fallback;
         }
     }
@@ -191,6 +193,12 @@ public final class Classroom {
         names.remove("");
         return new ArrayList<>(names);
     }
+    public String teaches(String tutorId){
+        CatalogState.Teacher teacher=host.catalog.teacher(tutorId);
+        if(teacher==null||teacher.offerings.isEmpty())return "";
+        CatalogState.Offering offering=teacher.offerings.get(0);
+        return host.catalog.subjects().get(offering.subjectId)+" · "+CatalogState.level(offering.level);
+    }
     /** Public profile of a lesson's or class's tutor, from the home screen catalog when it is still listed. */
     public void openTutor(String tutorId,String name){
         if(host.catalog.teacher(tutorId)!=null){
@@ -210,7 +218,7 @@ public final class Classroom {
         tutorView=value;preferences.edit().putBoolean("tutor_mode",value).apply();show(root());
     }
     public void message(String person){dialog("Nhắn tin với "+person,"Chức năng trò chuyện (màn hình 05–06) do Thành viên 4 phụ trách và sẽ được nối vào đây.");}
-    public void dialog(String title,String message){new AlertDialog.Builder(host).setTitle(title).setMessage(message).setPositiveButton(R.string.understood,null).show();}
+    public void dialog(String title,String message){ui.dialog().setTitle(title).setMessage(message).setPositiveButton(R.string.understood,null).show();}
     public void notice(String message){
         Snackbar bar=Snackbar.make(host.findViewById(R.id.screen_container),message,Snackbar.LENGTH_LONG);
         View navigation=host.findViewById(R.id.bottom_navigation);

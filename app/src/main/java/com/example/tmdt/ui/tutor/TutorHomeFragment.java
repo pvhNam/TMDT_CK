@@ -2,10 +2,8 @@ package com.example.tmdt.ui.tutor;
 
 import android.view.Gravity;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,17 +25,14 @@ public final class TutorHomeFragment extends ScreenFragment {
         LinearLayout root = ui.column(); LinearLayout body = ui.page(root);
         LinearLayout top = ui.row(); top.setPadding(0,ui.dp(8),0,ui.dp(8));
         top.addView(ui.photo(0,"Ảnh gia sư "+classroom.tutorName(),63,63,32)); ui.gap(top,15);
-        LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào "+classroom.tutorName()+"!",21,Ui.INK,true)); ui.space(hello,6);
+        LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào "+givenName(classroom.tutorName())+"!",21,Ui.INK,true)); ui.space(hello,6);
         TextView mode = ui.pill("Chế độ gia sư",14,Ui.BLUE,Ui.PALE);
-        ui.clickable(mode,()->new AlertDialog.Builder(classroom.context()).setTitle("Chuyển về chế độ học viên?")
+        ui.clickable(mode,()->classroom.ui.dialog().setTitle("Chuyển về chế độ học viên?")
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(false)).show());
         mode.setContentDescription("Chế độ gia sư. Chạm để chuyển về chế độ học viên"); hello.addView(mode,ui.lp(-2,27));
         ui.weight(top,hello);
-        FrameLayout bell = new FrameLayout(classroom.context());
-        bell.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo, có thông báo mới",()->classroom.dialog("Thông báo","Màn hình Thông báo (11) do Thành viên 4 phụ trách.")));
-        View dot = new View(classroom.context()); ui.surface(dot,Ui.RED,6,0);
-        FrameLayout.LayoutParams dotParams = new FrameLayout.LayoutParams(ui.dp(7),ui.dp(7),Gravity.TOP|Gravity.END); dotParams.setMargins(0,ui.dp(12),ui.dp(12),0);
-        bell.addView(dot,dotParams); top.addView(bell); ui.add(body,top); ui.space(body,10);
+        top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
+        ui.add(body,top); ui.space(body,10);
 
         List<Lesson> pending = new ArrayList<>(), today = new ArrayList<>();
         Set<String> students = new HashSet<>();
@@ -72,6 +67,11 @@ public final class TutorHomeFragment extends ScreenFragment {
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
         if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
         return root;
+    }
+
+    private static String givenName(String name) {
+        int space = name.trim().indexOf(' ');
+        return space < 0 ? name.trim() : name.trim().substring(space+1);
     }
 
     private void sectionTitle(LinearLayout body, String title, Runnable all) {
@@ -127,7 +127,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(lesson.dateLabel()+" · "+lesson.timeLabel(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(lesson.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        View detail = ui.action("Chi tiết",0,Ui.PRIMARY,()->TeachingScheduleFragment.details(classroom,lesson)); ui.weightAction(row,detail,34);
+        row.addView(ui.action("Chi tiết",0,Ui.PRIMARY,()->TeachingScheduleFragment.details(classroom,lesson)),ui.lp(105,34));
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
@@ -139,13 +139,13 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        View detail = ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")); ui.weightAction(row,detail,34);
+        row.addView(ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
     /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
     private void respond(Lesson lesson) {
-        new AlertDialog.Builder(classroom.context()).setTitle("Yêu cầu của "+lesson.studentName)
+        classroom.ui.dialog().setTitle("Yêu cầu của "+lesson.studentName)
                 .setMessage(lesson.title+"\n"+lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total()))
                 .setNeutralButton("Đóng",null)
                 .setNegativeButton("Từ chối",(d,w)->finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu."))

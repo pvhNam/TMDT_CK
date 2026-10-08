@@ -4,7 +4,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -95,7 +94,7 @@ public final class ScheduleFragment extends ScreenFragment {
 
     /** A tutor account also books lessons as a student; this switches to its teaching side. */
     private void tutorMode() {
-        new AlertDialog.Builder(classroom.context()).setTitle("Chuyển sang chế độ gia sư?")
+        classroom.ui.dialog().setTitle("Chuyển sang chế độ gia sư?")
                 .setMessage("Bạn sẽ chuyển sang giao diện gia sư để duyệt yêu cầu, xem lịch dạy và quản lý lớp nhóm.")
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(true)).show();
     }

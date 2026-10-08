@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Popups of the lesson and group-class screens only. -->
+<resources>
+    <color name="classroom_dialog_ink">#06164D</color>
+    <color name="classroom_dialog_muted">#46638C</color>
+    <color name="classroom_dialog_blue">#006BFF</color>
+
+    <style name="ThemeOverlay.TMDT.Classroom.Dialog" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_classroom_dialog</item>
+        <item name="android:backgroundDimAmount">0.4</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="colorPrimary">@color/classroom_dialog_blue</item>
+        <item name="colorAccent">@color/classroom_dialog_blue</item>
+        <item name="android:colorAccent">@color/classroom_dialog_blue</item>
+        <item name="colorControlActivated">@color/classroom_dialog_blue</item>
+        <item name="android:textColorPrimary">@color/classroom_dialog_ink</item>
+        <item name="android:textColorSecondary">@color/classroom_dialog_muted</item>
+        <item name="android:textColorAlertDialogListItem">@color/classroom_dialog_ink</item>
+        <item name="textColorAlertDialogListItem">@color/classroom_dialog_ink</item>
+        <item name="android:textViewStyle">@style/Widget.TMDT.Classroom.DialogText</item>
+        <item name="android:textAppearanceMedium">@style/TextAppearance.TMDT.Classroom.DialogItem</item>
+        <item name="android:windowTitleStyle">@style/TMDT.Classroom.DialogTitle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.TMDT.Classroom.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.TMDT.Classroom.DialogButton.Muted</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.TMDT.Classroom.DialogButton.Muted</item>
+    </style>
+
+    <style name="ThemeOverlay.TMDT.Classroom.DatePicker" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_classroom_dialog</item>
+        <item name="android:backgroundDimAmount">0.4</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="colorPrimary">@color/classroom_dialog_blue</item>
+        <item name="android:colorAccent">@color/classroom_dialog_blue</item>
+        <item name="android:textColorPrimary">@color/classroom_dialog_ink</item>
+        <item name="android:datePickerStyle">@style/Widget.TMDT.Classroom.DatePicker</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/Widget.TMDT.Classroom.DialogButton</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/Widget.TMDT.Classroom.DialogButton.Muted</item>
+    </style>
+
+    <style name="Widget.TMDT.Classroom.DatePicker" parent="android:Widget.Material.Light.DatePicker">
+        <item name="android:headerBackground">@drawable/bg_classroom_date_header</item>
+    </style>
+
+    <style name="TMDT.Classroom.DialogTitle" parent="">
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAppearance">@style/TMDT.Classroom.DialogTitle.Text</item>
+    </style>
+    <style name="TMDT.Classroom.DialogTitle.Text" parent="TextAppearance.AppCompat.Title">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/classroom_dialog_ink</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <style name="Widget.TMDT.Classroom.DialogText" parent="">
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+    </style>
+    <style name="TextAppearance.TMDT.Classroom.DialogItem" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/classroom_dialog_ink</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <style name="Widget.TMDT.Classroom.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/classroom_dialog_blue</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="Widget.TMDT.Classroom.DialogButton.Muted">
+        <item name="android:textColor">@color/classroom_dialog_muted</item>
+    </style>
+</resources>
