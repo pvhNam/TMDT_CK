@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
         NavigationAssets.apply(binding.bottomNavigation);
+        binding.bottomNavigation.setClipToOutline(true);
         binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
@@ -70,7 +71,9 @@ public class MainActivity extends AppCompatActivity {
     }
     public void show(String destination){
         destination=classroom.redirect(destination);
-        if(!account.signedIn()&&(destination.equals("account")||destination.equals("edit_account")||destination.equals("otp")))destination="login";
+        if(!account.signedIn()&&(destination.equals("account")||destination.equals("edit_account")||destination.equals("otp")||destination.equals("register_tutor")||destination.equals("review_tutor")))destination="login";
+        if((destination.equals("register_tutor")||destination.equals("review_tutor"))&&account.profile()!=null&&account.profile().tutor)destination="account";
+        if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
         Fragment fragment=classroom.fragment(destination);
@@ -80,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
             case "forgot":fragment=new ForgotPasswordFragment();break;
             case "account":fragment=new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
+            case "register_tutor":fragment=new com.example.tmdt.ui.profile.RegisterTutorFragment();break;
+            case "review_tutor":fragment=new com.example.tmdt.ui.profile.ReviewTutorFragment();break;
             case "otp":fragment=new PhoneVerificationFragment();break;
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
@@ -138,6 +143,8 @@ public class MainActivity extends AppCompatActivity {
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
             case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
             case "otp":account.clearFeedback();show("account");break;
+            case "register_tutor":account.clearFeedback();show("account");break;
+            case "review_tutor":account.clearFeedback();show("register_tutor");break;
             default:account.removeDraft("login.password");show("home");
         }
     }

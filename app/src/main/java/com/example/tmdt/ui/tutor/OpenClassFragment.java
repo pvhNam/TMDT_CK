@@ -72,7 +72,7 @@ public final class OpenClassFragment extends ScreenFragment {
         ui.weight(pair,left); ui.gap(pair,25); ui.weight(pair,right); ui.add(body,pair); ui.space(body,11);
 
         ui.label(body,"Học phí mỗi học viên *");
-        LinearLayout priceBox = ui.row(); priceBox.setPadding(ui.dp(12),0,ui.dp(12),0); ui.surface(priceBox,Ui.WHITE,10,Ui.BORDER);
+        LinearLayout priceBox = ui.row(); priceBox.setPadding(ui.dp(12),0,ui.dp(12),0); ui.fieldSurface(priceBox,Ui.WHITE,Ui.BORDER);
         priceBox.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(priceBox,10);
         price = ui.entry("300000",false); price.setBackgroundColor(android.graphics.Color.TRANSPARENT); price.setPadding(0,0,0,0);
         price.setInputType(InputType.TYPE_CLASS_NUMBER); price.setFilters(new InputFilter[]{new InputFilter.LengthFilter(8)});

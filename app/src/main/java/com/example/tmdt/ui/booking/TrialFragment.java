@@ -33,7 +33,7 @@ public final class TrialFragment extends ScreenFragment {
         LinearLayout root = ui.column(); ui.header(root,"Đặt buổi học thử",classroom::back,null);
         LinearLayout body = ui.page(root);
 
-        LinearLayout card = ui.row(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(7),ui.dp(9)); ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        LinearLayout card = ui.row(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(7),ui.dp(9)); ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,76,9)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false)); ui.space(info,5);
@@ -41,7 +41,7 @@ public final class TrialFragment extends ScreenFragment {
         rating.addView(ui.text(tutor.ratingLabel(),15,Ui.INK,false)); ui.add(info,rating);
         ui.weight(card,info); card.addView(ui.pill("Học thử",14,Ui.BLUE,Ui.PALE),ui.lp(71,34)); ui.add(body,card);
         TextView quote = ui.text("“Cùng làm quen và trao đổi phương pháp học nhé!”",14,Ui.INK,false);
-        quote.setPadding(ui.dp(7),ui.dp(8),ui.dp(7),ui.dp(8)); ui.surface(quote,Ui.PALE,8,0);
+        quote.setPadding(ui.dp(7),ui.dp(8),ui.dp(7),ui.dp(8)); ui.cardSurface(quote,Ui.PALE,0);
         LinearLayout.LayoutParams quoteParams = ui.lp(-1,-2); quoteParams.setMargins(ui.dp(7),ui.dp(-4),ui.dp(7),0); body.addView(quote,quoteParams);
         ui.space(body,14);
         body.addView(ui.pill("▣  Trực tuyến",14,Ui.BLUE,Ui.PALE),ui.lp(149,41)); ui.space(body,13);
@@ -56,7 +56,7 @@ public final class TrialFragment extends ScreenFragment {
         goal.setText("Làm quen phương pháp giảng dạy"); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
         ui.add(body,goal); ui.space(body,14);
         ui.section(body,"Học phí học thử",18); ui.space(body,8);
-        LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(9),ui.dp(13),ui.dp(9)); ui.surface(price,Ui.PALE,9,0);
+        LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(9),ui.dp(13),ui.dp(9)); ui.cardSurface(price,Ui.PALE,0);
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,18); price.addView(ui.text(Tutor.money(Lesson.TRIAL_PRICE),21,Ui.INK,true));
         ui.add(body,price); ui.space(body,6);
         ui.add(body,ui.note(R.drawable.ic_info,"Buổi học thử cần được gia sư xác nhận.",Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,6);

@@ -42,7 +42,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
     }
 
     private View card(GroupClass item) {
-        LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(10),ui.dp(13),ui.dp(10),ui.dp(10));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(10),ui.dp(13),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.art(item.smallArt(),77,83)); ui.gap(top,11);
         LinearLayout info = ui.column(); LinearLayout titleRow = ui.row(); titleRow.setGravity(Gravity.TOP);

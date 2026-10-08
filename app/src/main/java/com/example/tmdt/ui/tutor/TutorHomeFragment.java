@@ -81,7 +81,7 @@ public final class TutorHomeFragment extends ScreenFragment {
 
     private View tile(int icon, String value, String label, Runnable click) {
         LinearLayout tile = ui.column(); tile.setGravity(Gravity.CENTER_HORIZONTAL); tile.setPadding(0,ui.dp(14),0,ui.dp(10));
-        tile.setMinimumHeight(ui.dp(109)); ui.surface(tile,Ui.PALE,10,Ui.BORDER);
+        tile.setMinimumHeight(ui.dp(109)); ui.cardSurface(tile,Ui.PALE,Ui.BORDER);
         tile.addView(ui.icon(icon,27,Ui.BLUE)); ui.space(tile,6); tile.addView(ui.text(value,24,Ui.INK,true)); ui.space(tile,6);
         TextView text = ui.text(label,15,Ui.INK,false); text.setGravity(Gravity.CENTER); tile.addView(text);
         tile.setContentDescription(value+" "+label); ui.clickable(tile,click); return tile;
@@ -109,7 +109,7 @@ public final class TutorHomeFragment extends ScreenFragment {
     }
 
     private View requestCard(int photo, String name, String title, String when, String status, String action, Runnable click) {
-        LinearLayout card = ui.bordered(10); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(11));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(11));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.photo(photo,"Ảnh "+name,70,74,9)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(name,18,Ui.INK,true)); ui.space(info,5);
@@ -121,7 +121,7 @@ public final class TutorHomeFragment extends ScreenFragment {
 
     private View todayCard(Lesson lesson) {
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
-        ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.photo(0,"Ảnh "+lesson.studentName,69,73,9)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,2);
@@ -133,7 +133,7 @@ public final class TutorHomeFragment extends ScreenFragment {
 
     private View classTodayCard(GroupClass item) {
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
-        ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.art(item.smallArt(),69,73)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);

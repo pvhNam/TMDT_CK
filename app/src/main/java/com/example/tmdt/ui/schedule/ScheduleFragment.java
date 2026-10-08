@@ -57,7 +57,7 @@ public final class ScheduleFragment extends ScreenFragment {
         visible.sort(tab==2?order.reversed():order);
         for(Entry entry:visible){ui.add(content,entry.view);ui.space(content,11);}
         if(visible.isEmpty()) {
-            LinearLayout empty=ui.column();ui.pad(empty,18,32);empty.setGravity(Gravity.CENTER);ui.surface(empty,0xFFF3F8FE,12,0);
+            LinearLayout empty=ui.column();ui.pad(empty,18,32);empty.setGravity(Gravity.CENTER);ui.cardSurface(empty,0xFFF3F8FE,0);
             empty.addView(ui.icon(R.drawable.ic_calendar,42,Ui.BLUE));ui.space(empty,16);
             TextView title=ui.text(classroom.scheduleTab==1?"Chưa có yêu cầu đặt học":classroom.scheduleTab==2?"Chưa có buổi học đã hoàn thành":"Chưa có lịch học sắp tới",17,Ui.INK,true);
             title.setGravity(Gravity.CENTER);ui.add(empty,title);ui.space(empty,10);
@@ -70,7 +70,7 @@ public final class ScheduleFragment extends ScreenFragment {
     }
 
     private View lessonCard(Lesson lesson) {
-        LinearLayout card=ui.bordered(12);card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
+        LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
         row.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,77,9));ui.gap(row,14);
         LinearLayout details=ui.column();ui.space(details,4);
@@ -101,7 +101,7 @@ public final class ScheduleFragment extends ScreenFragment {
 
     /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
     private View classCard(GroupClass item, String when, TextView status, String note) {
-        LinearLayout card=ui.bordered(12);card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
+        LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
         row.addView(ui.art(item.smallArt(),73,77));ui.gap(row,14);
         LinearLayout details=ui.column();ui.space(details,4);
@@ -128,7 +128,7 @@ public final class ScheduleFragment extends ScreenFragment {
 
     /** "Sẵn sàng cho buổi học tiếp theo" banner with the calendar illustration of the design. */
     private View banner() {
-        LinearLayout banner=ui.row();banner.setPadding(ui.dp(16),ui.dp(16),ui.dp(7),ui.dp(10));banner.setMinimumHeight(ui.dp(160));ui.surface(banner,Ui.PALE,11,0);
+        LinearLayout banner=ui.row();banner.setPadding(ui.dp(16),ui.dp(16),ui.dp(7),ui.dp(10));banner.setMinimumHeight(ui.dp(160));ui.cardSurface(banner,Ui.PALE,0);
         LinearLayout text=ui.column();ui.add(text,ui.text("Sẵn sàng cho buổi học tiếp theo",21,Ui.INK,true));ui.space(text,8);
         ui.add(text,ui.text("Xem lại mục tiêu trước khi bắt đầu.",16,Ui.MUTED,false));ui.weight(banner,text);
         banner.addView(ui.art(R.drawable.illus_calendar,126,126));

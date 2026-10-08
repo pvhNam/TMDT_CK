@@ -22,7 +22,7 @@ public final class JoinClassFragment extends ScreenFragment {
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(6),ui.dp(11),ui.dp(8),ui.dp(11));
-        ui.surface(card,Ui.WHITE,11,Ui.BORDER);
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.art(item.largeArt(),108,112)); ui.gap(card,14);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,23,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text(item.subject+" · "+item.level,16,Ui.MUTED,false)); ui.space(info,8);
@@ -51,7 +51,7 @@ public final class JoinClassFragment extends ScreenFragment {
             ui.add(body,goal); ui.space(body,16);
         }
         ui.section(body,"Học phí",18); ui.space(body,8);
-        LinearLayout price = ui.row(); price.setPadding(ui.dp(15),ui.dp(10),ui.dp(15),ui.dp(10)); ui.surface(price,Ui.PALE,9,0);
+        LinearLayout price = ui.row(); price.setPadding(ui.dp(15),ui.dp(10),ui.dp(15),ui.dp(10)); ui.cardSurface(price,Ui.PALE,0);
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,17); price.addView(ui.text(item.priceLabel(),22,Ui.INK,true));
         ui.add(body,price); ui.space(body,20);
 

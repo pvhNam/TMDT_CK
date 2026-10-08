@@ -46,7 +46,7 @@ public final class BookingFragment extends ScreenFragment {
         if(address!=null) savedAddress=address.getText().toString();
         LinearLayout root=ui.column();ui.header(root,"Đặt lịch học",classroom::back,null);
         LinearLayout body=ui.page(root);
-        LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.surface(summary,Ui.WHITE,10,Ui.BORDER);
+        LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.cardSurface(summary,Ui.WHITE,Ui.BORDER);
         summary.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,71,9));ui.gap(summary,13);
         LinearLayout info=ui.column();ui.add(info,ui.text(tutor.name,17,Ui.INK,true));ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));ui.space(info,6);
@@ -75,7 +75,7 @@ public final class BookingFragment extends ScreenFragment {
         goal.setSingleLine(false);goal.setMaxLines(3);goal.setContentDescription("Mục tiêu buổi học");
         goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(300)});
         ui.add(body,goal);ui.space(body,12);
-        LinearLayout cost=ui.column();ui.pad(cost,15,14);ui.surface(cost,Ui.PALE,10,0);
+        LinearLayout cost=ui.column();ui.pad(cost,15,14);ui.cardSurface(cost,Ui.PALE,0);
         LinearLayout priceRow=ui.row();ui.weight(priceRow,ui.text("Học phí",16,Ui.MUTED,false));subtotal=ui.text("",16,Ui.INK,false);priceRow.addView(subtotal);
         ui.add(cost,priceRow);ui.space(cost,12);ui.line(cost);ui.space(cost,12);
         LinearLayout totalRow=ui.row();ui.weight(totalRow,ui.text("Tổng cộng",18,Ui.INK,true));total=ui.text("",20,Ui.INK,true);totalRow.addView(total);

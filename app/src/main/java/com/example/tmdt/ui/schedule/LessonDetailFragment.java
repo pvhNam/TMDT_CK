@@ -19,7 +19,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",classroom::back,null);
         LinearLayout body = ui.page(root);
 
-        LinearLayout summary = ui.row(); summary.setPadding(ui.dp(14),ui.dp(18),ui.dp(12),ui.dp(18)); ui.surface(summary,Ui.PALE,10,0);
+        LinearLayout summary = ui.row(); summary.setPadding(ui.dp(14),ui.dp(18),ui.dp(12),ui.dp(18)); ui.cardSurface(summary,Ui.PALE,0);
         LinearLayout heading = ui.column(), titleRow = ui.row();
         TextView title = ui.text(lesson.title,24,Ui.INK,true); title.setMaxLines(2); titleRow.addView(title); ui.gap(titleRow,10);
         titleRow.addView(ui.lessonStatus(lesson)); ui.add(heading,titleRow); ui.space(heading,10);
@@ -27,7 +27,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.weight(summary,heading); ui.gap(summary,8); summary.addView(ui.icon(R.drawable.ic_cap,48,Ui.BLUE));
         ui.add(body,summary); ui.space(body,11);
 
-        LinearLayout profile = ui.row(); profile.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9)); ui.surface(profile,Ui.WHITE,10,Ui.BORDER);
+        LinearLayout profile = ui.row(); profile.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9)); ui.cardSurface(profile,Ui.WHITE,Ui.BORDER);
         profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,79,9)); ui.gap(profile,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         String teaches = classroom.teaches(lesson.tutorId); ui.add(info,ui.text(teaches.isEmpty()?"Gia sư":teaches,15,Ui.MUTED,false));
@@ -44,9 +44,9 @@ public final class LessonDetailFragment extends ScreenFragment {
 
         ui.label(body,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,16,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));
-        goal.setMinHeight(ui.dp(46)); ui.surface(goal,Ui.PALE,10,Ui.BORDER); ui.add(body,goal); ui.space(body,12);
+        goal.setMinHeight(ui.dp(46)); ui.cardSurface(goal,Ui.PALE,Ui.BORDER); ui.add(body,goal); ui.space(body,12);
 
-        LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(11),ui.dp(16),ui.dp(11)); ui.surface(price,Ui.PALE,10,0);
+        LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(11),ui.dp(16),ui.dp(11)); ui.cardSurface(price,Ui.PALE,0);
         price.addView(ui.icon(R.drawable.ic_wallet,22,Ui.INK)); ui.gap(price,12);
         ui.weight(price,ui.text("Học phí",17,Ui.INK,false)); price.addView(ui.text(Tutor.money(lesson.total()),20,Ui.INK,true));
         ui.add(body,price); ui.space(body,10);

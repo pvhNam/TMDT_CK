@@ -3,6 +3,11 @@
         <item name="colorPrimary">#0866F5</item>
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorSecondary">#0866F5</item>
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.TMDT.SoftSmall</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.TMDT.SoftMedium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.TMDT.SoftLarge</item>
+        <item name="colorSecondaryContainer">@color/soft_surface</item>
+        <item name="colorOnSecondaryContainer">#0866F5</item>
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>

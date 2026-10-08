@@ -6,27 +6,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@android:color/white"
     tools:context="com.example.tmdt.ui.profile.AccountFragment">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:title="@string/page_account"
-        app:titleTextColor="#081F50"
-        app:navigationIcon="@drawable/ic_back"
-        app:navigationContentDescription="@string/back" />
+        style="@style/ReferenceToolbar"
+        app:title="@string/personal_info" />
     <ScrollView
+        android:id="@+id/account_scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
-            <include
-                layout="@layout/view_account_feedback" />
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="20dp">
+            <include layout="@layout/view_account_feedback" />
             <LinearLayout
                 android:id="@+id/form"
                 android:layout_width="match_parent"
@@ -37,98 +38,151 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <include
-                        android:id="@+id/avatar"
-                        layout="@layout/view_avatar" />
+                    <FrameLayout
+                        android:layout_width="112dp"
+                        android:layout_height="96dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="4dp">
+                        <include
+                            android:id="@+id/avatar"
+                            layout="@layout/view_avatar"
+                            android:layout_width="88dp"
+                            android:layout_height="88dp"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="0dp" />
+                    </FrameLayout>
                     <TextView
                         android:id="@+id/name"
-                        style="@style/ScreenTitle"
+                        style="@style/ReferenceTitle"
+                        android:layout_marginTop="8dp"
                         android:text="@string/name"
-                        android:gravity="center" />
+                        android:gravity="center"
+                        tools:text="Phạm Nam" />
                     <TextView
                         android:id="@+id/role"
-                        style="@style/BodyText"
+                        style="@style/ReferenceBody"
                         android:text="@string/role_student"
-                        android:gravity="center" />
+                        android:gravity="center"
+                        android:layout_marginBottom="14dp" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/edit"
-                        style="@style/SecondaryButton"
+                        style="@style/ReferencePrimary"
                         android:text="@string/edit_profile"
-                        android:contentDescription="@string/edit_profile" />
+                        android:contentDescription="@string/edit_profile"
+                        android:layout_marginBottom="20dp" />
                     <TextView
-                        style="@style/SectionTitle"
-                        android:text="@string/personal_info" />
-                    <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/email" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/email"
+                        android:labelFor="@id/email" />
                     <TextView
                         android:id="@+id/email"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
+                        style="@style/ReferenceProfileEmailValue"
+                        android:drawableStart="@drawable/ic_field_email"
+                        android:text="@string/not_updated"
+                        tools:text="nam@example.com" />
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/phone" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/phone"
+                        android:labelFor="@id/phone" />
                     <TextView
                         android:id="@+id/phone"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
+                        style="@style/ReferenceProfileValue"
+                        android:drawableStart="@drawable/ic_field_phone"
+                        android:text="@string/not_updated"
+                        tools:text="0901 234 567" />
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/address" />
-                    <TextView
-                        android:id="@+id/address"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
-                    <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/level" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/level"
+                        android:labelFor="@id/level" />
                     <TextView
                         android:id="@+id/level"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
+                        style="@style/ReferenceProfileValue"
+                        android:drawableStart="@drawable/ic_field_level"
+                        android:text="@string/not_updated"
+                        tools:text="Đại học" />
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/region" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/region"
+                        android:labelFor="@id/region" />
                     <TextView
                         android:id="@+id/region"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
+                        style="@style/ReferenceProfileValue"
+                        android:drawableStart="@drawable/ic_field_location"
+                        android:text="@string/not_updated"
+                        tools:text="TP. Hồ Chí Minh" />
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/goal" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/goal"
+                        android:labelFor="@id/goal" />
                     <TextView
                         android:id="@+id/goal"
-                        style="@style/ProfileValue"
-                        android:text="@string/not_updated" />
+                        style="@style/ReferenceProfileValue"
+                        android:minHeight="72dp"
+                        android:drawableStart="@drawable/ic_field_note"
+                        android:text="@string/not_updated"
+                        tools:text="Củng cố kiến thức và nâng cao kỹ năng." />
                     <TextView
-                        style="@style/SectionTitle"
+                        style="@style/ReferenceLabel"
+                        android:text="@string/address"
+                        android:labelFor="@id/address" />
+                    <TextView
+                        android:id="@+id/address"
+                        style="@style/ReferenceProfileValue"
+                        android:drawableStart="@drawable/ic_field_address"
+                        android:text="@string/not_updated"
+                        tools:text="Quận 1, TP. Hồ Chí Minh" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_tutor_surface"
+                        android:padding="12dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="12dp">
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="69dp">
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="4dp" android:paddingEnd="72dp">
+                                <TextView android:id="@+id/tutor_title" style="@style/TutorLabel" android:textSize="20sp" android:text="@string/tutor_invite"/>
+                                <TextView android:id="@+id/tutor_caption" style="@style/TutorText" android:textSize="15sp" android:textColor="@color/tutor_muted" android:text="@string/tutor_invite_caption"/>
+                            </LinearLayout>
+                            <ImageView android:id="@+id/tutor_books" android:layout_width="70dp" android:layout_height="69dp" android:layout_gravity="top|end" android:importantForAccessibility="no"/>
+                        </FrameLayout>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/tutor_action" style="@style/TutorPrimary" android:text="@string/tutor_register" android:layout_marginTop="8dp"/>
+                    </LinearLayout>
+                    <TextView
+                        style="@style/ReferenceSectionTitle"
                         android:text="@string/security" />
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/phone_verification" />
+                        style="@style/ReferenceLabel"
+                        android:text="@string/phone_verification"
+                        android:labelFor="@id/verification" />
                     <TextView
                         android:id="@+id/verification"
-                        style="@style/ProfileValue"
+                        style="@style/ReferenceProfileEmailValue"
+                        android:drawableStart="@drawable/ic_field_shield"
                         android:text="@string/unverified" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/verify"
-                        style="@style/SecondaryButton"
+                        style="@style/ReferenceOutline"
                         android:text="@string/page_otp"
                         android:contentDescription="@string/page_otp" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/reset"
-                        style="@style/SecondaryButton"
+                        style="@style/ReferenceOutline"
                         android:text="@string/reset_password"
                         android:contentDescription="@string/reset_password" />
                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/retry"
-                    style="@style/SecondaryButton"
+                    style="@style/ReferenceOutline"
                     android:text="@string/retry_profile"
                     android:contentDescription="@string/retry_profile" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/sign_out"
-                    style="@style/TextButton"
+                    style="@style/ReferenceLink"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="12dp"
+                    android:textSize="14sp"
+                    android:textColor="#B42318"
                     android:text="@string/sign_out"
                     android:contentDescription="@string/sign_out" />
             </LinearLayout>

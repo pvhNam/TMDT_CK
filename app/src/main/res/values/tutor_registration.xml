@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color
+        name="tutor_blue">#006BFF</color>
+    <color
+        name="tutor_ink">#06164D</color>
+    <color
+        name="tutor_muted">#46638C</color>
+    <color
+        name="tutor_border">@color/soft_border</color>
+    <color
+        name="tutor_surface">@color/soft_surface</color>
+    <string
+        name="tutor_register">Đăng ký làm gia sư</string>
+    <string
+        name="tutor_switch">Chuyển qua gia sư</string>
+    <string
+        name="tutor_switch_student">Chuyển qua học viên</string>
+    <string
+        name="tutor_invite">Bạn muốn trở thành gia sư?</string>
+    <string
+        name="tutor_invite_caption">Chia sẻ kiến thức và nhận lịch dạy.</string>
+    <string
+        name="tutor_manage_title">Không gian gia sư của bạn</string>
+    <string
+        name="tutor_manage_caption">Quản lý lịch dạy và lớp học.</string>
+    <string
+        name="tutor_step_info">Thông tin</string>
+    <string
+        name="tutor_step_review">Gửi duyệt</string>
+    <string
+        name="tutor_subject">Môn giảng dạy</string>
+    <string
+        name="tutor_select_subject">Chọn môn giảng dạy</string>
+    <string
+        name="tutor_select_levels">Chọn cấp học</string>
+    <string
+        name="tutor_experience">Kinh nghiệm</string>
+    <string
+        name="tutor_experience_hint">Số năm kinh nghiệm giảng dạy</string>
+    <string
+        name="tutor_mode">Hình thức dạy</string>
+    <string
+        name="tutor_online">Trực tuyến</string>
+    <string
+        name="tutor_in_person">Tại nhà</string>
+    <string
+        name="tutor_price">Học phí mỗi buổi (90 phút)</string>
+    <string
+        name="tutor_price_hint">Nhập số tiền (đồng)</string>
+    <string
+        name="tutor_next_note">Bước tiếp theo: kiểm tra và gửi hồ sơ xét duyệt.</string>
+    <string
+        name="tutor_continue">Tiếp tục</string>
+    <string
+        name="tutor_review_title">Kiểm tra hồ sơ</string>
+    <string
+        name="tutor_review_note">Hồ sơ sẽ được quản trị viên xét duyệt.</string>
+    <string
+        name="tutor_confirm">Tôi xác nhận thông tin đăng ký là chính xác.</string>
+    <string
+        name="tutor_send">Gửi hồ sơ xét duyệt</string>
+    <string
+        name="tutor_edit_again">Quay lại chỉnh sửa</string>
+    <string
+        name="tutor_confirm_error">Vui lòng xác nhận thông tin trước khi gửi hồ sơ.</string>
+    <string
+        name="tutor_subject_empty">Chưa có môn học để đăng ký. Vui lòng thử tải lại danh mục.</string>
+    <string
+        name="tutor_subject_reload">Tải lại</string>
+    <string
+        name="tutor_experience_value">%1$d năm kinh nghiệm</string>
+    <string
+        name="tutor_price_value">%1$s đ / 90 phút</string>
+    <style
+        name="TutorText"
+        parent="ReferenceBody">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">16sp</item>
+        <item
+            name="android:textColor">@color/tutor_ink</item>
+        <item
+            name="android:layout_marginBottom">0dp</item>
+    </style>
+    <style
+        name="TutorLabel"
+        parent="ReferenceLabel">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">16sp</item>
+        <item
+            name="android:textColor">@color/tutor_ink</item>
+        <item
+            name="android:layout_marginBottom">7dp</item>
+    </style>
+    <style
+        name="TutorInput"
+        parent="FormInput">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">16sp</item>
+        <item
+            name="android:minHeight">48dp</item>
+        <item
+            name="android:padding">14dp</item>
+        <item
+            name="android:paddingTop">8dp</item>
+        <item
+            name="android:paddingBottom">8dp</item>
+        <item
+            name="android:layout_marginBottom">10dp</item>
+        <item
+            name="android:background">@drawable/bg_tutor_field</item>
+        <item
+            name="android:textColor">@color/tutor_ink</item>
+        <item
+            name="android:textColorHint">@color/tutor_muted</item>
+    </style>
+    <style
+        name="TutorPrimary"
+        parent="ReferencePrimary">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">18sp</item>
+        <item
+            name="cornerRadius">@dimen/soft_button_radius</item>
+        <item
+            name="backgroundTint">@color/tutor_blue</item>
+    </style>
+    <style
+        name="TutorOutline"
+        parent="ReferenceOutline">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">18sp</item>
+        <item
+            name="android:textStyle">bold</item>
+        <item
+            name="cornerRadius">@dimen/soft_button_radius</item>
+        <item
+            name="strokeColor">@color/tutor_blue</item>
+        <item
+            name="android:textColor">@color/tutor_blue</item>
+    </style>
+    <style
+        name="TutorToolbarTitle"
+        parent="ReferenceToolbarTitle">
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">22sp</item>
+        <item
+            name="android:textColor">@color/tutor_ink</item>
+    </style>
+    <style
+        name="TutorMode"
+        parent="Widget.Material3.Button.OutlinedButton">
+        <item
+            name="android:layout_width">0dp</item>
+        <item
+            name="android:layout_height">48dp</item>
+        <item
+            name="android:layout_weight">1</item>
+        <item
+            name="android:fontFamily">sans-serif-condensed</item>
+        <item
+            name="android:textSize">16sp</item>
+        <item
+            name="android:textAllCaps">false</item>
+        <item
+            name="android:paddingLeft">12dp</item>
+        <item
+            name="android:paddingRight">8dp</item>
+        <item
+            name="android:insetTop">0dp</item>
+        <item
+            name="android:insetBottom">0dp</item>
+        <item
+            name="cornerRadius">@dimen/soft_button_radius</item>
+        <item
+            name="iconSize">25dp</item>
+        <item
+            name="iconPadding">10dp</item>
+        <item
+            name="iconTint">@null</item>
+    </style>
+</resources>

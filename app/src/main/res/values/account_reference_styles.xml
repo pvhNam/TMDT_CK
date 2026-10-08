@@ -28,7 +28,7 @@
     <style name="ReferenceLabel" parent="FieldLabel">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:layout_marginBottom">6dp</item>
         <item name="android:textColor">@color/account_ink</item>
     </style>
     <style name="ReferenceField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
@@ -36,14 +36,14 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginBottom">12dp</item>
         <item name="hintEnabled">false</item>
-        <item name="boxBackgroundColor">@android:color/white</item>
+        <item name="boxBackgroundColor">@color/soft_field_fill</item>
         <item name="boxStrokeColor">@color/account_field_stroke</item>
         <item name="boxStrokeWidth">1dp</item>
         <item name="boxStrokeWidthFocused">1dp</item>
-        <item name="boxCornerRadiusTopStart">9dp</item>
-        <item name="boxCornerRadiusTopEnd">9dp</item>
-        <item name="boxCornerRadiusBottomStart">9dp</item>
-        <item name="boxCornerRadiusBottomEnd">9dp</item>
+        <item name="boxCornerRadiusTopStart">@dimen/soft_field_radius</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/soft_field_radius</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/soft_field_radius</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/soft_field_radius</item>
         <item name="startIconTint">@color/account_ink</item>
         <item name="endIconTint">@color/account_ink</item>
         <item name="android:importantForAutofill">no</item>
@@ -71,7 +71,7 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="cornerRadius">9dp</item>
+        <item name="cornerRadius">@dimen/soft_button_radius</item>
         <item name="backgroundTint">@color/account_blue</item>
     </style>
     <style name="ReferenceOutline" parent="SecondaryButton">
@@ -81,7 +81,7 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:layout_marginTop">10dp</item>
         <item name="android:textSize">13sp</item>
-        <item name="cornerRadius">9dp</item>
+        <item name="cornerRadius">@dimen/soft_button_radius</item>
         <item name="strokeColor">@color/account_blue</item>
     </style>
     <style name="ReferenceFooter" parent="ReferenceOutline">
@@ -97,5 +97,25 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:paddingLeft">0dp</item>
         <item name="android:paddingRight">0dp</item>
+    </style>
+    <style name="ReferenceProfileValue" parent="BodyText">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:layout_marginBottom">12dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/account_ink</item>
+        <item name="android:background">@drawable/bg_account_value</item>
+        <item name="android:drawablePadding">12dp</item>
+        <item name="android:drawableTint">@color/account_ink</item>
+        <item name="android:textIsSelectable">true</item>
+    </style>
+    <style name="ReferenceProfileEmailValue" parent="ReferenceProfileValue">
+        <item name="android:background">@drawable/bg_account_email_value</item>
+    </style>
+    <style name="ReferenceSectionTitle" parent="ReferenceLabel">
+        <item name="android:textSize">16sp</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
     </style>
 </resources>

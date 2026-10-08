@@ -35,7 +35,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         ui.title(root,"Lớp học nhóm",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
                 ()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         LinearLayout body = ui.page(root);
-        LinearLayout box = ui.row(); box.setPadding(ui.dp(12),0,ui.dp(6),0); ui.surface(box,Ui.PALE,10,Ui.BORDER);
+        LinearLayout box = ui.row(); box.setPadding(ui.dp(12),0,ui.dp(6),0); ui.fieldSurface(box,Ui.PALE,Ui.BORDER);
         box.addView(ui.icon(R.drawable.ic_search,22,Ui.MUTED));
         search = ui.entry("Tìm lớp, môn học...",false); search.setBackgroundColor(Color.TRANSPARENT);
         search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
@@ -101,7 +101,7 @@ public final class GroupSearchFragment extends ScreenFragment {
             ui.add(results,card(item)); ui.space(results,13); count++;
         }
         if (count == 0) {
-            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.surface(empty,Ui.PALE,12,0);
+            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.cardSurface(empty,Ui.PALE,0);
             empty.addView(ui.icon(R.drawable.ic_users,40,Ui.BLUE)); ui.space(empty,14);
             TextView title = ui.text("Chưa có lớp phù hợp",18,Ui.INK,true); title.setGravity(Gravity.CENTER); ui.add(empty,title); ui.space(empty,8);
             TextView hint = ui.text("Thử từ khóa khác hoặc bỏ bớt bộ lọc.",15,Ui.MUTED,false); hint.setGravity(Gravity.CENTER); ui.add(empty,hint); ui.space(empty,16);
@@ -111,7 +111,7 @@ public final class GroupSearchFragment extends ScreenFragment {
     }
 
     private View card(GroupClass item) {
-        LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.art(item.largeArt(),99,133)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);

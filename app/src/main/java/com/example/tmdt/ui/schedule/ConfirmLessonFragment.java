@@ -21,7 +21,7 @@ public final class ConfirmLessonFragment extends ScreenFragment {
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
-        ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,100,107,9)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,14);
@@ -32,7 +32,7 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
         ui.label(body,"Nội dung đã học");
         TextView content = ui.text(lesson.content.isEmpty()?lesson.goal:lesson.content,16,Ui.INK,false);
-        content.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12)); content.setMinHeight(ui.dp(61)); ui.surface(content,Ui.PALE,10,Ui.BORDER);
+        content.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12)); content.setMinHeight(ui.dp(61)); ui.cardSurface(content,Ui.PALE,Ui.BORDER);
         ui.add(body,content); ui.space(body,12);
 
         LinearLayout tiles = ui.row();
@@ -58,7 +58,7 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
     private View tile(int icon, String label, String value) {
         LinearLayout tile = ui.row(); tile.setPadding(ui.dp(14),ui.dp(10),ui.dp(8),ui.dp(10)); tile.setMinimumHeight(ui.dp(70));
-        ui.surface(tile,Ui.PALE,10,Ui.BORDER); tile.addView(ui.icon(icon,26,Ui.INK)); ui.gap(tile,13);
+        ui.cardSurface(tile,Ui.PALE,Ui.BORDER); tile.addView(ui.icon(icon,26,Ui.INK)); ui.gap(tile,13);
         LinearLayout text = ui.column(); ui.add(text,ui.text(label,14,Ui.MUTED,false)); ui.space(text,4);
         ui.add(text,ui.text(value,20,Ui.INK,true)); ui.weight(tile,text); return tile;
     }

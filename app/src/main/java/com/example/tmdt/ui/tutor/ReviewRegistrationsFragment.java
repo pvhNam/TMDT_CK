@@ -26,7 +26,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         LinearLayout body = ui.page(root); ui.space(body,4);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(10),ui.dp(12),ui.dp(10),ui.dp(12));
-        ui.surface(card,Ui.PALE,11,0); card.addView(ui.art(item.smallArt(),77,86)); ui.gap(card,12);
+        ui.cardSurface(card,Ui.PALE,0); card.addView(ui.art(item.smallArt(),77,86)); ui.gap(card,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,21,Ui.INK,true)); ui.space(info,10);
         summary = ui.text("",18,Ui.INK,false); ui.add(info,summary); ui.space(info,8);
         ui.add(info,ui.text("▣ "+item.sessions+" buổi · "+item.mode,16,Ui.INK,false)); ui.space(info,6);
@@ -63,7 +63,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     }
 
     private View card(GroupClass.Registration registration) {
-        LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(9),ui.dp(10),ui.dp(10),ui.dp(10));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.photo(0,"Ảnh "+registration.studentName,71,78,9)); ui.gap(top,15);
         LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.studentName,20,Ui.INK,true));

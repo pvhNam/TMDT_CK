@@ -20,6 +20,7 @@
         android:layout_height="match_parent"
         android:background="@drawable/bg_avatar"
         android:scaleType="centerCrop"
+        android:clipToOutline="true"
         android:contentDescription="@string/avatar"
         android:visibility="gone" />
 </FrameLayout>

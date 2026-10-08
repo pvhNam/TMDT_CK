@@ -19,10 +19,10 @@ import androidx.appcompat.app.AlertDialog;
 import com.example.tmdt.R;
 import com.example.tmdt.Lesson;
 
-/** Shared spacing, typography and components; colours follow the variables of the Figma file "Mobile". */
+/** Figma-based components with the app's shared soft shapes and lighter surfaces. */
 public final class Ui {
     public static final int INK = 0xFF06164D, MUTED = 0xFF46638C, BLUE = 0xFF006BFF,
-            PALE = 0xFFEAF5FF, BORDER = 0xFFD4E5F8, WHITE = 0xFFFFFFFF,
+            PALE = 0xFFEFF6FF, BORDER = 0xFFDFE8F5, WHITE = 0xFFFFFFFF,
             GREEN = 0xFF009D70, GOLD = 0xFFFFB617, GREEN_BG = 0xFFDDF8EC,
             ORANGE = 0xFFEF8700, ORANGE_BG = 0xFFFFF2D2, RED = 0xFFFF364C, GRAY = 0xFFAEB9C9;
     public static final int PRIMARY = 0, OUTLINE = 1, DANGER = 2, DISABLED = 3;
@@ -73,8 +73,16 @@ public final class Ui {
         return drawable;
     }
     public void surface(View view, int color, int radius, int stroke) { view.setBackground(background(color,radius,stroke)); }
+    private int radius(int resource) {
+        return Math.round(context.getResources().getDimension(resource) / context.getResources().getDisplayMetrics().density);
+    }
+    public void cardSurface(View view, int color, int stroke) { surface(view,color,radius(R.dimen.soft_card_radius),stroke); }
+    public void fieldSurface(View view, int color, int stroke) { surface(view,color,radius(R.dimen.soft_field_radius),stroke); }
     public void clickable(View view, Runnable action) {
-        view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x220866F5),view.getBackground(),background(WHITE,12,0)));
+        android.graphics.drawable.Drawable content = view.getBackground();
+        android.graphics.drawable.Drawable mask = content != null && content.getConstantState() != null
+                ? content.getConstantState().newDrawable().mutate() : background(WHITE,radius(R.dimen.soft_field_radius),0);
+        view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x180866F5),content,mask));
         view.setOnClickListener(v -> action.run()); view.setFocusable(true);
     }
 
@@ -89,7 +97,7 @@ public final class Ui {
         };
     }
 
-    public LinearLayout card() { LinearLayout card = column(); pad(card,12,12); surface(card,WHITE,12,BORDER); return card; }
+    public LinearLayout card() { LinearLayout card = column(); pad(card,16,16); cardSurface(card,WHITE,BORDER); return card; }
     public ScrollView scroll(LinearLayout parent) {
         ScrollView scroll = new ScrollView(context); scroll.setFillViewport(true); scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false); parent.addView(scroll,new LinearLayout.LayoutParams(-1,0,1)); return scroll;
@@ -127,13 +135,13 @@ public final class Ui {
     public EditText input(String hint) {
         EditText input = new EditText(context); input.setTextSize(14); input.setTextColor(INK);
         input.setHintTextColor(MUTED); input.setHint(hint); input.setSingleLine(true);
-        input.setMinimumHeight(dp(48)); pad(input,13,10); surface(input,WHITE,9,BORDER);
+        input.setMinimumHeight(dp(48)); pad(input,13,10); fieldSurface(input,0xFFF8FAFF,BORDER);
         return input;
     }
 
     public LinearLayout option(String label, int icon, boolean selected, Runnable action) {
         LinearLayout view = row(); view.setPadding(dp(16),0,dp(8),0); view.setMinimumHeight(dp(47));
-        surface(view,selected?PALE:WHITE,8,selected?BLUE:BORDER);
+        fieldSurface(view,selected?PALE:WHITE,selected?BLUE:BORDER);
         view.addView(icon(icon,25,selected?BLUE:INK)); gap(view,11);
         TextView text = text(label,16,selected?BLUE:INK,false); text.setMaxLines(1); weight(view,text);
         view.setSelected(selected); view.setContentDescription(label+(selected?", đã chọn":""));
@@ -146,7 +154,7 @@ public final class Ui {
     public LinearLayout page(LinearLayout root) {
         ScrollView scroll = scroll(root); LinearLayout body = column(); body.setPadding(dp(16),dp(6),dp(16),dp(20)); scroll.addView(body); return body;
     }
-    public LinearLayout bordered(int radius) { LinearLayout card = column(); surface(card,WHITE,radius,BORDER); return card; }
+    public LinearLayout bordered() { LinearLayout card = column(); cardSurface(card,WHITE,BORDER); return card; }
     public TextView lessonStatus(Lesson lesson) {
         String label = lesson.statusLabel();
         if (lesson.pending() || lesson.needsConfirmation()) return pill(label,14,ORANGE,ORANGE_BG);
@@ -178,7 +186,7 @@ public final class Ui {
     public FrameLayout action(String label, int icon, int style, Runnable click) {
         FrameLayout button = new FrameLayout(context); button.setMinimumHeight(dp(46));
         int foreground = style==OUTLINE ? BLUE : style==DANGER ? RED : WHITE;
-        surface(button, style==PRIMARY ? BLUE : style==DISABLED ? GRAY : WHITE, 10, style==OUTLINE ? BLUE : style==DANGER ? RED : 0);
+        surface(button, style==PRIMARY ? BLUE : style==DISABLED ? GRAY : WHITE, radius(R.dimen.soft_button_radius), style==OUTLINE ? BLUE : style==DANGER ? RED : 0);
         TextView text = text(label,18,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
         text.setPadding(dp(icon!=0 ? 36 : 8),0,dp(8),0);
         button.addView(text,new FrameLayout.LayoutParams(-1,-1));
@@ -196,7 +204,7 @@ public final class Ui {
     /** Nhãn (status pill), e.g. green "Đã xác nhận" or orange "Chờ duyệt". */
     public TextView pill(String label, int size, int color, int fill) {
         TextView view = text(label,size,color,false); view.setGravity(Gravity.CENTER); view.setMaxLines(1);
-        view.setPadding(dp(10),dp(4),dp(10),dp(4)); surface(view,fill,10,0); return view;
+        view.setPadding(dp(10),dp(4),dp(10),dp(4)); surface(view,fill,radius(R.dimen.soft_button_radius),0); return view;
     }
     public TextView link(String label, int size, Runnable click) {
         TextView view = text(label,size,BLUE,false); view.setGravity(Gravity.CENTER_VERTICAL); view.setMinHeight(dp(40));
@@ -209,7 +217,7 @@ public final class Ui {
 
     /** Ô nhập acting as a picker: optional icon, value and the down chevron. */
     public LinearLayout picker(int icon, TextView value, Runnable click) {
-        LinearLayout box = row(); box.setPadding(dp(12),0,dp(12),0); box.setMinimumHeight(dp(40)); surface(box,WHITE,10,BORDER);
+        LinearLayout box = row(); box.setPadding(dp(12),0,dp(12),0); box.setMinimumHeight(dp(40)); fieldSurface(box,0xFFF8FAFF,BORDER);
         if (icon != 0) { box.addView(icon(icon,22,INK)); gap(box,10); }
         weight(box,value); box.addView(icon(R.drawable.ic_down,18,INK));
         clickable(box,click); return box;
@@ -220,18 +228,18 @@ public final class Ui {
         EditText input = new EditText(context); input.setTextSize(16); input.setTextColor(INK); input.setHintTextColor(MUTED);
         input.setHint(hint); input.setTypeface(Typeface.create("sans-serif-condensed",Typeface.NORMAL));
         input.setSingleLine(!multiline); if (multiline) { input.setMinLines(2); input.setGravity(Gravity.TOP|Gravity.START); }
-        input.setMinimumHeight(dp(multiline ? 61 : 44)); input.setPadding(dp(12),dp(10),dp(12),dp(10)); surface(input,WHITE,10,BORDER);
+        input.setMinimumHeight(dp(multiline ? 61 : 44)); input.setPadding(dp(12),dp(10),dp(12),dp(10)); fieldSurface(input,0xFFF8FAFF,BORDER);
         input.setContentDescription(hint); return input;
     }
 
     /** Ghi chú: tinted info box with an icon and one or two lines of text. */
     public LinearLayout note(int icon, String message, int fill, int iconColor, int textColor) {
-        LinearLayout box = row(); box.setPadding(dp(12),dp(10),dp(12),dp(10)); box.setMinimumHeight(dp(42)); surface(box,fill,10,0);
+        LinearLayout box = row(); box.setPadding(dp(12),dp(10),dp(12),dp(10)); box.setMinimumHeight(dp(42)); cardSurface(box,fill,0);
         box.addView(icon(icon,22,iconColor)); gap(box,13); weight(box,text(message,14,textColor,false)); return box;
     }
 
     /** Thông tin chi tiết: bordered list of icon, label and right-aligned value rows. */
-    public LinearLayout table() { LinearLayout table = column(); table.setPadding(dp(11),dp(3),dp(14),dp(3)); surface(table,WHITE,10,BORDER); return table; }
+    public LinearLayout table() { LinearLayout table = column(); table.setPadding(dp(11),dp(3),dp(14),dp(3)); cardSurface(table,WHITE,BORDER); return table; }
     public void tableRow(LinearLayout table, int icon, String label, String value) {
         if (table.getChildCount() > 0) {
             View divider = new View(context); divider.setBackgroundColor(BORDER);
@@ -250,13 +258,13 @@ public final class Ui {
     /** Chọn: selectable cell such as a time slot or the week/month toggle. */
     public TextView choice(String label, boolean selected, Runnable click) {
         TextView view = text(label,16,selected?WHITE:INK,selected); view.setGravity(Gravity.CENTER); view.setMinHeight(dp(38));
-        surface(view,selected?BLUE:WHITE,9,selected?BLUE:BORDER); view.setSelected(selected);
+        fieldSurface(view,selected?BLUE:WHITE,selected?BLUE:BORDER); view.setSelected(selected);
         view.setContentDescription(label+(selected?", đã chọn":"")); clickable(view,click); return view;
     }
     /** Day cell of the date strip (weekday label above the day number). */
     public LinearLayout day(java.time.LocalDate date, boolean selected, Runnable click) {
         LinearLayout cell = column(); cell.setGravity(Gravity.CENTER); cell.setMinimumHeight(dp(61));
-        surface(cell,selected?BLUE:WHITE,9,selected?BLUE:BORDER);
+        fieldSurface(cell,selected?BLUE:WHITE,selected?BLUE:BORDER);
         int weekday = date.getDayOfWeek().getValue();
         cell.addView(text(weekday==7?"CN":"T"+(weekday+1),12,selected?WHITE:MUTED,false)); space(cell,6);
         cell.addView(text(String.valueOf(date.getDayOfMonth()),19,selected?WHITE:INK,true));
@@ -286,7 +294,7 @@ public final class Ui {
     }
     /** Lựa chọn (radio row); the selected row gets the pale surface of the design. */
     public LinearLayout radio(String label, boolean selected, Runnable click) {
-        LinearLayout row = row(); row.setPadding(dp(14),0,dp(12),0); row.setMinimumHeight(dp(44)); surface(row,selected?PALE:WHITE,9,0);
+        LinearLayout row = row(); row.setPadding(dp(14),0,dp(12),0); row.setMinimumHeight(dp(44)); fieldSurface(row,selected?PALE:WHITE,0);
         FrameLayout mark = new FrameLayout(context); surface(mark,WHITE,15,selected?BLUE:INK);
         if (selected) { View dot = new View(context); surface(dot,BLUE,8,0); mark.addView(dot,new FrameLayout.LayoutParams(dp(11),dp(11),Gravity.CENTER)); }
         row.addView(mark,lp(21,21)); gap(row,18); weight(row,text(label,19,INK,false));

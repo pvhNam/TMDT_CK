@@ -50,6 +50,7 @@ public final class Classroom {
     public final Store store;
     public final List<Lesson> lessons;
     private boolean tutorView;
+    private String modeOwner="";
     public String tutorKey, lessonId="", classId="";
     public int scheduleTab, classTab;
     /** Where "Đặt lịch học" was opened from, so back returns there. */
@@ -67,7 +68,8 @@ public final class Classroom {
         preferences=host.getSharedPreferences("tutor_demo",Context.MODE_PRIVATE);
         cloud=new ViewModelProvider(host).get(ClassroomCloud.class);
         store=cloud.store;lessons=store.lessons;
-        tutorView=preferences.getBoolean("tutor_mode",false);
+        modeOwner=host.account.signedIn()?host.account.uid():"";
+        tutorView=!modeOwner.isEmpty()&&preferences.getBoolean("tutor_mode_"+modeOwner,false);
         if(state!=null){
             tutorKey=state.getString("tutor");scheduleTab=state.getInt("tab",0);classTab=state.getInt("classTab",0);
             lessonId=state.getString("lesson","");classId=state.getString("class","");
@@ -86,6 +88,8 @@ public final class Classroom {
 
     /** Follows sign-in, sign-out and the loaded profile (MainActivity calls this on every account change). */
     void onAccount(){
+        String owner=host.account.signedIn()?host.account.uid():"";
+        if(!owner.equals(modeOwner)){modeOwner=owner;tutorView=!owner.isEmpty()&&preferences.getBoolean("tutor_mode_"+owner,false);}
         cloud.user(host.account.signedIn()?host.account.uid():"");
         if(tutorMode()&&"home".equals(host.screen))show("tutorHome");
     }
@@ -99,7 +103,7 @@ public final class Classroom {
         CatalogState.Teacher teacher=host.catalog.teacher(me());
         return teacher!=null?teacher.name:myName();
     }
-    /** Tutor accounts are marked la_gia_su by an administrator (UC28). */
+    /** Registration enables the tutor view; server rules still require VERIFIED for teaching. */
     public boolean isTutor(){UserProfile profile=host.account.profile();return host.account.signedIn()&&profile!=null&&profile.tutor;}
     public boolean tutorMode(){return tutorView&&isTutor();}
 
@@ -215,7 +219,8 @@ public final class Classroom {
     public void openClass(GroupClass item,String destination){classId=item==null?"":item.id;show(destination);}
     /** Tutors switch between their teaching view and their own student view. */
     public void setTutorMode(boolean value){
-        tutorView=value;preferences.edit().putBoolean("tutor_mode",value).apply();show(root());
+        if(value&&!isTutor())return;
+        tutorView=value;preferences.edit().putBoolean("tutor_mode_"+host.account.uid(),value).apply();show(root());
     }
     public void message(String person){dialog("Nhắn tin với "+person,"Chức năng trò chuyện (màn hình 05–06) do Thành viên 4 phụ trách và sẽ được nối vào đây.");}
     public void dialog(String title,String message){ui.dialog().setTitle(title).setMessage(message).setPositiveButton(R.string.understood,null).show();}

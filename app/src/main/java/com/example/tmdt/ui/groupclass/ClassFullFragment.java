@@ -18,9 +18,9 @@ public final class ClassFullFragment extends ScreenFragment {
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết lớp nhóm",classroom::back,null);
         LinearLayout body = ui.page(root);
 
-        LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(13),ui.dp(14),ui.dp(12),ui.dp(12));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(13),ui.dp(14),ui.dp(12),ui.dp(12));
         LinearLayout top = ui.row();
-        FrameLayout badge = new FrameLayout(classroom.context()); ui.surface(badge,Ui.PALE,9,0);
+        FrameLayout badge = new FrameLayout(classroom.context()); ui.cardSurface(badge,Ui.PALE,0);
         badge.addView(ui.icon(R.drawable.ic_users_filled,35,Ui.BLUE),new FrameLayout.LayoutParams(ui.dp(35),ui.dp(35),Gravity.CENTER));
         top.addView(badge,ui.lp(62,59)); ui.gap(top,13);
         LinearLayout title = ui.column(); ui.add(title,ui.text(item.title,21,Ui.INK,true)); ui.space(title,8);
@@ -30,7 +30,7 @@ public final class ClassFullFragment extends ScreenFragment {
         ui.add(card,ui.fact(R.drawable.ic_pin,item.address.isEmpty()?"Học trực tuyến":"Học trực tiếp tại "+item.address,23,14,Ui.INK,false));
         ui.add(body,card);
 
-        LinearLayout seats = ui.bordered(10); seats.setGravity(Gravity.CENTER_HORIZONTAL); seats.setPadding(ui.dp(12),ui.dp(14),ui.dp(12),ui.dp(12));
+        LinearLayout seats = ui.bordered(); seats.setGravity(Gravity.CENTER_HORIZONTAL); seats.setPadding(ui.dp(12),ui.dp(14),ui.dp(12),ui.dp(12));
         seats.addView(ui.pill("♟ Đã đủ "+item.members.size()+"/"+item.capacity+" học viên",14,Ui.ORANGE,Ui.ORANGE_BG),ui.lp(196,36)); ui.space(seats,20);
         LinearLayout people = ui.row();
         for (int i = 0; i < Math.min(item.capacity,10); i++) { people.addView(ui.icon(R.drawable.ic_user_filled,18,Ui.BLUE)); ui.gap(people,7); }

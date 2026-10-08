@@ -36,6 +36,10 @@ public final class AccountState extends ViewModel {
     long resendAt;
     private int generation;
     private int phoneAttempt;
+    private TutorRegistration tutorRegistration;
+    public TutorRegistration tutorRegistration(){return tutorRegistration;}
+    public void reviewTutor(TutorRegistration value){tutorRegistration=value;destination="review_tutor";notifyUi();}
+    public void reportError(String value){error=value;notice="";notifyUi();}
 
     public androidx.lifecycle.LiveData<Integer> changes() { return changes; }
     public UserProfile profile() { return profile; }
@@ -149,6 +153,47 @@ public final class AccountState extends ViewModel {
             busy=false;notice="Nếu email đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu. Hãy kiểm tra cả thư rác.";notifyUi();
         });
     }
+    public void submitTutor(){
+        TutorRegistration value=tutorRegistration;
+        if(busy||user()==null||profile==null||value==null)return;
+        if(!value.error().isEmpty()){reportError(value.error());return;}
+        begin();final int token=generation;final String owner=uid();
+        db.runTransaction(tx->{
+            com.google.firebase.firestore.DocumentReference userRef=db.collection("users").document(owner);
+            com.google.firebase.firestore.DocumentReference tutorRef=db.collection("tutor_profiles").document(owner);
+            com.google.firebase.firestore.DocumentSnapshot accountDoc=tx.get(userRef),existing=tx.get(tutorRef);
+            if(existing.exists()){
+                if(Boolean.TRUE.equals(accountDoc.getBoolean("la_gia_su")))return UserProfile.from(accountDoc);
+                throw new IllegalStateException("Existing tutor profile needs administrator review");
+            }
+            if(!accountDoc.exists())throw new IllegalStateException("Missing account");
+            Map<String,Object> data=new HashMap<>();
+            data.put("user_id",owner);data.put("ho_ten",value.name);data.put("hoc_van",accountDoc.getString("cap_hoc")==null?"":accountDoc.getString("cap_hoc"));
+            data.put("truong","");data.put("chuyen_nganh","");data.put("gioi_thieu","");
+            data.put("khu_vuc",accountDoc.getString("khu_vuc")==null?"":accountDoc.getString("khu_vuc"));
+            data.put("so_nam_kinh_nghiem",value.experience);data.put("hinh_thuc_day",value.mode);
+            data.put("nhan_lop",true);data.put("trang_thai_xac_minh","PENDING");
+            data.put("created_at",FieldValue.serverTimestamp());data.put("updated_at",FieldValue.serverTimestamp());
+            tx.set(tutorRef,data);
+            for(String level:value.levels){
+                Map<String,Object> offering=new HashMap<>();offering.put("tutor_id",owner);
+                offering.put("subject_id",value.subjectId);offering.put("cap_lop",level);offering.put("hoc_phi_moi_buoi",value.price);
+                tx.set(db.collection("tutor_subjects").document(owner+"_"+value.subjectId+"_"+level),offering);
+            }
+            Map<String,Object> update=new HashMap<>();update.put("la_gia_su",true);update.put("ho_ten",value.name);
+            update.put("so_dien_thoai",value.phone);update.put("updated_at",FieldValue.serverTimestamp());
+            tx.update(userRef,update);return null;
+        }).addOnCompleteListener(task->{
+            if(!current(token,owner))return;
+            if(!task.isSuccessful()){failed(task.getException());return;}
+            if(task.getResult()!=null)profile=task.getResult();
+            else {profile.tutor=true;profile.name=value.name;profile.phone=value.phone;}
+            tutorRegistration=null;draft.keySet().removeIf(key->key.startsWith("tutor."));
+            busy=false;destination="account";
+            notice="Đã gửi hồ sơ gia sư. Bạn có thể chuyển qua gia sư; hồ sơ cần được duyệt trước khi nhận lớp.";
+            notifyUi();
+        });
+    }
     public void sendCode(Activity activity, String phone, boolean resend) {
         if(sendingCode || busy || user()==null)return;
         if(SystemClock.elapsedRealtime()<resendAt)return;
@@ -192,6 +237,7 @@ public final class AccountState extends ViewModel {
         });
     }
     public void signOut() {
+        tutorRegistration=null;
         generation++;phoneAttempt++;auth.signOut();profile=null;draft.clear();terms=false;busy=false;sendingCode=false;
         verificationId=null;verificationPhone="";resendToken=null;resendAt=0;clearFeedback();
         destination="login";notifyUi();

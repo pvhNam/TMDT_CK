@@ -6,6 +6,10 @@ Bốn màn hình Đăng nhập, Đăng ký, Quên mật khẩu và Chỉnh sửa
 
 ## Các màn hình
 
+Trang Thông tin cá nhân dùng cùng `ReferenceToolbar`, `ReferenceTitle`, `ReferenceLabel`, avatar 88dp và nút xanh với trang Chỉnh sửa hồ sơ. Các giá trị chỉ đọc dùng `ReferenceProfileValue`: icon 24dp, viền 1dp, góc bo 9dp, chữ 14sp và ô email nền xanh nhạt. Người dùng có thể chọn/sao chép giá trị; chỉnh sửa qua nút Chỉnh sửa hồ sơ. Thứ tự thông tin là email, điện thoại, cấp học, khu vực, mục tiêu và địa chỉ.
+
+Xác nhận 08/10/2026: `assembleDebug`, `assembleDebugAndroidTest` và `lintDebug` thành công, lint không có lỗi. Chưa xác nhận luồng hồ sơ trên thiết bị trong lượt này: máy ảo API 36.1 bị treo System UI/DeadSystemException và tiến trình instrumentation không chạy xong. Không dùng các ảnh hồ sơ cũ trong `build/ui-previews/` làm ảnh xác nhận giao diện mới.
+
 | Chức năng | Java dưới app/src/main/java/com/example/tmdt/ | XML dưới app/src/main/res/layout/ |
 | --- | --- | --- |
 | Trang chủ | ui/home/HomeFragment.java | fragment_home.xml |
@@ -18,6 +22,8 @@ Bốn màn hình Đăng nhập, Đăng ký, Quên mật khẩu và Chỉnh sửa
 | Xác thực điện thoại tùy chọn | ui/auth/PhoneVerificationFragment.java | fragment_phone_verification.xml |
 | Thông tin cá nhân | ui/profile/AccountFragment.java | fragment_account.xml |
 | Chỉnh sửa hồ sơ | ui/profile/EditAccountFragment.java | fragment_edit_account.xml |
+| Đăng ký gia sư | ui/profile/RegisterTutorFragment.java | fragment_register_tutor.xml |
+| Kiểm tra và gửi hồ sơ gia sư | ui/profile/ReviewTutorFragment.java | fragment_review_tutor.xml |
 
 `item_tutor.xml` là một thẻ gia sư. `item_offering.xml` là một dòng môn dạy/học phí. `view_avatar.xml` và `view_account_feedback.xml` là các thành phần dùng chung.
 
@@ -40,6 +46,12 @@ Mỗi Fragment bỏ tham chiếu binding ở `onDestroyView`. Observer gắn v�
 `legacy/java/`, `legacy/tests/`, `legacy/res/` giữ lại bản giao diện dựng bằng Java, luồng đặt lịch mô phỏng và template Android ban đầu. Các thư mục này nằm ngoài source set của app nên không được biên dịch hay xuất hiện trong ứng dụng. Dữ liệu Firebase/rules không bị xóa hoặc thay đổi do việc tách giao diện.
 
 ## Kiểm tra
+
+### Giao diện bo mềm
+
+`res/values/soft_ui.xml` tập trung bán kính dùng chung: ô nhập 18dp, nút/thẻ 24dp, hộp thoại/menu 28dp. XML tài khoản và đăng ký gia sư dùng các kích thước này; `Ui.cardSurface`/`Ui.fieldSurface` áp dụng cho lịch học, lớp học và không gian gia sư. Viền xanh xám nhẹ, nền ô nhập và các thẻ ghi chú xanh nhạt. Hiệu ứng chạm giữ đúng đường bo của thành phần.
+
+Thanh menu có nền xanh nhạt bo tròn, cách mép màn hình 12dp, vẫn giữ các mục và icon hiện có. Đây là điều chỉnh hình thức theo yêu cầu bo mềm sau bản Figma; không thay đổi luồng điều hướng hay quyền Firebase.
 
 ```powershell
 .\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug

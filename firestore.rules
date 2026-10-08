@@ -25,8 +25,12 @@ service cloud.firestore {
         && request.resource.data.trang_thai == 'ACTIVE'
         && request.resource.data.created_at == request.time;
       allow update: if owner() && resource.data.trang_thai == 'ACTIVE' && validProfile()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'ho_ten','so_dien_thoai','dia_chi','anh_dai_dien','cap_hoc','khu_vuc','muc_tieu_hoc_tap','updated_at']);
+        && (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'ho_ten','so_dien_thoai','dia_chi','anh_dai_dien','cap_hoc','khu_vuc','muc_tieu_hoc_tap','updated_at'])
+          || (resource.data.la_gia_su == false && request.resource.data.la_gia_su == true
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ho_ten','so_dien_thoai','la_gia_su','updated_at'])
+            && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.trang_thai_xac_minh == 'PENDING'
+            && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.created_at == request.time));
     }
     // Only trusted administrators publish catalog records. Private contacts stay in users.
     match /subjects/{subjectId} {
@@ -34,12 +38,40 @@ service cloud.firestore {
       allow write: if false;
     }
     match /tutor_profiles/{tutorId} {
-      allow read: if resource.data.trang_thai_xac_minh == 'VERIFIED';
-      allow write: if false;
+      function validRegistration(){
+        let d=request.resource.data;
+        return d.keys().hasAll(['user_id','ho_ten','hoc_van','truong','chuyen_nganh','gioi_thieu','khu_vuc','so_nam_kinh_nghiem','hinh_thuc_day','nhan_lop','trang_thai_xac_minh','created_at','updated_at'])
+          && d.keys().hasOnly(['user_id','ho_ten','hoc_van','truong','chuyen_nganh','gioi_thieu','khu_vuc','so_nam_kinh_nghiem','hinh_thuc_day','nhan_lop','trang_thai_xac_minh','created_at','updated_at'])
+          && d.user_id == tutorId && d.ho_ten is string && d.ho_ten.size() >= 2 && d.ho_ten.size() <= 100
+          && d.hoc_van is string && d.hoc_van.size() <= 100 && d.truong is string && d.truong.size() <= 150
+          && d.chuyen_nganh is string && d.chuyen_nganh.size() <= 150 && d.gioi_thieu is string && d.gioi_thieu.size() <= 2000
+          && d.khu_vuc is string && d.khu_vuc.size() <= 150
+          && d.so_nam_kinh_nghiem is int && d.so_nam_kinh_nghiem >= 0 && d.so_nam_kinh_nghiem <= 60
+          && d.hinh_thuc_day in ['TRUC_TUYEN','TAI_NHA','CA_HAI'] && d.nhan_lop == true
+          && d.trang_thai_xac_minh == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
+      }
+      allow get: if (request.auth != null && request.auth.uid == tutorId) || resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow list: if resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow create: if signedIn() && request.auth.uid == tutorId && account().trang_thai == 'ACTIVE'
+        && account().la_gia_su == false && validRegistration()
+        && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.la_gia_su == true
+        && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.ho_ten == request.resource.data.ho_ten;
+      allow update, delete: if false;
     }
     match /tutor_subjects/{offeringId} {
       allow read: if true;
-      allow write: if false;
+      allow create: if signedIn() && account().trang_thai == 'ACTIVE'
+        && request.resource.data.keys().hasAll(['tutor_id','subject_id','cap_lop','hoc_phi_moi_buoi'])
+        && request.resource.data.keys().hasOnly(['tutor_id','subject_id','cap_lop','hoc_phi_moi_buoi'])
+        && request.resource.data.tutor_id == request.auth.uid
+        && request.resource.data.subject_id is string && request.resource.data.subject_id.size() <= 150
+        && request.resource.data.cap_lop in ['TIEU_HOC','THCS','THPT','LUYEN_THI','KHAC']
+        && offeringId == request.auth.uid + '_' + request.resource.data.subject_id + '_' + request.resource.data.cap_lop
+        && request.resource.data.hoc_phi_moi_buoi is int && request.resource.data.hoc_phi_moi_buoi >= 50000 && request.resource.data.hoc_phi_moi_buoi <= 2000000
+        && get(/databases/$(database)/documents/subjects/$(request.resource.data.subject_id)).data.dang_su_dung == true
+        && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.trang_thai_xac_minh == 'PENDING'
+        && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.created_at == request.time;
+      allow update, delete: if false;
     }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }

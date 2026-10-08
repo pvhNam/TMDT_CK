@@ -91,7 +91,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     /** One session of a group class; it follows the class schedule, so it is moved by editing the class, not by a proposal. */
     private View classCard(GroupClass.Session session, boolean withDate) {
         GroupClass item = session.groupClass();
-        LinearLayout card = ui.bordered(10); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
         LinearLayout top = ui.row();
         ui.weight(top,ui.text((withDate?session.date.format(Lesson.DATE).substring(0,5)+" · ":"")+Lesson.range(item.hour,item.minutes).replace("–"," – "),21,Ui.INK,true));
         top.addView(ui.pill("Lớp nhóm",14,Ui.BLUE,Ui.PALE)); ui.add(card,top); ui.space(card,4);
@@ -115,7 +115,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     }
 
     private View card(Lesson lesson, boolean withDate) {
-        LinearLayout card = ui.bordered(10); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
         LinearLayout top = ui.row(); ui.weight(top,ui.text((withDate?lesson.dateLabel().substring(0,5)+" · ":"")+lesson.timeLabel().replace("–"," – "),21,Ui.INK,true));
         top.addView(ui.lessonStatus(lesson)); ui.add(card,top); ui.space(card,4);
         ui.add(card,ui.text(lesson.title,21,Ui.INK,true)); ui.space(card,6);

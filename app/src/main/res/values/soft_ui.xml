@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="soft_field_radius">18dp</dimen>
+    <dimen name="soft_button_radius">24dp</dimen>
+    <dimen name="soft_card_radius">24dp</dimen>
+    <dimen name="soft_dialog_radius">28dp</dimen>
+    <color name="soft_field_fill">#F8FAFF</color>
+    <color name="soft_border">#DFE8F5</color>
+    <color name="soft_surface">#EFF6FF</color>
+    <style name="ShapeAppearance.TMDT.SoftSmall" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">@dimen/soft_field_radius</item>
+    </style>
+    <style name="ShapeAppearance.TMDT.SoftMedium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">@dimen/soft_card_radius</item>
+    </style>
+    <style name="ShapeAppearance.TMDT.SoftLarge" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">@dimen/soft_dialog_radius</item>
+    </style>
+</resources>

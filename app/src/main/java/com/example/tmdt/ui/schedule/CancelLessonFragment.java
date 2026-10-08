@@ -25,7 +25,7 @@ public final class CancelLessonFragment extends ScreenFragment {
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));
-        ui.surface(card,Ui.WHITE,10,Ui.BORDER);
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,98,106,9)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,34);
@@ -37,7 +37,7 @@ public final class CancelLessonFragment extends ScreenFragment {
         other = ui.entry("Nhập lý do hủy",false); other.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(150)});
         ui.add(body,other); renderReasons(); ui.space(body,12);
 
-        LinearLayout deposit = ui.column(); deposit.setPadding(ui.dp(20),ui.dp(12),ui.dp(16),ui.dp(14)); ui.surface(deposit,Ui.PALE,11,Ui.BORDER);
+        LinearLayout deposit = ui.column(); deposit.setPadding(ui.dp(20),ui.dp(12),ui.dp(16),ui.dp(14)); ui.cardSurface(deposit,Ui.PALE,Ui.BORDER);
         LinearLayout amount = ui.row(); amount.addView(ui.icon(R.drawable.ic_coin,26,Ui.INK)); ui.gap(amount,16);
         LinearLayout amountText = ui.column(); ui.add(amountText,ui.text("Học phí ký quỹ:",18,Ui.MUTED,false)); ui.space(amountText,4);
         ui.add(amountText,ui.text(Tutor.money(lesson.total()),26,Ui.INK,true)); ui.weight(amount,amountText); ui.add(deposit,amount); ui.space(deposit,8);

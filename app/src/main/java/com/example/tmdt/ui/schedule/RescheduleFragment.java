@@ -23,7 +23,7 @@ public final class RescheduleFragment extends ScreenFragment {
         ui.space(body,6);
         ui.add(body,ui.note(R.drawable.ic_clock,"Chờ phản hồi\nGia sư đang chờ bạn xác nhận.",Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE)); ui.space(body,14);
 
-        LinearLayout card = ui.bordered(11); card.setPadding(ui.dp(7),ui.dp(7),ui.dp(7),ui.dp(14));
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(7),ui.dp(7),ui.dp(7),ui.dp(14));
         LinearLayout profile = ui.row(); profile.setGravity(android.view.Gravity.TOP);
         profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,91,94,9)); ui.gap(profile,14);
         LinearLayout info = ui.column(); ui.space(info,8); ui.add(info,ui.text(lesson.tutorName,23,Ui.INK,true)); ui.space(info,8);
@@ -44,7 +44,7 @@ public final class RescheduleFragment extends ScreenFragment {
     }
 
     private View slot(String title, String value, int fill, int accent) {
-        LinearLayout box = ui.column(); box.setPadding(ui.dp(10),ui.dp(11),ui.dp(10),ui.dp(12)); ui.surface(box,fill,10,0);
+        LinearLayout box = ui.column(); box.setPadding(ui.dp(10),ui.dp(11),ui.dp(10),ui.dp(12)); ui.cardSurface(box,fill,0);
         ui.add(box,ui.text(title,18,accent,true)); ui.space(box,9);
         LinearLayout row = ui.row(); row.setPadding(ui.dp(3),0,0,0); row.addView(ui.icon(R.drawable.ic_calendar,23,accent)); ui.gap(row,13);
         ui.weight(row,ui.text(value,18,Ui.INK,false)); ui.add(box,row); return box;
