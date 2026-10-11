@@ -20,9 +20,18 @@ public final class LoginFragment extends AccountFragmentBase {
             }
         });
         binding.register.setOnClickListener(v->go("register"));
+        binding.googleSignIn.setOnClickListener(v->{
+            host().hideKeyboard();state.startGoogleSignIn(requireActivity());
+        });
+        binding.facebookSignIn.setOnClickListener(v->
+                com.google.android.material.snackbar.Snackbar.make(view,R.string.facebook_sign_in_unavailable,
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show());
+        binding.appleSignIn.setOnClickListener(v->
+                com.google.android.material.snackbar.Snackbar.make(view,R.string.apple_sign_in_unavailable,
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show());
         binding.forgot.setOnClickListener(v->{
             state.draft("forgot.email",text(binding.email),false);go("forgot");
         });
     }
-    @Override public void onDestroyView(){super.onDestroyView();binding=null;}
+    @Override public void onDestroyView(){state.cancelGooglePicker();super.onDestroyView();binding=null;}
 }

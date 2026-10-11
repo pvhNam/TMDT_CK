@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sign_in_facebook">Đăng nhập bằng Facebook</string>
+    <string name="sign_in_apple">Đăng nhập bằng Apple</string>
+    <string name="facebook_sign_in_unavailable">Đăng nhập Facebook chưa khả dụng.</string>
+    <string name="apple_sign_in_unavailable">Đăng nhập Apple chưa khả dụng.</string>
+    <style name="SocialSignInButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:layout_width">52dp</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="backgroundTint">@android:color/white</item>
+        <item name="cornerRadius">26dp</item>
+        <item name="strokeColor">#DCE8FA</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="iconTint">@null</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="rippleColor">#DCEBFF</item>
+    </style>
+</resources>
