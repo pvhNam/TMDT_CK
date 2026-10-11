@@ -76,7 +76,7 @@ public final class OpenClassFragment extends ScreenFragment {
         priceBox.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(priceBox,10);
         price = ui.entry("300000",false); price.setBackgroundColor(android.graphics.Color.TRANSPARENT); price.setPadding(0,0,0,0);
         price.setInputType(InputType.TYPE_CLASS_NUMBER); price.setFilters(new InputFilter[]{new InputFilter.LengthFilter(8)});
-        price.setTypeface(android.graphics.Typeface.create("sans-serif-condensed",android.graphics.Typeface.BOLD));
+        price.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
         price.setContentDescription("Học phí mỗi học viên, đồng một khóa");
         ui.weight(priceBox,price); priceBox.addView(ui.text("đ / khóa",16,Ui.INK,true)); ui.add(body,priceBox); ui.space(body,11);
 

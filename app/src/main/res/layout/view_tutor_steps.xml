@@ -18,7 +18,7 @@
             android:layout_height="30dp"
             android:background="@drawable/bg_tutor_step"
             android:gravity="center"
-            android:fontFamily="sans-serif-condensed"
+            android:fontFamily="sans-serif"
             android:textSize="18sp"
             android:text="1" />
         <View
@@ -32,7 +32,7 @@
             android:layout_height="30dp"
             android:background="@drawable/bg_tutor_step"
             android:gravity="center"
-            android:fontFamily="sans-serif-condensed"
+            android:fontFamily="sans-serif"
             android:textSize="18sp"
             android:text="2" />
     </LinearLayout>

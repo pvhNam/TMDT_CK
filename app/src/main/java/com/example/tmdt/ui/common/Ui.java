@@ -61,8 +61,8 @@ public final class Ui {
         view.setText(value); view.setTextSize(size); view.setTextColor(color);
         view.setFontFeatureSettings("kern"); view.setIncludeFontPadding(false);
         view.setLayoutParams(lp(-2,-2));
-        // The design uses Roboto Condensed, which Android ships as "sans-serif-condensed".
-        view.setTypeface(Typeface.create("sans-serif-condensed", bold ? Typeface.BOLD : Typeface.NORMAL));
+        // Match ScreenTitle/FieldLabel and FormInput on the student screens.
+        view.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
         view.setLineSpacing(dp(3),1);
         return view;
     }
@@ -92,7 +92,7 @@ public final class Ui {
             @Override public AlertDialog show() {
                 AlertDialog dialog = super.show();
                 TextView message = dialog.findViewById(android.R.id.message);
-                if (message != null) message.setTypeface(Typeface.create("sans-serif-condensed", Typeface.NORMAL));
+                if (message != null) message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
                 return dialog;
             }
         };
@@ -118,7 +118,7 @@ public final class Ui {
     public LinearLayout header(LinearLayout root, String title, Runnable back, View trailing) {
         LinearLayout header = row(); pad(header,6,3); header.setMinimumHeight(dp(57));
         if (back != null) header.addView(iconButton(R.drawable.ic_back,INK,"Quay lại",back)); else gap(header,12);
-        weight(header,text(title,22,INK,true)); if(trailing!=null) header.addView(trailing);
+        weight(header,text(title,16,INK,true)); if(trailing!=null) header.addView(trailing);
         add(root,header); return header;
     }
 
@@ -197,7 +197,7 @@ public final class Ui {
         FrameLayout button = new FrameLayout(context); button.setMinimumHeight(dp(46));
         int foreground = style==OUTLINE ? BLUE : style==DANGER ? RED : WHITE;
         surface(button, style==PRIMARY ? BLUE : style==DISABLED ? GRAY : WHITE, radius(R.dimen.soft_button_radius), style==OUTLINE ? BLUE : style==DANGER ? RED : 0);
-        TextView text = text(label,18,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
+        TextView text = text(label,14,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
         text.setPadding(dp(icon!=0 ? 36 : 8),0,dp(8),0);
         button.addView(text,new FrameLayout.LayoutParams(-1,-1));
         if (icon != 0) {
@@ -222,7 +222,7 @@ public final class Ui {
     }
 
     /** Trường: a bold label above an input or picker. */
-    public void label(LinearLayout parent, String label) { add(parent,text(label,16,INK,true)); space(parent,7); }
+    public void label(LinearLayout parent, String label) { add(parent,text(label,14,INK,true)); space(parent,7); }
     public TextView section(LinearLayout parent, String title, int size) { TextView view = text(title,size,INK,true); add(parent,view); return view; }
 
     /** Ô nhập acting as a picker: optional icon, value and the down chevron. */
@@ -232,11 +232,11 @@ public final class Ui {
         weight(box,value); box.addView(icon(R.drawable.ic_down,18,INK));
         clickable(box,click); return box;
     }
-    public TextView value(String value) { TextView view = text(value,16,INK,false); view.setMaxLines(2); return view; }
+    public TextView value(String value) { TextView view = text(value,15,INK,false); view.setMaxLines(2); return view; }
 
     public EditText entry(String hint, boolean multiline) {
-        EditText input = new EditText(context); input.setTextSize(16); input.setTextColor(INK); input.setHintTextColor(MUTED);
-        input.setHint(hint); input.setTypeface(Typeface.create("sans-serif-condensed",Typeface.NORMAL));
+        EditText input = new EditText(context); input.setTextSize(15); input.setTextColor(INK); input.setHintTextColor(MUTED);
+        input.setHint(hint); input.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));
         input.setSingleLine(!multiline); if (multiline) { input.setMinLines(2); input.setGravity(Gravity.TOP|Gravity.START); }
         input.setMinimumHeight(dp(multiline ? 61 : 44)); input.setPadding(dp(12),dp(10),dp(12),dp(10)); fieldSurface(input,0xFFF8FAFF,BORDER);
         input.setContentDescription(hint); return input;
@@ -287,7 +287,7 @@ public final class Ui {
         LinearLayout tabs = row();
         for (int i = 0; i < labels.length; i++) {
             int index = i; boolean active = i == selected;
-            LinearLayout tab = column(); TextView label = text(labels[i],16,active?BLUE:MUTED,active);
+            LinearLayout tab = column(); TextView label = text(labels[i],14,active?BLUE:MUTED,active);
             label.setGravity(Gravity.CENTER); label.setMinHeight(dp(43)); label.setMaxLines(1); add(tab,label);
             View underline = new View(context); surface(underline,active?BLUE:WHITE,2,0);
             LinearLayout.LayoutParams under = lp(-1,3); under.setMargins(dp(8),0,dp(8),0); tab.addView(underline,under);
@@ -299,7 +299,7 @@ public final class Ui {
 
     public CheckBox check(String label, boolean checked, CompoundButton.OnCheckedChangeListener change) {
         CheckBox box = new CheckBox(context); box.setText(label); box.setTextSize(15); box.setTextColor(INK); box.setChecked(checked);
-        box.setTypeface(Typeface.create("sans-serif-condensed",Typeface.NORMAL)); box.setButtonTintList(ColorStateList.valueOf(BLUE));
+        box.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL)); box.setButtonTintList(ColorStateList.valueOf(BLUE));
         box.setMinHeight(dp(44)); box.setOnCheckedChangeListener(change); return box;
     }
     /** Lựa chọn (radio row); the selected row gets the pale surface of the design. */
@@ -307,7 +307,7 @@ public final class Ui {
         LinearLayout row = row(); row.setPadding(dp(14),0,dp(12),0); row.setMinimumHeight(dp(44)); fieldSurface(row,selected?PALE:WHITE,0);
         FrameLayout mark = new FrameLayout(context); surface(mark,WHITE,15,selected?BLUE:INK);
         if (selected) { View dot = new View(context); surface(dot,BLUE,8,0); mark.addView(dot,new FrameLayout.LayoutParams(dp(11),dp(11),Gravity.CENTER)); }
-        row.addView(mark,lp(21,21)); gap(row,18); weight(row,text(label,19,INK,false));
+        row.addView(mark,lp(21,21)); gap(row,18); weight(row,text(label,15,INK,false));
         row.setSelected(selected); row.setContentDescription(label+(selected?", đã chọn":", chưa chọn")); clickable(row,click); return row;
     }
 }

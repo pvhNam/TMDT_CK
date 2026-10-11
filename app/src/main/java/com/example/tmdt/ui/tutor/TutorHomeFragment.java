@@ -59,7 +59,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         }
         today.sort((a,b)->a.hour-b.hour);
 
-        ui.section(body,"Tổng quan giảng dạy",24); ui.space(body,8);
+        ui.section(body,"Tổng quan giảng dạy",19); ui.space(body,8);
         LinearLayout tiles = ui.row();
         ui.weight(tiles,tile(R.drawable.ic_mail,String.valueOf(pending.size()+registrations),"Yêu cầu mới",()->{allRequests=true;animateRequests(pending);})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
@@ -82,8 +82,8 @@ public final class TutorHomeFragment extends ScreenFragment {
     }
 
     private TextView sectionTitle(LinearLayout body, String title, Runnable all) {
-        LinearLayout row = ui.row(); ui.weight(row,ui.text(title,23,Ui.INK,true));
-        TextView link=ui.link("Xem tất cả",17,all);row.addView(link); ui.add(body,row); ui.space(body,4);return link;
+        LinearLayout row = ui.row(); ui.weight(row,ui.text(title,19,Ui.INK,true));
+        TextView link=ui.link("Xem tất cả",14,all);row.addView(link); ui.add(body,row); ui.space(body,4);return link;
     }
 
     private View tile(int icon, String value, String label, Runnable click) {

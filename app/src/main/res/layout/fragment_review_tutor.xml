@@ -116,7 +116,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="48dp"
-                    android:fontFamily="sans-serif-condensed"
+                    android:fontFamily="sans-serif"
                     android:textSize="15sp"
                     android:textColor="@color/tutor_ink"
                     android:text="@string/tutor_confirm"
