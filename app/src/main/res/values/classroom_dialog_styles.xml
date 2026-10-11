@@ -8,7 +8,7 @@
     <style name="ThemeOverlay.TMDT.Classroom.Dialog" parent="ThemeOverlay.Material3.Dialog.Alert">
         <item name="android:windowBackground">@drawable/bg_classroom_dialog</item>
         <item name="android:backgroundDimAmount">0.4</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="colorPrimary">@color/classroom_dialog_blue</item>
         <item name="colorAccent">@color/classroom_dialog_blue</item>
         <item name="android:colorAccent">@color/classroom_dialog_blue</item>
@@ -28,7 +28,7 @@
     <style name="ThemeOverlay.TMDT.Classroom.DatePicker" parent="android:Theme.Material.Light.Dialog.Alert">
         <item name="android:windowBackground">@drawable/bg_classroom_dialog</item>
         <item name="android:backgroundDimAmount">0.4</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="colorPrimary">@color/classroom_dialog_blue</item>
         <item name="android:colorAccent">@color/classroom_dialog_blue</item>
         <item name="android:textColorPrimary">@color/classroom_dialog_ink</item>
@@ -50,24 +50,24 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/classroom_dialog_ink</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 
     <style name="Widget.TMDT.Classroom.DialogText" parent="">
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:lineSpacingExtra">2sp</item>
     </style>
     <style name="TextAppearance.TMDT.Classroom.DialogItem" parent="TextAppearance.AppCompat.Medium">
-        <item name="android:textSize">17sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/classroom_dialog_ink</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 
     <style name="Widget.TMDT.Classroom.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
         <item name="android:textColor">@color/classroom_dialog_blue</item>
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textAllCaps">false</item>
     </style>
     <style name="Widget.TMDT.Classroom.DialogButton.Muted">
