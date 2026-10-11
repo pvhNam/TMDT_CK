@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation("com.github.Dimezis:BlurView:version-3.2.0")
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-analytics")

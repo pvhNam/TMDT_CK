@@ -14,11 +14,16 @@ public final class LineIcon extends View {
     private final Path path = new Path();
     private final RectF bounds = new RectF();
     private final int color;
+    private final android.graphics.drawable.Drawable sharedIcon;
 
     public LineIcon(Context context, String kind, int color) {
         super(context);
         this.kind = kind;
         this.color = color;
+        int resource="calendar".equals(kind)?com.example.tmdt.R.drawable.ic_calendar:
+                "chat".equals(kind)?com.example.tmdt.R.drawable.ic_chat:0;
+        sharedIcon=resource==0?null:androidx.appcompat.content.res.AppCompatResources.getDrawable(context,resource).mutate();
+        if(sharedIcon!=null&&!NavigationAssets.useOriginalColors(resource,color))sharedIcon.setTint(color);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
@@ -35,6 +40,10 @@ public final class LineIcon extends View {
 
     @Override protected void onDraw(Canvas c) {
         super.onDraw(c);
+        if(sharedIcon!=null){
+            int edge=Math.min(getWidth(),getHeight()),left=(getWidth()-edge)/2,top=(getHeight()-edge)/2;
+            sharedIcon.setBounds(left,top,left+edge,top+edge);sharedIcon.draw(c);return;
+        }
         c.save();
         float size = Math.min(getWidth(), getHeight());
         c.translate((getWidth() - size) / 2f, (getHeight() - size) / 2f);
@@ -56,12 +65,6 @@ public final class LineIcon extends View {
             case "down": lines(c,6,9,12,15,18,9); break;
             case "search": c.drawCircle(10,10,7,paint); lines(c,15,15,21,21); break;
             case "home": lines(c,2,11,12,2,22,11); lines(c,5,9,5,22,10,22,10,15,14,15,14,22,19,22,19,9); break;
-            case "calendar":
-                c.drawRoundRect(rect(3,5,21,22),2,2,paint); lines(c,3,10,21,10);
-                lines(c,8,2,8,7); lines(c,16,2,16,7); lines(c,7,14,10,14); lines(c,14,14,17,14); lines(c,7,18,10,18); break;
-            case "chat":
-                c.drawRoundRect(rect(2,3,22,19),3,3,paint); lines(c,6,19,6,23,11,19);
-                c.drawPoint(7,11,paint); c.drawPoint(12,11,paint); c.drawPoint(17,11,paint); break;
             case "person": c.drawCircle(12,6,4,paint); c.drawArc(rect(3,12,21,30),180,180,false,paint); lines(c,3,21,21,21); break;
             case "bell":
                 lines(c,3,18,5,15,5,10); c.drawArc(rect(5,3,19,17),180,180,false,paint);

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LoginGlassField" parent="ReferenceFilledField">
+        <item name="boxBackgroundColor">#F5F8FC</item>
+        <item name="boxStrokeColor">@color/login_field_stroke</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="boxCornerRadiusTopStart">18dp</item>
+        <item name="boxCornerRadiusTopEnd">18dp</item>
+        <item name="boxCornerRadiusBottomStart">18dp</item>
+        <item name="boxCornerRadiusBottomEnd">18dp</item>
+        <item name="android:layout_marginBottom">14dp</item>
+    </style>
+    <style name="LoginInput" parent="ReferenceInput">
+        <item name="android:minHeight">54dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColorHint">#7B8CA6</item>
+    </style>
+    <style name="LoginPrimary" parent="ReferencePrimary">
+        <item name="android:layout_height">54dp</item>
+        <item name="android:minHeight">54dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="backgroundTint">#087BFF</item>
+    </style>
+    <style name="LoginGlassSocialButton" parent="SocialSignInButton">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:padding">16dp</item>
+        <item name="cornerRadius">28dp</item>
+        <item name="backgroundTint">#FFFFFF</item>
+        <item name="strokeColor">#E2EAF4</item>
+    </style>
+    <style name="LoginGlassFooter" parent="ReferenceFooter">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:layout_marginTop">22dp</item>
+    </style>
+</resources>

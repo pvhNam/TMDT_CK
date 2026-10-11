@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@android:color/white"
     tools:context="com.example.tmdt.ui.auth.LoginFragment">
+    <com.example.tmdt.ui.common.SoftBlurBackground
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         style="@style/ReferenceToolbar"
@@ -24,10 +31,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="20dp">
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:paddingTop="28dp"
+            android:paddingBottom="28dp">
             <include
                 layout="@layout/view_account_feedback" />
             <LinearLayout
@@ -37,28 +44,31 @@
                 android:orientation="vertical">
                 <ImageView
                     android:layout_width="match_parent"
-                    android:layout_height="182dp"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_height="176dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="20dp"
                     android:src="@drawable/illustration_learning"
                     android:scaleType="fitCenter"
                     android:importantForAccessibility="no" />
                 <TextView
                     style="@style/ReferenceTitle"
+                    android:textSize="26sp"
+                    android:letterSpacing="-0.02"
                     android:text="@string/welcome"
                     android:gravity="center" />
                 <TextView
                     style="@style/ReferenceBody"
+                    android:textSize="14sp"
                     android:text="@string/login_caption"
                     android:gravity="center"
-                    android:layout_marginBottom="24dp" />
+                    android:layout_marginBottom="30dp" />
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/email_layout"
-                    style="@style/ReferenceFilledField"
+                    style="@style/LoginGlassField"
                     app:startIconDrawable="@drawable/ic_field_email">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/email"
-                        style="@style/ReferenceInput"
+                        style="@style/LoginInput"
                         android:hint="@string/ref_email_hint"
                         android:inputType="textEmailAddress"
                         android:autofillHints="emailAddress"
@@ -66,12 +76,12 @@
                 </com.google.android.material.textfield.TextInputLayout>
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/password_layout"
-                    style="@style/ReferenceFilledField"
+                    style="@style/LoginGlassField"
                     app:startIconDrawable="@drawable/ic_field_lock"
                     app:endIconMode="password_toggle">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/password"
-                        style="@style/ReferenceInput"
+                        style="@style/LoginInput"
                         android:hint="@string/password"
                         android:inputType="textPassword"
                         android:autofillHints="password"
@@ -86,14 +96,14 @@
                     android:layout_marginTop="-8dp" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/sign_in"
-                    style="@style/ReferencePrimary"
+                    style="@style/LoginPrimary"
                     android:text="@string/page_login"
                     android:contentDescription="@string/page_login" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="18dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
                     <View android:layout_width="0dp" android:layout_height="1dp"
@@ -112,20 +122,20 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/google_sign_in"
-                        style="@style/SocialSignInButton"
+                        style="@style/LoginGlassSocialButton"
                         android:contentDescription="@string/sign_in_google"
                         android:tooltipText="@string/sign_in_google"
                         app:icon="@drawable/ic_google" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/facebook_sign_in"
-                        style="@style/SocialSignInButton"
+                        style="@style/LoginGlassSocialButton"
                         android:layout_marginStart="16dp"
                         android:contentDescription="@string/sign_in_facebook"
                         android:tooltipText="@string/sign_in_facebook"
                         app:icon="@drawable/ic_facebook" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/apple_sign_in"
-                        style="@style/SocialSignInButton"
+                        style="@style/LoginGlassSocialButton"
                         android:layout_marginStart="16dp"
                         android:contentDescription="@string/sign_in_apple"
                         android:tooltipText="@string/sign_in_apple"
@@ -133,10 +143,11 @@
                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/register"
-                    style="@style/ReferenceFooter"
+                    style="@style/LoginGlassFooter"
                     android:text="@string/ref_register_footer"
                     android:contentDescription="@string/register_link" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>

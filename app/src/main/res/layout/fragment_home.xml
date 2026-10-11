@@ -54,11 +54,27 @@
                 android:importantForAutofill="no" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/search_button"
-                style="@style/PrimaryButton"
-                android:layout_width="wrap_content"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginTop="0dp"
-                android:text="@string/search_button" />
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="13dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:contentDescription="@string/search_button"
+                android:tooltipText="@string/search_button"
+                app:backgroundTint="#F5F8FF"
+                app:cornerRadius="18dp"
+                app:strokeColor="#E1EAFA"
+                app:strokeWidth="1dp"
+                app:icon="@drawable/search"
+                app:iconSize="26dp"
+                app:iconTint="@null"
+                app:iconPadding="0dp"
+                app:iconGravity="textStart"
+                app:rippleColor="#DCEBFF" />
         </LinearLayout>
         <HorizontalScrollView
             android:layout_width="match_parent"

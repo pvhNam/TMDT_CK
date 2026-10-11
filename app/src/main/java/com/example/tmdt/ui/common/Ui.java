@@ -165,7 +165,8 @@ public final class Ui {
 
     public ImageView icon(int drawable, int size, int color) {
         ImageView view = new ImageView(context); view.setImageResource(drawable);
-        view.setImageTintList(ColorStateList.valueOf(color)); view.setLayoutParams(lp(size,size));
+        view.setImageTintList(NavigationAssets.useOriginalColors(drawable,color)?null:ColorStateList.valueOf(color));
+        view.setLayoutParams(lp(size,size));
         view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); return view;
     }
     public ImageView art(int drawable, int width, int height) {

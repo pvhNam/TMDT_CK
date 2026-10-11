@@ -36,7 +36,10 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean keyboardVisible;
+    private int bottomInset,systemBottomInset;
     private String navigatingTo;
+    private final com.example.tmdt.ui.common.FloatingNavigationInsets navigationInsets=new com.example.tmdt.ui.common.FloatingNavigationInsets();
+    private final android.view.ViewTreeObserver.OnGlobalLayoutListener navigationLayout=this::updateNavigationPadding;
 
     @Override public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -47,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
         classroom=new Classroom(this,savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
+            bottomInset=safe.bottom;
+            systemBottomInset=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()).bottom;
             view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
             keyboardVisible=insets.isVisible(WindowInsetsCompat.Type.ime());
             updateNavigationVisibility();
@@ -54,8 +59,19 @@ public class MainActivity extends AppCompatActivity {
         });
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
         WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarContrastEnforced(false);
         NavigationAssets.apply(binding.bottomNavigation);
-        binding.bottomNavigation.setClipToOutline(true);
+        binding.bottomNavigation.setBackgroundTintList(null);
+        binding.bottomNavigation.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        binding.navigationGlass.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        binding.navigationGlass.setClipToOutline(true);
+        binding.navigationGlass.setOutlineAmbientShadowColor(0x246583AD);
+        binding.navigationGlass.setOutlineSpotShadowColor(0x246583AD);
+        binding.navigationGlass.setupWith(binding.navigationBlurTarget,4f,false)
+                .setFrameClearDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE))
+                .setBlurRadius(8f);
+        binding.screenContainer.getViewTreeObserver().addOnGlobalLayoutListener(navigationLayout);
         binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
@@ -141,8 +157,29 @@ public class MainActivity extends AppCompatActivity {
     private void updateNavigationVisibility(){
         boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
+        // Let the page extend underneath both the floating menu and Android's gesture area.
+        int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
+        if(binding.appRoot.getPaddingBottom()!=paddingBottom)
+            binding.appRoot.setPadding(binding.appRoot.getPaddingLeft(),binding.appRoot.getPaddingTop(),binding.appRoot.getPaddingRight(),paddingBottom);
+        android.widget.FrameLayout.LayoutParams glassParams=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
+        int margin=Math.round(8*getResources().getDisplayMetrics().density)+systemBottomInset;
+        if(glassParams.bottomMargin!=margin){glassParams.bottomMargin=margin;binding.navigationGlass.setLayoutParams(glassParams);}
         binding.bottomNavigation.setVisibility(visibility);
-        binding.navigationDivider.setVisibility(visibility);
+        binding.navigationGlass.setVisibility(visibility);
+        binding.navigationGlass.setBlurAutoUpdate(visibility==View.VISIBLE);
+        updateNavigationPadding();
+    }
+    private void updateNavigationPadding() {
+        if(binding==null)return;
+        int inset=binding.navigationGlass.getVisibility()==View.VISIBLE
+                ?Math.round(96*getResources().getDisplayMetrics().density)+systemBottomInset:0;
+        for(int i=0;i<binding.screenContainer.getChildCount();i++)
+            navigationInsets.apply(binding.screenContainer.getChildAt(i),inset);
+    }
+    @Override protected void onDestroy() {
+        binding.screenContainer.getViewTreeObserver().removeOnGlobalLayoutListener(navigationLayout);
+        binding.navigationGlass.setBlurAutoUpdate(false);
+        super.onDestroy();
     }
     public void back(){
         if(account.isBusy())return;hideKeyboard();
