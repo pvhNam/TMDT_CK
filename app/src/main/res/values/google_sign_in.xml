@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sign_in_google">Đăng nhập bằng Google</string>
+    <string name="sign_in_or">hoặc</string>
+    <string name="google_not_configured">Đăng nhập Google chưa được cấu hình. Hãy bật Google trong Firebase Authentication, thêm SHA của ứng dụng và cập nhật file google-services.json.</string>
+    <string name="google_invalid_response">Không nhận được thông tin đăng nhập Google hợp lệ. Vui lòng thử lại.</string>
+    <string name="google_no_account">Hãy thêm tài khoản Google trên thiết bị rồi thử lại.</string>
+    <string name="google_services_unavailable">Thiết bị cần Dịch vụ Google Play để đăng nhập Google. Hãy cài đặt hoặc cập nhật rồi thử lại.</string>
+    <string name="google_sign_in_failed">Chưa thể đăng nhập Google. Hãy kiểm tra kết nối và thử lại. Nếu lỗi vẫn còn, cần kiểm tra cấu hình OAuth và SHA của ứng dụng.</string>
+</resources>

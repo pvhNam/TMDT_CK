@@ -89,6 +89,48 @@
                     style="@style/ReferencePrimary"
                     android:text="@string/page_login"
                     android:contentDescription="@string/page_login" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <View android:layout_width="0dp" android:layout_height="1dp"
+                        android:layout_weight="1" android:background="#DCE8FA" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp" android:text="@string/sign_in_or"
+                        android:textColor="#7083AC" android:textSize="13sp" />
+                    <View android:layout_width="0dp" android:layout_height="1dp"
+                        android:layout_weight="1" android:background="#DCE8FA" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/google_sign_in"
+                        style="@style/SocialSignInButton"
+                        android:contentDescription="@string/sign_in_google"
+                        android:tooltipText="@string/sign_in_google"
+                        app:icon="@drawable/ic_google" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/facebook_sign_in"
+                        style="@style/SocialSignInButton"
+                        android:layout_marginStart="16dp"
+                        android:contentDescription="@string/sign_in_facebook"
+                        android:tooltipText="@string/sign_in_facebook"
+                        app:icon="@drawable/ic_facebook" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/apple_sign_in"
+                        style="@style/SocialSignInButton"
+                        android:layout_marginStart="16dp"
+                        android:contentDescription="@string/sign_in_apple"
+                        android:tooltipText="@string/sign_in_apple"
+                        app:icon="@drawable/ic_apple" />
+                </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/register"
                     style="@style/ReferenceFooter"
