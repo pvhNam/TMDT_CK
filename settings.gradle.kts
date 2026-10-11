@@ -19,9 +19,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven("https://jitpack.io") {
+            content { includeGroup("com.github.Dimezis") }
+        }
     }
 }
 
 rootProject.name = "TMDT"
 include(":app")
- 

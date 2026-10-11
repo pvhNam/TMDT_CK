@@ -36,6 +36,7 @@ public final class AccountState extends ViewModel {
     long resendAt;
     private int generation;
     private int phoneAttempt;
+    private android.os.CancellationSignal googlePicker;
     private TutorRegistration tutorRegistration;
     public TutorRegistration tutorRegistration(){return tutorRegistration;}
     public void reviewTutor(TutorRegistration value){tutorRegistration=value;destination="review_tutor";notifyUi();}
@@ -159,6 +160,55 @@ public final class AccountState extends ViewModel {
             busy=false;notice="Nếu email đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu. Hãy kiểm tra cả thư rác.";notifyUi();
         });
     }
+    public void startGoogleSignIn(Activity activity) {
+        if(busy)return;
+        if(GoogleSignIn.clientId(activity).isEmpty()) {
+            reportError(activity.getString(R.string.google_not_configured));return;
+        }
+        begin();
+        final android.os.CancellationSignal picker=new android.os.CancellationSignal();
+        googlePicker=picker;
+        GoogleSignIn.launch(activity,picker,new GoogleSignIn.Callback() {
+            @Override public void token(String idToken) {
+                if(googlePicker!=picker)return;
+                googlePicker=null;busy=false;signInWithGoogle(idToken);
+            }
+            @Override public void stopped(String message) {
+                if(googlePicker!=picker)return;
+                googlePicker=null;busy=false;error=message;notifyUi();
+            }
+        });
+    }
+    public void cancelGooglePicker() {
+        if(googlePicker==null)return;
+        android.os.CancellationSignal picker=googlePicker;googlePicker=null;
+        picker.cancel();busy=false;notifyUi();
+    }
+    public void signInWithGoogle(String idToken) {
+        if(busy)return;
+        if(idToken==null || idToken.trim().isEmpty()) {reportError("Không nhận được thông tin đăng nhập Google. Hãy thử lại.");return;}
+        begin();int token=generation;
+        auth.signInWithCredential(com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken,null))
+                .addOnCompleteListener(task->{
+                    if(token!=generation)return;
+                    if(!task.isSuccessful()) {
+                        busy=false;
+                        Exception cause=task.getException();
+                        if(cause instanceof FirebaseAuthException) {
+                            String code=((FirebaseAuthException)cause).getErrorCode();
+                            if("ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL".equals(code))
+                                error="Email này đã có tài khoản. Hãy đăng nhập bằng phương thức đã đăng ký trước đó.";
+                            else if("ERROR_INVALID_CREDENTIAL".equals(code))
+                                error="Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn. Hãy chọn lại tài khoản.";
+                            else if("ERROR_OPERATION_NOT_ALLOWED".equals(code))
+                                error="Đăng nhập Google chưa được bật trong Firebase Authentication.";
+                            else error=message(cause);
+                        } else error=message(cause);
+                        notifyUi();return;
+                    }
+                    draft.clear();destination=null;profile=null;loadProfile(true);
+                });
+    }
     public void submitTutor(){
         TutorRegistration value=tutorRegistration;
         if(busy||user()==null||profile==null||value==null)return;
@@ -260,10 +310,16 @@ public final class AccountState extends ViewModel {
         });
     }
     public void signOut() {
+        cancelGooglePicker();
+        GoogleSignIn.clearSession(com.google.firebase.FirebaseApp.getInstance().getApplicationContext());
         tutorRegistration=null;
         generation++;phoneAttempt++;auth.signOut();profile=null;draft.clear();terms=false;busy=false;sendingCode=false;
         verificationId=null;verificationPhone="";resendToken=null;resendAt=0;clearFeedback();
         destination="login";notifyUi();
+    }
+    @Override protected void onCleared() {
+        if(googlePicker!=null){googlePicker.cancel();googlePicker=null;}
+        super.onCleared();
     }
     static String message(Exception e) {
         if(e instanceof FirebaseNetworkException)return "Không có kết nối mạng. Vui lòng thử lại.";
