@@ -101,6 +101,11 @@
                         android:text="@string/not_updated"
                         tools:text="Đại học" />
                     <TextView
+                        android:id="@+id/study_details"
+                        style="@style/ReferenceBody"
+                        android:visibility="gone"
+                        tools:text="Lớp 8 · 13 tuổi" />
+                    <TextView
                         style="@style/ReferenceLabel"
                         android:text="@string/region"
                         android:labelFor="@id/region" />

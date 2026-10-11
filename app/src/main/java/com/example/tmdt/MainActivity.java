@@ -78,7 +78,10 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
             @Override public void handleOnBackPressed(){if(classroom.root().equals(screen))finish();else back();}
         });
-        screen=savedInstanceState==null?"home":savedInstanceState.getString("screen","home");
+        Onboarding intro=new Onboarding(this);
+        if(account.signedIn()&&!intro.introduced())intro.existingAccount();
+        String initial=!intro.introduced()?"welcome":intro.pending()&&!account.signedIn()?"register":"home";
+        screen=savedInstanceState==null?initial:savedInstanceState.getString("screen",initial);
         show(screen);
         account.changes().observe(this,ignored->{
             classroom.onAccount();
@@ -96,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)switch(destination){
+            case "welcome":fragment=new com.example.tmdt.ui.onboarding.WelcomeFragment();break;
+            case "student_intro":fragment=new com.example.tmdt.ui.onboarding.StudentIntroFragment();break;
             case "login":fragment=new LoginFragment();break;
             case "register":fragment=new RegisterFragment();break;
             case "forgot":fragment=new ForgotPasswordFragment();break;
@@ -186,7 +191,13 @@ public class MainActivity extends AppCompatActivity {
         String target=classroom.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
-            case "register":case "forgot":
+            case "welcome":finish();break;
+            case "student_intro":show("welcome");break;
+            case "register":
+                account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();
+                Onboarding intro=new Onboarding(this);
+                show(intro.pending()?(intro.teacher()?"welcome":"student_intro"):"login");break;
+            case "forgot":
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
             case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
             case "otp":account.clearFeedback();show("account");break;

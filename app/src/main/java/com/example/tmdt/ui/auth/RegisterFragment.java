@@ -13,6 +13,14 @@ public final class RegisterFragment extends AccountFragmentBase {
     public RegisterFragment(){super(R.layout.fragment_register);}
     @Override protected void bindFields(View view){
         binding=FragmentRegisterBinding.bind(view);
+        com.example.tmdt.Onboarding intro=new com.example.tmdt.Onboarding(requireContext());
+        if(intro.pending()&&intro.teacher()){
+            binding.toolbar.setTitle("Đăng ký giáo viên");
+            binding.registerHeading.setText("Tạo tài khoản giáo viên");
+            binding.registerCaption.setText("Bước 1 / 2 · Tạo tài khoản. Tiếp theo, bạn sẽ hoàn thiện hồ sơ gia sư và chọn môn giảng dạy.");
+        }else if(intro.pending()){
+            binding.registerCaption.setText(intro.level()+" · "+intro.grade()+" · "+intro.age()+" tuổi. Hoàn tất tài khoản để bắt đầu học.");
+        }
         draft(binding.name,"register.name","");draft(binding.email,"register.email","");draft(binding.phone,"register.phone","");
         draft(binding.password,"register.password","");
         draft(binding.confirm,"register.confirm","");

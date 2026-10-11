@@ -40,6 +40,8 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.role.setText("ADMIN".equals(profile.role)?R.string.role_admin:host().classroom.tutorMode()?R.string.role_tutor:R.string.role_student);
         value(binding.email,profile.email);value(binding.phone,profile.phone);value(binding.address,profile.address);
         value(binding.level,profile.level);value(binding.region,profile.region);value(binding.goal,profile.goal);
+        binding.studyDetails.setText((profile.grade.isEmpty()?"":profile.grade)+(profile.age>0?(profile.grade.isEmpty()?"":" · ")+profile.age+" tuổi":""));
+        binding.studyDetails.setVisibility(profile.grade.isEmpty()&&profile.age==0?View.GONE:View.VISIBLE);
         binding.verification.setText(state.verified()?getString(R.string.verified_phone,state.verifiedPhone()):getString(R.string.unverified));
         binding.verify.setVisibility(state.verified()?View.GONE:View.VISIBLE);
     }
