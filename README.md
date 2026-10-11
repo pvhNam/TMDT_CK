@@ -8,9 +8,11 @@ Bản hiện tại triển khai **trang chủ, đăng nhập, đăng ký và th�
 - Thông tin gia sư gồm giới thiệu, kinh nghiệm, hình thức, môn dạy và học phí cho buổi 90 phút.
 - Đăng ký/đăng nhập Firebase Email/Password, kiểm tra đầu vào và mật khẩu xác nhận, lưu phiên, quên mật khẩu qua email.
 - Trang cá nhân hiển thị và chỉnh sửa hồ sơ, địa chỉ, số điện thoại, ảnh đại diện, cấp học và mục tiêu; đăng xuất. Xác thực điện thoại là chức năng bổ sung tùy chọn.
+- [Đăng ký làm gia sư](TUTOR_REGISTRATION.md) từ trang cá nhân theo Figma: nhập thông tin, xem lại và gửi Firebase. Sau khi lưu thành công, nút đổi thành Chuyển qua gia sư; có chuyển lại học viên. Hồ sơ PENDING cần quản trị duyệt trước khi mở lớp.
+- Menu dưới theo [Figma Mobile](FIGMA_MENU.md): Trang chủ, Lịch học, Tin nhắn, Cá nhân. Lịch học và Tin nhắn mới có màn hình chờ, chưa kết nối nghiệp vụ.
 - Firestore Rules bảo vệ hồ sơ theo UID, chặn nâng vai trò và chặn client sửa danh mục gia sư.
 
-Đã bỏ khỏi điều hướng và dữ liệu của các màn hình mới: tin đăng/ứng tuyển/lời mời, minh chứng bằng cấp, hợp đồng chống dạy ngoài, học thử/điểm danh, đánh giá, ví/ký quỹ/thanh toán, tin nhắn và cấu hình hệ thống cùng các trường đã được yêu cầu bỏ. Chi tiết tại [schema rút gọn](FIRESTORE_SCHEMA.md).
+Đã bỏ khỏi dữ liệu và nghiệp vụ của các màn hình mới: tin đăng/ứng tuyển/lời mời, minh chứng bằng cấp, hợp đồng chống dạy ngoài, học thử/điểm danh, đánh giá, ví/ký quỹ/thanh toán, tin nhắn và cấu hình hệ thống cùng các trường đã được yêu cầu bỏ. Mục Tin nhắn trong menu Figma chỉ mở giao diện chờ. Chi tiết tại [schema rút gọn](FIRESTORE_SCHEMA.md).
 
 ## Chạy dự án
 

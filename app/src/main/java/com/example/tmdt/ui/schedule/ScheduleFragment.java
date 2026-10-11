@@ -72,7 +72,7 @@ public final class ScheduleFragment extends ScreenFragment {
     private View lessonCard(Lesson lesson) {
         LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
-        row.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,77,9));ui.gap(row,14);
+        row.addView(ui.avatar(lesson.tutorId,lesson.tutorName,73));ui.gap(row,14);
         LinearLayout details=ui.column();ui.space(details,4);
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(lesson.title,lesson.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);

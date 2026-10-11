@@ -28,7 +28,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.add(body,summary); ui.space(body,11);
 
         LinearLayout profile = ui.row(); profile.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9)); ui.cardSurface(profile,Ui.WHITE,Ui.BORDER);
-        profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,73,79,9)); ui.gap(profile,13);
+        profile.addView(ui.avatar(lesson.tutorId,lesson.tutorName,73)); ui.gap(profile,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         String teaches = classroom.teaches(lesson.tutorId); ui.add(info,ui.text(teaches.isEmpty()?"Gia sư":teaches,15,Ui.MUTED,false));
         info.addView(ui.link("Xem hồ sơ",16,()->classroom.openTutor(lesson.tutorId,lesson.tutorName)),ui.lp(-2,-2));

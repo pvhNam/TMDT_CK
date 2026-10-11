@@ -35,18 +35,21 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         return root;
     }
 
+    private void animateCalendar(){
+        render();com.example.tmdt.ui.common.Motion.reveal(content);
+    }
     private void render() {
         content.removeAllViews();
         LocalDate day = classroom.teachingDay; boolean month = classroom.teachingMonth;
         LinearLayout toggle = ui.row();
-        ui.weight(toggle,ui.choice("Tuần",!month,()->{classroom.teachingMonth=false;render();})); ui.gap(toggle,8);
-        ui.weight(toggle,ui.choice("Tháng",month,()->{classroom.teachingMonth=true;render();}));
+        ui.weight(toggle,ui.choice("Tuần",!month,()->{if(classroom.teachingMonth){classroom.teachingMonth=false;animateCalendar();}})); ui.gap(toggle,8);
+        ui.weight(toggle,ui.choice("Tháng",month,()->{if(!classroom.teachingMonth){classroom.teachingMonth=true;animateCalendar();}}));
         ui.add(content,toggle); ui.space(content,12);
 
         LinearLayout period = ui.row();
-        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);render();}),ui.lp(40,36));
+        period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);animateCalendar();}),ui.lp(40,36));
         TextView label = ui.text("Tháng "+day.getMonthValue()+", "+day.getYear(),20,Ui.INK,true); label.setGravity(Gravity.CENTER); ui.weight(period,label);
-        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);render();}),ui.lp(40,36));
+        period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);animateCalendar();}),ui.lp(40,36));
         ui.add(content,period);
 
         List<Entry> shown = new ArrayList<>();
@@ -54,7 +57,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
             LinearLayout strip = ui.row(); LocalDate monday = day.with(DayOfWeek.MONDAY);
             for (int i = 0; i < 7; i++) {
                 LocalDate date = monday.plusDays(i); if (i > 0) ui.gap(strip,5);
-                ui.weight(strip,ui.day(date,date.equals(day),()->{classroom.teachingDay=date;render();}));
+                ui.weight(strip,ui.day(date,date.equals(day),()->{if(!date.equals(classroom.teachingDay)){classroom.teachingDay=date;animateCalendar();}}));
             }
             ui.add(content,strip); ui.space(content,6);
         }
@@ -119,7 +122,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         LinearLayout top = ui.row(); ui.weight(top,ui.text((withDate?lesson.dateLabel().substring(0,5)+" · ":"")+lesson.timeLabel().replace("–"," – "),21,Ui.INK,true));
         top.addView(ui.lessonStatus(lesson)); ui.add(card,top); ui.space(card,4);
         ui.add(card,ui.text(lesson.title,21,Ui.INK,true)); ui.space(card,6);
-        LinearLayout student = ui.row(); student.addView(ui.photo(0,"Ảnh "+lesson.studentName,62,64,9)); ui.gap(student,12);
+        LinearLayout student = ui.row(); student.addView(ui.avatar(lesson.studentId,lesson.studentName,62)); ui.gap(student,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text("Học viên",14,Ui.MUTED,false)); ui.space(info,4);
         ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text("▣ "+lesson.mode+(lesson.trial?" · Học thử":""),15,Ui.INK,false)); ui.weight(student,info);

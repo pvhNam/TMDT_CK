@@ -22,7 +22,7 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
         LinearLayout card = ui.row(); card.setGravity(android.view.Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,100,107,9)); ui.gap(card,13);
+        card.addView(ui.avatar(lesson.tutorId,lesson.tutorName,100)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.space(info,3); ui.add(info,ui.text(lesson.tutorName,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,14);
         ui.add(info,ui.text("▦ "+lesson.dateLabel()+" · "+lesson.timeLabel(),15,Ui.INK,false)); ui.space(info,10);

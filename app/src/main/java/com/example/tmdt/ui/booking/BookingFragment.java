@@ -47,7 +47,7 @@ public final class BookingFragment extends ScreenFragment {
         LinearLayout root=ui.column();ui.header(root,"Đặt lịch học",classroom::back,null);
         LinearLayout body=ui.page(root);
         LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.cardSurface(summary,Ui.WHITE,Ui.BORDER);
-        summary.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,71,9));ui.gap(summary,13);
+        summary.addView(ui.avatar(tutor.id,tutor.name,72));ui.gap(summary,13);
         LinearLayout info=ui.column();ui.add(info,ui.text(tutor.name,17,Ui.INK,true));ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));ui.space(info,6);
         LinearLayout rating=ui.row();rating.addView(ui.icon(R.drawable.ic_star,18,Ui.GOLD));ui.gap(rating,7);

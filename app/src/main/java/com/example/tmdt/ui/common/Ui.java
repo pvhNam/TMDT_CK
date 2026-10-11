@@ -84,6 +84,7 @@ public final class Ui {
                 ? content.getConstantState().newDrawable().mutate() : background(WHITE,radius(R.dimen.soft_field_radius),0);
         view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x180866F5),content,mask));
         view.setOnClickListener(v -> action.run()); view.setFocusable(true);
+        Motion.press(view);
     }
 
     public AlertDialog.Builder dialog() {
@@ -170,6 +171,14 @@ public final class Ui {
     public ImageView art(int drawable, int width, int height) {
         ImageView view = new ImageView(context); view.setImageResource(drawable); view.setLayoutParams(lp(width,height));
         view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); return view;
+    }
+    public AvatarView avatar(String uid, String name, int size) {
+        AvatarView view = new AvatarView(context);
+        view.bind(uid,name); view.setLayoutParams(lp(size,size)); return view;
+    }
+    public AvatarView accountAvatar(int size) {
+        AvatarView view = new AvatarView(context);
+        view.bindCurrentAccount(); view.setLayoutParams(lp(size,size)); return view;
     }
     /** drawable 0 (a catalog tutor without a bundled photo) shows the user icon on the pale surface instead. */
     public ImageView photo(int drawable, String description, int width, int height, int radius) {

@@ -16,7 +16,6 @@ import com.example.tmdt.databinding.ItemTutorBinding;
 import com.google.android.material.chip.Chip;
 import java.util.Map;
 import java.util.List;
-import java.util.Locale;
 
 public final class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
@@ -36,6 +35,7 @@ public final class HomeFragment extends Fragment {
             }
             return false;
         });
+        binding.account.bindCurrentAccount();
         binding.account.setOnClickListener(v->host().show("account"));
         binding.groupClasses.setOnClickListener(v->host().show("groups"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
@@ -95,7 +95,7 @@ public final class HomeFragment extends Fragment {
         if(loading||failed)return;
         for(CatalogState.Teacher teacher:teachers){
             ItemTutorBinding item=ItemTutorBinding.inflate(getLayoutInflater(),binding.results,false);
-            item.name.setText(teacher.name);item.initial.setText(teacher.name.substring(0,1).toUpperCase(Locale.ROOT));
+            item.name.setText(teacher.name);item.avatar.bind(teacher.id,teacher.name);
             CatalogState.Offering selected=null;
             for(CatalogState.Offering offering:teacher.offerings){
                 if((catalog.subject().isEmpty()||catalog.subject().equals(offering.subjectId))

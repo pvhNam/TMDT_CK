@@ -26,6 +26,7 @@ public final class TutorDetailsDialog extends DialogFragment {
         AlertDialog.Builder dialog=new AlertDialog.Builder(requireContext()).setPositiveButton(R.string.close,null);
         if(teacher==null)return dialog.setMessage(R.string.empty_catalog).create();
         DialogTutorBinding binding=DialogTutorBinding.inflate(getLayoutInflater());
+        binding.avatar.bind(teacher.id,teacher.name);
         binding.experience.setText(getString(R.string.experience,teacher.experience,CatalogState.mode(teacher.mode)));
         binding.region.setText(teacher.region);binding.education.setText(teacher.education+" · "+teacher.school);
         binding.introduction.setText(teacher.introduction);

@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean keyboardVisible;
+    private String navigatingTo;
 
     @Override public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -76,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
+        if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)switch(destination){
             case "login":fragment=new LoginFragment();break;
@@ -92,9 +94,17 @@ public class MainActivity extends AppCompatActivity {
         }
         screen=destination;
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
-        if(current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
-        if(current==null||!screen.equals(current.getTag()))getSupportFragmentManager().beginTransaction()
-                .setReorderingAllowed(true).replace(R.id.screen_container,fragment,screen).commit();
+        if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
+        if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
+            androidx.fragment.app.FragmentTransaction transaction=getSupportFragmentManager().beginTransaction().setReorderingAllowed(true);
+            if(current!=null && com.example.tmdt.ui.common.Motion.enabled()
+                    && (classroom.tutorMode() || current.getClass().getPackage().getName().endsWith(".tutor")))
+                transaction.setCustomAnimations(R.anim.teacher_enter,R.anim.teacher_exit);
+            final String target=screen;navigatingTo=target;
+            transaction.replace(R.id.screen_container,fragment,screen).runOnCommit(()->{
+                if(target.equals(navigatingTo))navigatingTo=null;
+            }).commit();
+        }
         renderNavigation();
     }
     private boolean navigateMenu(int itemId){

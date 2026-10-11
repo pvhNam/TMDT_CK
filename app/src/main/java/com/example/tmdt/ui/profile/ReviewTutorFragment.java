@@ -31,8 +31,6 @@ public final class ReviewTutorFragment extends AccountFragmentBase {
             binding.experience.setText(getString(R.string.tutor_experience_value,value.experience));
             binding.price.setText(getString(R.string.tutor_price_value,NumberFormat.getIntegerInstance(new Locale("vi","VN")).format(value.price)));
             AvatarRenderer.render(binding.avatar,state.profile()==null?"":state.profile().avatar,value.name);
-            binding.avatar.avatarInitials.setBackgroundResource(R.drawable.bg_tutor_surface);
-            binding.avatar.avatarPhoto.setBackgroundResource(R.drawable.bg_tutor_surface);
         }
         binding.confirm.setChecked(Boolean.parseBoolean(state.draft("tutor.confirmed","false")));
         binding.confirm.setOnCheckedChangeListener((button,checked)->state.draft("tutor.confirmed",String.valueOf(checked),false));

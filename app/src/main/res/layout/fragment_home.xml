@@ -22,12 +22,12 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:text="@string/greeting" />
-            <ImageButton
+            <com.example.tmdt.ui.common.AvatarView
                 android:id="@+id/account"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:src="@drawable/ic_person"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
                 android:contentDescription="@string/personal_info" />
         </LinearLayout>
         <TextView

@@ -32,6 +32,18 @@ service cloud.firestore {
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.trang_thai_xac_minh == 'PENDING'
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.created_at == request.time));
     }
+    // Display images only. Private names/contact details remain in the existing profile collections.
+    match /profile_avatars/{userId} {
+      allow get: if signedIn() || verifiedTutor(userId);
+      allow list, delete: if false;
+      allow create, update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['anh_dai_dien','updated_at'])
+        && request.resource.data.keys().hasOnly(['anh_dai_dien','updated_at'])
+        && request.resource.data.anh_dai_dien is string && request.resource.data.anh_dai_dien.size() <= 90000
+        && request.resource.data.updated_at == request.time
+        && getAfter(/databases/$(database)/documents/users/$(userId)).data.trang_thai == 'ACTIVE'
+        && request.resource.data.anh_dai_dien == getAfter(/databases/$(database)/documents/users/$(userId)).data.anh_dai_dien;
+    }
     // Only trusted administrators publish catalog records. Private contacts stay in users.
     match /subjects/{subjectId} {
       allow read: if resource.data.dang_su_dung == true;
