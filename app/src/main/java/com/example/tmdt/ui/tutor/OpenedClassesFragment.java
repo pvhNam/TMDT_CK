@@ -15,6 +15,7 @@ import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
 public final class OpenedClassesFragment extends ScreenFragment {
+    private LinearLayout tabContainer, listContainer;
     private static final String[] STATUSES = {GroupClass.OPEN, GroupClass.RUNNING, GroupClass.ENDED};
 
     @Override protected View build() {
@@ -22,17 +23,24 @@ public final class OpenedClassesFragment extends ScreenFragment {
         View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->classroom.openClass(null,"openClass"));
         open.setLayoutParams(ui.lp(104,37));
         ui.title(root,"Lớp đã mở",open);
+        tabContainer=ui.column();ui.add(root,tabContainer);
+        listContainer=ui.page(root);renderClasses();return root;
+    }
+    private void renderClasses(){
+        tabContainer.removeAllViews();listContainer.removeAllViews();
         String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
-        for (int i = 0; i < 3; i++) labels[i] += " ("+mine(STATUSES[i]).size()+")";
-        ui.tabs(root,labels,classroom.classTab,index->{classroom.classTab=index;classroom.show("classes");});
-        LinearLayout body = ui.page(root); ui.space(body,4);
-        List<GroupClass> list = mine(STATUSES[classroom.classTab]);
-        for (GroupClass item : list) { ui.add(body,card(item)); ui.space(body,11); }
-        if (list.isEmpty()) {
-            ui.add(body,ui.note(R.drawable.ic_info,classroom.classTab==0?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới."
-                    :"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
-        }
-        return root;
+        for(int i=0;i<3;i++)labels[i]+=" ("+mine(STATUSES[i]).size()+")";
+        ui.tabs(tabContainer,labels,classroom.classTab,index->{
+            if(index==classroom.classTab)return;
+            classroom.classTab=index;renderClasses();
+            ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
+            com.example.tmdt.ui.common.Motion.reveal(listContainer);
+        });
+        ui.space(listContainer,4);
+        List<GroupClass> list=mine(STATUSES[classroom.classTab]);
+        for(GroupClass item:list){ui.add(listContainer,card(item));ui.space(listContainer,11);}
+        if(list.isEmpty())ui.add(listContainer,ui.note(R.drawable.ic_info,classroom.classTab==0
+                ?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới.":"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
     }
 
     private List<GroupClass> mine(String status) {

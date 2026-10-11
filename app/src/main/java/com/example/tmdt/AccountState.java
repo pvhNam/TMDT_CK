@@ -116,7 +116,10 @@ public final class AccountState extends ViewModel {
                 }
                 if(profile!=null && "BANNED".equals(profile.status)) {
                     signOut(); error="Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.";
-                } else if(navigate && destination==null) destination="home";
+                } else {
+                    if(task.getResult().exists())syncSavedAvatar(token,uid);
+                    if(navigate && destination==null) destination="home";
+                }
             } else {
                 error="Không tải được hồ sơ. " + message(task.getException());
                 if(navigate)destination="account";
@@ -134,6 +137,9 @@ public final class AccountState extends ViewModel {
             Map<String,Object> data=value.fields(); data.put("updated_at",FieldValue.serverTimestamp());
             if(!exists){data.put("vai_tro","STUDENT");data.put("la_gia_su",false);data.put("trang_thai","ACTIVE");data.put("created_at",FieldValue.serverTimestamp());tx.set(ref,data);}
             else tx.update(ref,data);
+            Map<String,Object> avatar=new HashMap<>();
+            avatar.put("anh_dai_dien",value.avatar);avatar.put("updated_at",FieldValue.serverTimestamp());
+            tx.set(db.collection("profile_avatars").document(uid),avatar);
             return null;
         }).addOnCompleteListener(task->{
             if(!current(token,uid))return;
@@ -192,6 +198,23 @@ public final class AccountState extends ViewModel {
             busy=false;destination="account";
             notice="Đã gửi hồ sơ gia sư. Bạn có thể chuyển qua gia sư; hồ sơ cần được duyệt trước khi nhận lớp.";
             notifyUi();
+        });
+    }
+    /** Backfill only the image for accounts created before the shared avatar document existed. */
+    private void syncSavedAvatar(int token,String owner) {
+        db.runTransaction(tx->{
+            com.google.firebase.firestore.DocumentSnapshot userDoc=tx.get(db.collection("users").document(owner));
+            com.google.firebase.firestore.DocumentReference avatarRef=db.collection("profile_avatars").document(owner);
+            com.google.firebase.firestore.DocumentSnapshot avatarDoc=tx.get(avatarRef);
+            if(!userDoc.exists() || !"ACTIVE".equals(userDoc.getString("trang_thai")))return null;
+            String image=userDoc.getString("anh_dai_dien");
+            if(image==null || (image.isEmpty()&&!avatarDoc.exists()) || image.equals(avatarDoc.getString("anh_dai_dien")))return null;
+            Map<String,Object> data=new HashMap<>();data.put("anh_dai_dien",image);data.put("updated_at",FieldValue.serverTimestamp());
+            tx.set(avatarRef,data);return null;
+        }).addOnFailureListener(e->{
+            if(current(token,owner)&&!busy&&notice.isEmpty()){
+                notice="Chưa đồng bộ ảnh đại diện. "+message(e);notifyUi();
+            }
         });
     }
     public void sendCode(Activity activity, String phone, boolean resend) {

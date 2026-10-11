@@ -55,6 +55,7 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
             if (failure != null) { fail("Không tải được lịch học và lớp nhóm. "+message(failure)); return; }
             Map<String,Map<String,Object>> docs = new LinkedHashMap<>();
             for (DocumentSnapshot doc : snapshot) docs.put(doc.getId(),doc.getData());
+            if(Objects.equals(results.get(name),docs))return;
             results.put(name,docs); rebuild();
         });
     }

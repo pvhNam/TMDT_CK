@@ -20,11 +20,18 @@ import com.example.tmdt.Tutor;
 public final class TutorHomeFragment extends ScreenFragment {
     private boolean allRequests;
     private LinearLayout requests;
+    private TextView requestsToggle;
+    @Override public void onCreate(android.os.Bundle state){
+        super.onCreate(state);allRequests=state!=null&&state.getBoolean("all_requests",false);
+    }
+    @Override public void onSaveInstanceState(android.os.Bundle out){super.onSaveInstanceState(out);out.putBoolean("all_requests",allRequests);}
 
     @Override protected View build() {
         LinearLayout root = ui.column(); LinearLayout body = ui.page(root);
         LinearLayout top = ui.row(); top.setPadding(0,ui.dp(8),0,ui.dp(8));
-        top.addView(ui.photo(0,"Ảnh gia sư "+classroom.tutorName(),63,63,32)); ui.gap(top,15);
+        View avatar=ui.accountAvatar(63); avatar.setOnClickListener(v->classroom.show("account"));
+        com.example.tmdt.ui.common.Motion.press(avatar);
+        top.addView(avatar); ui.gap(top,15);
         LinearLayout hello = ui.column(); ui.add(hello,ui.text("Chào "+givenName(classroom.tutorName())+"!",21,Ui.INK,true)); ui.space(hello,6);
         TextView mode = ui.pill("Chế độ gia sư",14,Ui.BLUE,Ui.PALE);
         ui.clickable(mode,()->classroom.ui.dialog().setTitle("Chuyển về chế độ học viên?")
@@ -54,12 +61,12 @@ public final class TutorHomeFragment extends ScreenFragment {
 
         ui.section(body,"Tổng quan giảng dạy",24); ui.space(body,8);
         LinearLayout tiles = ui.row();
-        ui.weight(tiles,tile(R.drawable.ic_mail,String.valueOf(pending.size()+registrations),"Yêu cầu mới",()->{allRequests=true;renderRequests(pending);})); ui.gap(tiles,7);
+        ui.weight(tiles,tile(R.drawable.ic_mail,String.valueOf(pending.size()+registrations),"Yêu cầu mới",()->{allRequests=true;animateRequests(pending);})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->classroom.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
 
-        sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;renderRequests(pending);});
+        requestsToggle=sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;animateRequests(pending);});
         requests = ui.column(); ui.add(body,requests); renderRequests(pending); ui.space(body,10);
 
         sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
@@ -74,9 +81,9 @@ public final class TutorHomeFragment extends ScreenFragment {
         return space < 0 ? name.trim() : name.trim().substring(space+1);
     }
 
-    private void sectionTitle(LinearLayout body, String title, Runnable all) {
+    private TextView sectionTitle(LinearLayout body, String title, Runnable all) {
         LinearLayout row = ui.row(); ui.weight(row,ui.text(title,23,Ui.INK,true));
-        row.addView(ui.link("Xem tất cả",17,all)); ui.add(body,row); ui.space(body,4);
+        TextView link=ui.link("Xem tất cả",17,all);row.addView(link); ui.add(body,row); ui.space(body,4);return link;
     }
 
     private View tile(int icon, String value, String label, Runnable click) {
@@ -88,11 +95,17 @@ public final class TutorHomeFragment extends ScreenFragment {
     }
 
     /** Lesson requests first, then class registrations; shows one card until "Xem tất cả" is chosen. */
+    private void animateRequests(List<Lesson> pending) {
+        com.example.tmdt.ui.common.Motion.change((android.view.ViewGroup)requests.getParent());
+        renderRequests(pending);
+    }
     private void renderRequests(List<Lesson> pending) {
+        requestsToggle.setText(allRequests?"Thu gọn":"Xem tất cả");
+        requestsToggle.setContentDescription(allRequests?"Thu gọn yêu cầu mới":"Xem tất cả yêu cầu mới");
         requests.removeAllViews(); int shown = 0;
         for (Lesson lesson : pending) {
             if (!allRequests && shown == 1) break;
-            ui.add(requests,requestCard(0,lesson.studentName,lesson.title,
+            ui.add(requests,requestCard(lesson.studentId,lesson.studentName,lesson.title,
                     lesson.dateLabel()+" · "+lesson.timeLabel(),"Chờ xác nhận","Xem yêu cầu",()->respond(lesson)));
             ui.space(requests,10); shown++;
         }
@@ -100,7 +113,7 @@ public final class TutorHomeFragment extends ScreenFragment {
             if (!item.tutorId.equals(classroom.me())) continue;
             for (GroupClass.Registration registration : item.registrations) {
                 if (!registration.pending() || (!allRequests && shown == 1)) continue;
-                ui.add(requests,requestCard(0,registration.studentName,"Đăng ký lớp "+item.title,
+                ui.add(requests,requestCard(registration.studentId,registration.studentName,"Đăng ký lớp "+item.title,
                         "Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),"Chờ duyệt","Duyệt đăng ký",()->classroom.openClass(item,"review")));
                 ui.space(requests,10); shown++;
             }
@@ -108,10 +121,10 @@ public final class TutorHomeFragment extends ScreenFragment {
         if (shown == 0) { ui.add(requests,ui.note(R.drawable.ic_info,"Chưa có yêu cầu mới.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(requests,10); }
     }
 
-    private View requestCard(int photo, String name, String title, String when, String status, String action, Runnable click) {
+    private View requestCard(String userId, String name, String title, String when, String status, String action, Runnable click) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(11));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.photo(photo,"Ảnh "+name,70,74,9)); ui.gap(top,13);
+        top.addView(ui.avatar(userId,name,70)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(name,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text(title,15,Ui.MUTED,false)); ui.space(info,2); ui.add(info,ui.text(when,14,Ui.MUTED,false)); ui.space(info,5);
         info.addView(ui.pill(status,14,Ui.ORANGE,Ui.ORANGE_BG),ui.lp(-2,26)); ui.weight(top,info);
@@ -122,7 +135,7 @@ public final class TutorHomeFragment extends ScreenFragment {
     private View todayCard(Lesson lesson) {
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.photo(0,"Ảnh "+lesson.studentName,69,73,9)); ui.gap(card,13);
+        card.addView(ui.avatar(lesson.studentId,lesson.studentName,69)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text(lesson.title,15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(lesson.dateLabel()+" · "+lesson.timeLabel(),14,Ui.MUTED,false)); ui.space(info,8);

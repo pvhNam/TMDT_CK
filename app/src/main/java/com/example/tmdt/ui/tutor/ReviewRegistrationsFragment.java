@@ -33,7 +33,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         ui.add(info,ui.text("▦ "+item.scheduleLabel(),15,Ui.INK,false)); ui.weight(card,info); ui.add(body,card); ui.space(body,16);
 
         LinearLayout titleRow = ui.row(); heading = ui.text("",20,Ui.INK,true); ui.weight(titleRow,heading);
-        sort = ui.link("",14,()->{newestFirst=!newestFirst;render();}); sort.setTextColor(Ui.MUTED); titleRow.addView(sort);
+        sort = ui.link("",14,()->{newestFirst=!newestFirst;render();com.example.tmdt.ui.common.Motion.reveal(list);}); sort.setTextColor(Ui.MUTED); titleRow.addView(sort);
         ui.add(body,titleRow); ui.space(body,4);
         list = ui.column(); ui.add(body,list); ui.space(body,2);
         ui.add(body,ui.note(R.drawable.ic_info,"Số học viên được duyệt không vượt quá "+item.capacity+".",Ui.PALE,Ui.BLUE,Ui.MUTED)); ui.space(body,18);
@@ -65,7 +65,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     private View card(GroupClass.Registration registration) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.photo(0,"Ảnh "+registration.studentName,71,78,9)); ui.gap(top,15);
+        top.addView(ui.avatar(registration.studentId,registration.studentName,71)); ui.gap(top,15);
         LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.studentName,20,Ui.INK,true));
         nameRow.addView(ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG)); ui.add(info,nameRow); ui.space(info,4);
         ui.add(info,ui.text("Mục tiêu học",14,Ui.MUTED,false)); ui.space(info,5);

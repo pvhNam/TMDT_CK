@@ -25,7 +25,7 @@ public final class RescheduleFragment extends ScreenFragment {
 
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(7),ui.dp(7),ui.dp(7),ui.dp(14));
         LinearLayout profile = ui.row(); profile.setGravity(android.view.Gravity.TOP);
-        profile.addView(ui.photo(0,"Ảnh gia sư "+lesson.tutorName,91,94,9)); ui.gap(profile,14);
+        profile.addView(ui.avatar(lesson.tutorId,lesson.tutorName,91)); ui.gap(profile,14);
         LinearLayout info = ui.column(); ui.space(info,8); ui.add(info,ui.text(lesson.tutorName,23,Ui.INK,true)); ui.space(info,8);
         ui.add(info,ui.text(lesson.title,17,Ui.INK,false)); ui.weight(profile,info); ui.add(card,profile); ui.space(card,7);
         ui.add(card,slot("Lịch hiện tại",lesson.dateLabel()+" · "+lesson.timeLabel(),Ui.PALE,Ui.INK)); ui.space(card,12);

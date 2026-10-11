@@ -109,6 +109,7 @@ public final class OpenClassFragment extends ScreenFragment {
         int index = java.util.Arrays.asList(SUBJECTS).indexOf(subject);
         subjectMark.setText(index<0?"∑":SUBJECT_MARKS[index]); subjectValue.setText(subject);
         modeValue.setText(mode); modeIcon.setImageResource(mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_laptop);
+        com.example.tmdt.ui.common.Motion.change((android.view.ViewGroup)addressField.getParent());
         addressField.setVisibility(mode.equals("Tại nhà")?View.VISIBLE:View.GONE);
         capacityValue.setText(String.valueOf(capacity)); sessionsValue.setText(String.valueOf(sessions));
         scheduleValue.setText(label()); startValue.setText(start.format(Lesson.DATE));

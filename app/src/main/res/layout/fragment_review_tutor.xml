@@ -53,7 +53,7 @@
                         android:id="@+id/avatar"
                         layout="@layout/view_avatar"
                         android:layout_width="97dp"
-                        android:layout_height="113dp"
+                        android:layout_height="97dp"
                         android:layout_marginBottom="0dp" />
                     <LinearLayout
                         android:layout_width="0dp"

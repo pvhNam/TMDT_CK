@@ -34,7 +34,7 @@ public final class TrialFragment extends ScreenFragment {
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(7),ui.dp(9)); ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.photo(0,"Ảnh gia sư "+tutor.name,72,76,9)); ui.gap(card,13);
+        card.addView(ui.avatar(tutor.id,tutor.name,72)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(tutor.name,18,Ui.INK,true)); ui.space(info,6);
         ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false)); ui.space(info,5);
         LinearLayout rating = ui.row(); rating.addView(ui.icon(R.drawable.ic_star,18,Ui.GOLD)); ui.gap(rating,7);

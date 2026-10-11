@@ -26,7 +26,7 @@ public final class JoinClassFragment extends ScreenFragment {
         card.addView(ui.art(item.largeArt(),108,112)); ui.gap(card,14);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,23,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text(item.subject+" · "+item.level,16,Ui.MUTED,false)); ui.space(info,8);
-        LinearLayout teacher = ui.row(); teacher.addView(ui.photo(0,"Ảnh gia sư "+item.tutorName,48,50,9)); ui.gap(teacher,11);
+        LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,48)); ui.gap(teacher,11);
         LinearLayout name = ui.column(); ui.add(name,ui.text(item.tutorName,16,Ui.INK,false)); ui.space(name,6);
         ui.add(name,ui.text("Gia sư đã xác minh",15,Ui.MUTED,false)); ui.weight(teacher,name);
         ui.add(info,teacher); ui.weight(card,info); ui.add(body,card); ui.space(body,11);
