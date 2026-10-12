@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Một hợp đồng trong danh sách "Hợp đồng của tôi". -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/ExCard"
+    android:layout_marginBottom="12dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_ex_icon_circle"
+            android:importantForAccessibility="no"
+            android:padding="9dp"
+            android:src="@drawable/ic_ex_doc" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/subject"
+                style="@style/ExName" />
+
+            <TextView
+                android:id="@+id/code"
+                style="@style/ExLabel"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/status"
+            style="@style/ExPill" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/party"
+        style="@style/ExInfoRow"
+        android:layout_marginTop="10dp"
+        android:drawableStart="@drawable/ic_user"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/schedule"
+        style="@style/ExInfoRow"
+        android:drawableStart="@drawable/ic_calendar"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/total"
+        style="@style/ExValue"
+        android:layout_width="match_parent"
+        android:layout_marginTop="6dp"
+        android:gravity="end"
+        android:textColor="@color/chat_blue"
+        android:textStyle="bold" />
+</LinearLayout>
