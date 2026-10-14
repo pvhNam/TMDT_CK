@@ -1,7 +1,10 @@
 package com.example.tmdt;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
@@ -221,6 +224,11 @@ public final class Classroom {
     public void setTutorMode(boolean value){
         if(value&&!isTutor())return;
         tutorView=value;preferences.edit().putBoolean("tutor_mode_"+host.account.uid(),value).apply();show(root());
+    }
+    public void openRoom(Lesson lesson){
+        if(!lesson.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
+        try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(lesson.roomUrl())));}
+        catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+lesson.roomUrl());}
     }
     public void message(String person){dialog("Nhắn tin với "+person,"Chức năng trò chuyện (màn hình 05–06) do Thành viên 4 phụ trách và sẽ được nối vào đây.");}
     public void dialog(String title,String message){ui.dialog().setTitle(title).setMessage(message).setPositiveButton(R.string.understood,null).show();}

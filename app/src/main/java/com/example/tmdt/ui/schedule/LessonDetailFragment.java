@@ -37,7 +37,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         LinearLayout table = ui.table();
         ui.tableRow(table,R.drawable.ic_calendar,"Ngày học",lesson.dateLabel());
         ui.tableRow(table,R.drawable.ic_clock,"Thời gian",lesson.timeLabel());
-        ui.tableRow(table,lesson.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,"Hình thức",lesson.mode+(lesson.trial?" · Học thử":""));
+        ui.tableRow(table,lesson.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,"Hình thức",lesson.mode+(lesson.trial?" · Học thử":""));
         if (!lesson.address.isEmpty()) ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",lesson.address);
         ui.tableRow(table,R.drawable.ic_hourglass,"Thời lượng",lesson.minutes+" phút");
         ui.add(body,table); ui.space(body,12);
@@ -71,7 +71,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (lesson.pending()) return "Gia sư sẽ xác nhận yêu cầu của bạn.";
         if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để giải ngân học phí.";
         if (lesson.finished) return "Bạn đã xác nhận buổi học này hoàn thành.";
-        return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : "Phòng học mở trước giờ bắt đầu 10 phút.";
+        return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : (lesson.roomLink.isEmpty()?"Phòng học":"Phòng học "+lesson.roomHost())+" mở trước giờ bắt đầu 10 phút.";
     }
 
     /** The button of the design changes with the lesson's state instead of always reading "Chưa đến giờ vào học". */
@@ -81,8 +81,8 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (lesson.pending()) return ui.action("Đang chờ gia sư xác nhận",0,Ui.DISABLED,null);
         if (lesson.finished) return ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null);
         if (lesson.needsConfirmation()) return ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,()->classroom.show("confirm"));
-        if (lesson.roomOpen()) return lesson.mode.equals("Tại nhà") ? ui.action("Buổi học đang diễn ra",0,Ui.DISABLED,null)
-                : ui.action("Vào phòng học",0,Ui.PRIMARY,()->classroom.dialog("Phòng học trực tuyến","Phòng học sẽ mở khi ứng dụng được kết nối máy chủ."));
+        if (lesson.roomOpen()) return lesson.online() ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openRoom(lesson))
+                : ui.action("Buổi học đang diễn ra",0,Ui.DISABLED,null);
         return ui.action("Chưa đến giờ vào học",0,Ui.DISABLED,null);
     }
 }

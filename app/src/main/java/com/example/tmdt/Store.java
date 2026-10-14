@@ -91,9 +91,17 @@ public final class Store {
         if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
         String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.minutes, lesson.id);
         if (clash != null) return "Khung giờ đề xuất không còn trống. Lịch hiện tại được giữ nguyên.";
-        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; clearProposal(lesson); return null;
+        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = 0; clearProposal(lesson); return null;
     }
     public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = ""; remote.save(lesson); }
+    public String setRoomLink(Lesson lesson, String link) {
+        if (!lesson.confirmed() || lesson.ended()) return "Chỉ gắn link cho buổi học đã xác nhận và chưa kết thúc.";
+        if (!lesson.online()) return "Buổi học tại nhà không cần link phòng học.";
+        String value = link.trim();
+        if (value.length() > 300) return "Link phòng học quá dài.";
+        if (!value.isEmpty() && !value.matches("(?i)https?://\\S+")) return "Link phòng học cần bắt đầu bằng https://";
+        lesson.roomLink = value; remote.save(lesson); return null;
+    }
 
     public String cancel(Lesson lesson, String reason) {
         if (!lesson.active()) return "Buổi học này không còn ở trạng thái có thể hủy.";
