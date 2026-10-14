@@ -35,10 +35,12 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
                 <TextView
+                    android:id="@+id/register_heading"
                     style="@style/ReferenceTitle"
                     android:text="@string/register_heading"
                     android:textSize="20sp" />
                 <TextView
+                    android:id="@+id/register_caption"
                     style="@style/ReferenceBody"
                     android:text="@string/register_caption"
                     android:layout_marginBottom="16dp" />
