@@ -2,6 +2,7 @@ package com.example.tmdt.ui.home;
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
@@ -23,13 +24,20 @@ public final class TutorDetailsDialog extends DialogFragment {
     @NonNull @Override public Dialog onCreateDialog(Bundle state){
         CatalogState catalog=new ViewModelProvider(requireActivity()).get(CatalogState.class);
         CatalogState.Teacher teacher=catalog.teacher(requireArguments().getString("tutor_id",""));
-        AlertDialog.Builder dialog=new AlertDialog.Builder(requireContext()).setPositiveButton(R.string.close,null);
-        if(teacher==null)return dialog.setMessage(R.string.empty_catalog).create();
+        AlertDialog.Builder dialog=new AlertDialog.Builder(requireContext(),R.style.ThemeOverlay_TMDT_Classroom_Dialog);
+        if(teacher==null)return dialog.setMessage(R.string.empty_catalog).setPositiveButton(R.string.close,null).create();
         DialogTutorBinding binding=DialogTutorBinding.inflate(getLayoutInflater());
-        binding.avatar.bind(teacher.id,teacher.name);
-        binding.experience.setText(getString(R.string.experience,teacher.experience,CatalogState.mode(teacher.mode)));
-        binding.region.setText(teacher.region);binding.education.setText(teacher.education+" · "+teacher.school);
-        binding.introduction.setText(teacher.introduction);
+        binding.avatar.bind(teacher.id,teacher.name);binding.name.setText(teacher.name.trim());
+        binding.experience.setText(getString(R.string.tutor_years,teacher.experience));
+        binding.experienceRow.setVisibility(teacher.experience>0?View.VISIBLE:View.GONE);
+        binding.mode.setText(CatalogState.mode(teacher.mode));
+        binding.modeIcon.setImageResource("TAI_NHA".equals(teacher.mode)?R.drawable.ic_home_soft:R.drawable.ic_video);
+        binding.region.setText(teacher.region.trim());binding.regionRow.setVisibility(teacher.region.trim().isEmpty()?View.GONE:View.VISIBLE);
+        String education=join(teacher.education,teacher.school);
+        binding.education.setText(education);binding.educationRow.setVisibility(education.isEmpty()?View.GONE:View.VISIBLE);
+        binding.introduction.setText(teacher.introduction.trim());
+        int intro=teacher.introduction.trim().isEmpty()?View.GONE:View.VISIBLE;
+        binding.introductionLabel.setVisibility(intro);binding.introduction.setVisibility(intro);
         for(CatalogState.Offering offering:teacher.offerings){
             ItemOfferingBinding item=ItemOfferingBinding.inflate(getLayoutInflater(),binding.offerings,false);
             item.subject.setText(getString(R.string.subject_level,catalog.subjects().get(offering.subjectId),CatalogState.level(offering.level)));
@@ -37,6 +45,14 @@ public final class TutorDetailsDialog extends DialogFragment {
             binding.offerings.addView(item.getRoot());
         }
         MainActivity host=(MainActivity)requireActivity();
+        binding.close.setOnClickListener(v->dismiss());
+        binding.book.setVisibility(teacher.offerings.isEmpty()?View.GONE:View.VISIBLE);
+        binding.book.setOnClickListener(v->{dismiss();book(host,catalog,teacher);});
+        return dialog.setView(binding.getRoot()).create();
+    }
+    private static String join(String first,String second){
+        String a=first==null?"":first.trim(),b=second==null?"":second.trim();
+        return a.isEmpty()?b:b.isEmpty()?a:a+" · "+b;
         dialog.setNegativeButton(R.string.tutor_profile_full_profile,(d,which)->host.classroom.openTutor(teacher.id,teacher.name,"home"));
         if(!teacher.offerings.isEmpty())dialog.setNeutralButton(R.string.book_lesson,(d,which)->book(host,catalog,teacher));
         return dialog.setTitle(teacher.name).setView(binding.getRoot()).create();

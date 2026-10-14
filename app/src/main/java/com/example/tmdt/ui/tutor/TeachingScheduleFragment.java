@@ -118,27 +118,60 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     }
 
     private View card(Lesson lesson, boolean withDate) {
-        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(11),ui.dp(11),ui.dp(9),ui.dp(7));
-        LinearLayout top = ui.row(); ui.weight(top,ui.text((withDate?lesson.dateLabel().substring(0,5)+" · ":"")+lesson.timeLabel().replace("–"," – "),21,Ui.INK,true));
-        top.addView(ui.lessonStatus(lesson)); ui.add(card,top); ui.space(card,4);
-        ui.add(card,ui.text(lesson.title,21,Ui.INK,true)); ui.space(card,6);
-        LinearLayout student = ui.row(); student.addView(ui.avatar(lesson.studentId,lesson.studentName,62)); ui.gap(student,12);
-        LinearLayout info = ui.column(); ui.add(info,ui.text("Học viên",14,Ui.MUTED,false)); ui.space(info,4);
-        ui.add(info,ui.text(lesson.studentName,18,Ui.INK,true)); ui.space(info,4);
-        ui.add(info,ui.text("▣ "+lesson.mode+(lesson.trial?" · Học thử":""),15,Ui.INK,false)); ui.weight(student,info);
-        ui.add(card,student); ui.space(card,8);
+        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(14),ui.dp(12),ui.dp(14),ui.dp(14));
+        LinearLayout top = ui.row(); top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(ui.icon(R.drawable.ic_clock,18,Ui.BLUE)); ui.gap(top,6);
+        ui.weight(top,ui.text((withDate?lesson.dateLabel().substring(0,5)+" · ":"")+lesson.timeLabel().replace("–"," – "),17,Ui.INK,true));
+        top.addView(ui.lessonStatus(lesson)); ui.add(card,top); ui.space(card,12);
+
+        LinearLayout student = ui.row(); student.setGravity(Gravity.CENTER_VERTICAL);
+        student.addView(ui.avatar(lesson.studentId,lesson.studentName,48)); ui.gap(student,12);
+        LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.title,17,Ui.INK,true)); ui.space(info,3);
+        ui.add(info,ui.text(lesson.studentName,14,Ui.MUTED,false)); ui.weight(student,info); ui.gap(student,8);
+        student.addView(ui.pill(lesson.mode+(lesson.trial?" · Thử":""),13,lesson.online()?Ui.BLUE:Ui.GREEN,lesson.online()?Ui.PALE:Ui.GREEN_BG),ui.lp(-2,26));
+        ui.add(card,student); ui.space(card,12);
+
+        if (lesson.confirmed() && lesson.online() && !lesson.ended()) {
+            LinearLayout link = ui.row(); link.setGravity(Gravity.CENTER_VERTICAL);
+            link.setPadding(ui.dp(12),ui.dp(9),ui.dp(12),ui.dp(9)); ui.fieldSurface(link,Ui.PALE,0);
+            link.addView(ui.icon(R.drawable.ic_video,18,Ui.BLUE)); ui.gap(link,8);
+            TextView host = ui.text(lesson.roomLink.isEmpty()?"Chưa có link phòng học":lesson.roomHost(),14,lesson.roomLink.isEmpty()?Ui.MUTED:Ui.INK,false);
+            host.setSingleLine(true); host.setEllipsize(android.text.TextUtils.TruncateAt.END); ui.weight(link,host); ui.gap(link,8);
+            link.addView(ui.text(lesson.roomLink.isEmpty()?"Dán link":"Sửa",14,Ui.BLUE,true));
+            link.setContentDescription("Link phòng học. Chạm để "+(lesson.roomLink.isEmpty()?"dán link":"sửa"));
+            ui.clickable(link,()->editRoomLink(lesson)); ui.add(card,link); ui.space(card,12);
+        }
         LinearLayout actions = ui.row(); card.addView(actions,ui.lp(-1,-2));
         if (lesson.pending()) {
-            ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->answer(lesson,false)),40); ui.gap(actions,8);
-            ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->answer(lesson,true)),40);
+            ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->answer(lesson,false)),42); ui.gap(actions,10);
+            ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->answer(lesson,true)),42);
         } else {
-            ui.weightAction(actions,ui.action("Chi tiết",R.drawable.ic_chat,Ui.OUTLINE,()->details(classroom,lesson)),40); ui.gap(actions,8);
-            View move = lesson.started() ? ui.action("Đã diễn ra",0,Ui.DISABLED,null)
+            ui.weightAction(actions,ui.action("Chi tiết",0,Ui.OUTLINE,()->details(classroom,lesson,this::render)),42); ui.gap(actions,10);
+            View move = lesson.roomOpen() && lesson.online() ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openRoom(lesson))
+                    : lesson.started() ? ui.action("Đã diễn ra",0,Ui.DISABLED,null)
                     : lesson.proposal() ? ui.action("Chờ học viên",0,Ui.DISABLED,null)
                     : ui.action("Đề nghị đổi lịch",0,Ui.PRIMARY,()->propose(lesson));
-            ui.weightAction(actions,move,40);
+            ui.weightAction(actions,move,42);
         }
         return card;
+    }
+
+    private void editRoomLink(Lesson lesson) { editRoomLink(classroom,lesson,this::render); }
+
+    private static void editRoomLink(Classroom classroom, Lesson lesson, Runnable saved) {
+        Ui ui = classroom.ui;
+        LinearLayout form = ui.column(); form.setPadding(ui.dp(22),ui.dp(4),ui.dp(22),0);
+        ui.add(form,ui.text("Dán link Google Meet, Google Classroom hoặc Zoom. Để trống thì dùng phòng Jitsi của app.",14,Ui.MUTED,false)); ui.space(form,12);
+        EditText input = ui.entry("https://meet.google.com/...",false); input.setText(lesson.roomLink);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI); ui.add(form,input);
+        AlertDialog dialog = ui.dialog().setTitle("Link phòng học").setView(form).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();
+        dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String error = classroom.store.setRoomLink(lesson,input.getText().toString());
+            if (error != null) { input.setError(error); return; }
+            dialog.dismiss(); classroom.hideKeyboard(); saved.run();
+            classroom.notice(lesson.roomLink.isEmpty()?"Buổi học sẽ dùng phòng Jitsi của app.":"Đã lưu link phòng học.");
+        }));
+        dialog.show();
     }
 
     private void answer(Lesson lesson, boolean accept) {
@@ -147,14 +180,58 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         render(); classroom.notice(accept?"Đã chấp nhận buổi học với "+lesson.studentName+".":"Đã từ chối yêu cầu của "+lesson.studentName+".");
     }
 
-    /** Tutor-side lesson summary with a shortcut to message the student. */
-    public static void details(Classroom classroom, Lesson lesson) {
-        classroom.ui.dialog().setTitle(lesson.title+" · "+lesson.studentName)
-                .setMessage(lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+(lesson.address.isEmpty()?"":"\nĐịa chỉ: "+lesson.address)
-                        +"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total())+"\nTrạng thái: "+lesson.statusLabel()
-                        +(lesson.proposal()?"\n\nĐề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.":""))
-                .setNeutralButton("Nhắn tin",(dialog,which)->classroom.message(lesson.studentName))
-                .setPositiveButton("Đóng",null).show();
+    /** Tutor-side lesson summary with the room link, a shortcut to message the student and the room button. */
+    public static void details(Classroom classroom, Lesson lesson) { details(classroom,lesson,()->{}); }
+
+    private static void details(Classroom classroom, Lesson lesson, Runnable changed) {
+        Ui ui = classroom.ui;
+        LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
+        LinearLayout top = ui.row();
+        top.addView(ui.avatar(lesson.studentId,lesson.studentName,56)); ui.gap(top,14);
+        LinearLayout who = ui.column(); ui.add(who,ui.text(lesson.studentName,20,Ui.INK,true)); ui.space(who,6);
+        who.addView(ui.lessonStatus(lesson),ui.lp(-2,-2));
+        ui.weight(top,who); ui.add(view,top); ui.space(view,16);
+
+        LinearLayout table = ui.table();
+        ui.tableRow(table,R.drawable.ic_file,"Môn học",lesson.title);
+        ui.tableRow(table,R.drawable.ic_calendar,"Ngày học",lesson.dateLabel());
+        ui.tableRow(table,R.drawable.ic_clock,"Thời gian",lesson.timeLabel());
+        ui.tableRow(table,lesson.online()?R.drawable.ic_video:R.drawable.ic_home_soft,"Hình thức",lesson.mode+(lesson.trial?" · Học thử":""));
+        if (!lesson.address.isEmpty()) ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",lesson.address);
+        ui.add(view,table); ui.space(view,12);
+
+        AlertDialog dialog = ui.dialog().create();
+        if (lesson.confirmed() && lesson.online() && !lesson.ended()) {
+            LinearLayout link = ui.note(R.drawable.ic_video,lesson.roomLink.isEmpty()?"Chưa gắn link phòng học. Chạm để dán link Google Meet, Classroom...":"Phòng học: "+lesson.roomHost()+". Chạm để sửa link.",Ui.PALE,Ui.BLUE,Ui.INK);
+            ui.clickable(link,()->{dialog.dismiss();editRoomLink(classroom,lesson,()->{changed.run();details(classroom,lesson,changed);});});
+            ui.add(view,link); ui.space(view,12);
+        }
+        if (lesson.proposal()) {
+            ui.add(view,ui.note(R.drawable.ic_clock,"Đề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE)); ui.space(view,12);
+        }
+
+        ui.label(view,"Mục tiêu buổi học");
+        TextView goal = ui.text(lesson.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
+        ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(view,goal); ui.space(view,12);
+
+        LinearLayout price = ui.row(); price.setPadding(ui.dp(14),ui.dp(10),ui.dp(16),ui.dp(10)); ui.fieldSurface(price,Ui.PALE,0);
+        price.addView(ui.icon(R.drawable.ic_wallet,22,Ui.INK)); ui.gap(price,12);
+        ui.weight(price,ui.text("Học phí",16,Ui.INK,false)); price.addView(ui.text(Tutor.money(lesson.total()),19,Ui.INK,true));
+        ui.add(view,price); ui.space(view,18);
+
+        boolean room = lesson.roomOpen() && lesson.online();
+        LinearLayout actions = ui.row();
+        ui.weightAction(actions,ui.action("Nhắn tin",R.drawable.ic_chat,Ui.OUTLINE,()->{dialog.dismiss();classroom.message(lesson.studentName);}),46);
+        ui.gap(actions,10);
+        ui.weightAction(actions,room ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->{dialog.dismiss();classroom.openRoom(lesson);})
+                : ui.action("Đóng",0,Ui.PRIMARY,dialog::dismiss),46);
+        ui.add(view,actions);
+        if (room) {
+            TextView close = ui.link("Đóng",15,dialog::dismiss); close.setTextColor(Ui.MUTED); close.setGravity(Gravity.CENTER);
+            ui.space(view,6); ui.add(view,close);
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(classroom.context()); scroll.addView(view);
+        dialog.setView(scroll); dialog.show();
     }
 
     private void propose(Lesson lesson) {

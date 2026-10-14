@@ -3,13 +3,31 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_marginTop="8dp"
+    android:background="@drawable/bg_offering_row"
+    android:gravity="center_vertical"
+    android:minHeight="48dp"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="10dp">
+
     <TextView
         android:id="@+id/subject"
-        style="@style/FieldLabel"
-        android:text="@string/offerings_heading" />
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-condensed"
+        android:textColor="#06164D"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
     <TextView
         android:id="@+id/price"
-        style="@style/BodyText"
-        android:text="@string/offerings_heading" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="end"
+        android:textColor="#006BFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
 </LinearLayout>

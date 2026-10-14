@@ -58,7 +58,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
         titleRow.addView(status(item)); ui.add(info,titleRow); ui.space(info,4);
         ui.add(info,ui.fact(R.drawable.ic_users,item.members.size()+"/"+item.capacity+" học viên",18,16,Ui.INK,false));
         if (item.pendingCount() > 0) ui.add(info,ui.fact(R.drawable.ic_clock,item.pendingCount()+" đăng ký chờ duyệt",18,16,Ui.ORANGE,false));
-        ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,18,16,Ui.INK,false));
+        ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,Tutor.money(item.price)+(item.perSession?" / buổi":" / học viên"),18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),18,16,Ui.INK,false));
         ui.weight(top,info); ui.add(card,top); ui.space(card,8);

@@ -89,7 +89,7 @@ public final class BookingFragment extends ScreenFragment {
     private void setMode(String value){mode=value;renderModes();}
     private void renderModes() {
         modes.removeAllViews();ui.weight(modes,ui.option("Trực tuyến",R.drawable.ic_laptop,mode.equals("Trực tuyến"),()->setMode("Trực tuyến")));
-        ui.gap(modes,10);ui.weight(modes,ui.option("Tại nhà",R.drawable.ic_home,mode.equals("Tại nhà"),()->setMode("Tại nhà")));
+        ui.gap(modes,10);ui.weight(modes,ui.option("Tại nhà",R.drawable.ic_home_soft,mode.equals("Tại nhà"),()->setMode("Tại nhà")));
         addressBox.setVisibility(mode.equals("Tại nhà")?View.VISIBLE:View.GONE);
     }
     private void renderDays(boolean reveal) {
