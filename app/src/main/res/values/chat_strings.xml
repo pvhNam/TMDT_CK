@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_title">Tin nhắn</string>
+    <string name="chat_search_hint">Tìm cuộc trò chuyện</string>
+    <string name="chat_tab_all">Tất cả</string>
+    <string name="chat_tab_unread">Chưa đọc</string>
+    <string name="chat_banner_title">Trao đổi trước buổi học</string>
+    <string name="chat_banner_body">Thống nhất mục tiêu\ncùng gia sư.</string>
+    <string name="chat_sign_in_needed">Đăng nhập để xem và gửi tin nhắn cho gia sư.</string>
+    <string name="chat_sign_in">Đăng nhập</string>
+    <string name="chat_loading">Đang tải cuộc trò chuyện…</string>
+    <string name="chat_retry">Thử lại</string>
+    <string name="chat_empty">Chưa có cuộc trò chuyện nào. Mở hồ sơ gia sư hoặc một buổi học rồi chọn Nhắn tin để bắt đầu.</string>
+    <string name="chat_find_tutor">Tìm gia sư</string>
+    <string name="chat_all_read">Bạn đã đọc hết tin nhắn.</string>
+    <string name="chat_no_match">Không tìm thấy cuộc trò chuyện phù hợp.</string>
+    <string name="chat_you">Bạn: %1$s</string>
+    <string name="chat_new_conversation">Bắt đầu trò chuyện</string>
+    <string name="chat_input_hint">Nhập tin nhắn…</string>
+    <string name="chat_send">Gửi tin nhắn</string>
+    <string name="chat_attach">Mẫu tin nhắn</string>
+    <string name="chat_video">Gọi video</string>
+    <string name="chat_video_info">Phòng học trực tuyến mở từ buổi học trong mục Lịch học, 10 phút trước giờ bắt đầu.</string>
+    <string name="chat_online">Đang hoạt động</string>
+    <string name="chat_role_tutor">Gia sư</string>
+    <string name="chat_role_student">Học viên</string>
+    <string name="chat_start_hint">Hãy gửi lời chào để bắt đầu trao đổi mục tiêu và bài tập trước buổi học.</string>
+    <string name="chat_sending">Đang gửi</string>
+    <string name="chat_failed">Không gửi được · Chạm để gửi lại</string>
+    <string name="chat_today">Hôm nay</string>
+    <string name="chat_yesterday">Hôm qua</string>
+    <string name="chat_avatar">Ảnh đại diện</string>
+    <string name="chat_template_goal">Mục tiêu buổi học: </string>
+    <string name="chat_template_homework">Bài tập em cần hỗ trợ: </string>
+    <string name="chat_template_schedule">Em muốn hỏi về lịch học: </string>
+    <string name="chat_template_thanks">Em cảm ơn ạ!</string>
+    <string name="chat_unavailable_title">Nhắn tin với %1$s</string>
+    <string name="chat_unavailable_body">Gia sư này chưa có tài khoản trên hệ thống nên chưa thể nhắn tin. Hãy chọn gia sư từ Trang chủ.</string>
+    <string name="chat_login_notice">Đăng nhập để nhắn tin với gia sư.</string>
+    <string name="chat_message_tutor">Nhắn tin</string>
+    <string name="chat_more">Tùy chọn khác</string>
+    <string name="chat_contract">Hợp đồng dạy</string>
+    <string name="chat_view_reviews">Xem đánh giá gia sư</string>
+    <string name="chat_report">Báo cáo vi phạm</string>
+    <string name="tutor_reviews">Xem đánh giá</string>
+</resources>
