@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tutor_profile_title">Hồ sơ gia sư</string>
+    <string name="tutor_profile_save">Lưu gia sư</string>
+    <string name="tutor_profile_unsave">Bỏ lưu gia sư</string>
+    <string name="tutor_profile_saved_toast">Đã lưu gia sư vào danh sách quan tâm</string>
+    <string name="tutor_profile_unsaved_toast">Đã bỏ lưu gia sư</string>
+    <string name="tutor_profile_verified_badge">✓  Đã xác minh</string>
+    <string name="tutor_profile_stat_rating">Đánh giá</string>
+    <string name="tutor_profile_stat_experience">Kinh nghiệm</string>
+    <string name="tutor_profile_stat_students">Học viên</string>
+    <string name="tutor_profile_section_intro">Giới thiệu</string>
+    <string name="tutor_profile_section_modes">Hình thức dạy</string>
+    <string name="tutor_profile_mode_online">Trực tuyến</string>
+    <string name="tutor_profile_mode_online_desc">Học qua Google Meet / Zoom</string>
+    <string name="tutor_profile_mode_home">Tại nhà</string>
+    <string name="tutor_profile_mode_home_desc">Gia sư đến dạy kèm trực tiếp</string>
+    <string name="tutor_profile_mode_supported">Hỗ trợ</string>
+    <string name="tutor_profile_mode_not_supported">Không hỗ trợ</string>
+    <string name="tutor_profile_section_pricing">Môn dạy và học phí</string>
+    <string name="tutor_profile_choose_offering">Chọn môn học này</string>
+    <string name="tutor_profile_section_reviews">Đánh giá của học viên</string>
+    <string name="tutor_profile_reviews_count">%1$d đánh giá từ học viên</string>
+    <string name="tutor_profile_action_message">Nhắn tin</string>
+    <string name="tutor_profile_action_book">Đặt lịch học</string>
+    <string name="tutor_profile_not_found">Không tìm thấy thông tin gia sư hoặc gia sư hiện không nhận lớp mới.</string>
+    <string name="tutor_profile_no_offerings">Chưa có môn dạy nào được mở.</string>
+    <string name="tutor_profile_region_label">Khu vực: %1$s</string>
+    <string name="tutor_profile_education_label">%1$s · %2$s</string>
+    <string name="tutor_profile_review_dialog_title">Đánh giá từ học viên</string>
+    <string name="tutor_profile_full_profile">Hồ sơ chi tiết</string>
+</resources>
