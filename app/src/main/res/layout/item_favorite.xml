@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:strokeColor="@color/soft_border"
+    app:strokeWidth="1dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="14dp">
+        <com.example.tmdt.ui.common.AvatarView
+            android:id="@+id/avatar"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="14dp" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+                <TextView android:id="@+id/name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="1" android:ellipsize="end" android:textSize="17sp" android:textStyle="bold" android:textColor="@color/tutor_ink" tools:text="Nguyễn Minh Anh" />
+                <ImageView android:id="@+id/heart" android:layout_width="40dp" android:layout_height="40dp" android:padding="8dp" android:src="@drawable/ic_pf_heart_filled" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Bỏ lưu gia sư" android:clickable="true" android:focusable="true" />
+            </LinearLayout>
+            <TextView android:id="@+id/course" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="@color/tutor_muted" tools:text="Toán · THPT" />
+            <TextView android:id="@+id/verified" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textSize="14sp" android:textColor="@color/tutor_muted" android:text="Gia sư đã xác minh" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center_vertical">
+                <TextView android:id="@+id/price" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textSize="15sp" android:textStyle="bold" android:textColor="@color/tutor_ink" tools:text="150.000 ₫ / buổi" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/view_profile"
+                    style="@style/ReferenceOutline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:minHeight="0dp"
+                    android:layout_marginTop="0dp"
+                    android:text="Xem hồ sơ"
+                    android:textSize="14sp"
+                    android:textColor="@color/tutor_blue"
+                    app:strokeColor="@color/tutor_blue" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

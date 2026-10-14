@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F9FF"
+    tools:context="com.example.tmdt.ui.profile.SettingsFragment">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/ReferenceToolbar"
+        app:title="Cài đặt" />
+    <ScrollView
+        android:id="@+id/account_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="20dp">
+            <include layout="@layout/view_account_feedback" />
+            <LinearLayout
+                android:id="@+id/form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:orientation="vertical" android:background="@drawable/bg_pf_section">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_pf_section_header">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sec_bell" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="12dp" android:text="Thông báo" android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/row_reminder" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" android:tint="@color/tutor_ink" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Nhắc lịch học" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/reminder_switch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:contentDescription="@null" />
+                </LinearLayout>
+                <View style="@style/ProfileDivider" />
+                <LinearLayout android:id="@+id/row_messages" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_chat" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Tin nhắn mới" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/message_switch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:contentDescription="@null" />
+                </LinearLayout>
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:orientation="vertical" android:background="@drawable/bg_pf_section">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_pf_section_header">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sec_palette" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="12dp" android:text="Hiển thị" android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/row_language" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_globe" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Ngôn ngữ" />
+                    <TextView android:id="@+id/language_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/tutor_blue" android:text="Tiếng Việt" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+                <View style="@style/ProfileDivider" />
+                <LinearLayout android:id="@+id/row_theme" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sun" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Giao diện" />
+                    <TextView android:id="@+id/theme_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/tutor_blue" android:text="Sáng" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:orientation="vertical" android:background="@drawable/bg_pf_section">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_pf_section_header">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sec_user" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="12dp" android:text="Tài khoản" android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/row_password" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_lock" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Đổi mật khẩu" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+                <View style="@style/ProfileDivider" />
+                <LinearLayout android:id="@+id/row_privacy" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_shield" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Quyền riêng tư" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:orientation="vertical" android:background="@drawable/bg_pf_section">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:background="@drawable/bg_pf_section_header">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sec_help" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="12dp" android:text="Hỗ trợ" android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/row_help" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_helpdesk" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Trung tâm trợ giúp" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+                <View style="@style/ProfileDivider" />
+                <LinearLayout android:id="@+id/row_terms" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_doc" />
+                    <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Điều khoản sử dụng" />
+                    <ImageView style="@style/ProfileRowChevron" />
+                </LinearLayout>
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sign_out"
+                style="@style/ReferenceOutline"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="@string/sign_out"
+                android:contentDescription="@string/sign_out"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#D92D20"
+                app:backgroundTint="#FFFFFF"
+                app:strokeColor="#F04438"
+                app:strokeWidth="1.5dp"
+                app:icon="@drawable/ic_pf_logout"
+                app:iconTint="@null"
+                app:iconGravity="textStart" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

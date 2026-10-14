@@ -111,4 +111,16 @@
             android:src="@drawable/ic_right"
             app:tint="#9AB0CC" />
     </LinearLayout>
+    <ImageView
+        android:id="@+id/favorite"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:padding="10dp"
+        android:src="@drawable/ic_pf_heart_blue"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Lưu gia sư"
+        android:clickable="true"
+        android:focusable="true" />
 </com.google.android.material.card.MaterialCardView>
