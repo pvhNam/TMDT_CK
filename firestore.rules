@@ -1,16 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- BẮT ĐẦU PHẦN THÊM CHO UC21 ---
-    // Tài khoản bị khóa không tạo được tin nhắn
-    function notBanned() {
-      return request.auth != null
-        && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
-            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.trang_thai != 'BANNED');
-    }
-    // --- KẾT THÚC PHẦN THÊM CHO UC21 ---
-
     match /users/{userId} {
       function owner() { return request.auth != null && request.auth.uid == userId; }
       function validProfile() {
@@ -99,6 +89,12 @@ service cloud.firestore {
     }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }
+    // UC21: tài khoản bị khóa (users/{uid}.trang_thai == 'BANNED') không tạo được hội thoại, tin nhắn.
+    function notBanned() {
+      return request.auth != null
+        && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.trang_thai != 'BANNED');
+    }
     function stamped() { return request.resource.data.updated_at == request.time; }
     function changed(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
     function account() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
@@ -246,8 +242,10 @@ service cloud.firestore {
           || reviewed());
     }
 
-    // --- BẮT ĐẦU PHẦN THÊM CHO UC21 ---
+    // ---------------------------------------------------------------------------------------------
     // UC21 – Trao đổi qua tin nhắn (màn 05, 06). Chỉ thành viên hội thoại đọc/ghi; tin nhắn không sửa, không xóa.
+    // Mã hội thoại = uidA + '__' + uidB (đã sắp xếp); một bên phải là gia sư (tutor_profiles/{uid}).
+    // ---------------------------------------------------------------------------------------------
     match /conversations/{conversationId} {
       function isMember(data) { return request.auth != null && data.member_ids is list && request.auth.uid in data.member_ids; }
       function peerOf(data) { return data.member_ids[0] == request.auth.uid ? data.member_ids[1] : data.member_ids[0]; }
@@ -306,7 +304,8 @@ service cloud.firestore {
       }
 
       allow get: if request.auth != null && (resource == null || isMember(resource.data));
-      allow list: if isMember(resource.data);
+      // Truy vấn danh sách (where member_ids array-contains uid): điều kiện phải chứng minh được từ chính truy vấn.
+      allow list: if request.auth != null && request.auth.uid in resource.data.member_ids;
       allow create: if notBanned() && validNew(request.resource.data);
       allow update: if isMember(resource.data) && validUpdate(resource.data, request.resource.data);
       allow delete: if false;
@@ -330,7 +329,6 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
-
     // Trạng thái "Đang hoạt động" ở màn 06: ai đăng nhập cũng xem được, chỉ chủ tài khoản ghi.
     match /presence/{userId} {
       allow read: if request.auth != null;
@@ -340,8 +338,6 @@ service cloud.firestore {
         && request.resource.data.last_seen == request.time;
       allow delete: if false;
     }
-    // --- KẾT THÚC PHẦN THÊM CHO UC21 ---
-
     // All other collections, including the removed flows, are denied by default.
   }
 }
