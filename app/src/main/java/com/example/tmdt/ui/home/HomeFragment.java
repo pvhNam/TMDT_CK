@@ -103,7 +103,7 @@ public final class HomeFragment extends Fragment {
             }
             if(selected==null)continue;
             item.subject.setText(getString(R.string.subject_level,catalog.subjects().get(selected.subjectId),CatalogState.level(selected.level)));
-            item.mode.setText(CatalogState.mode(teacher.mode));item.price.setText(getString(R.string.price_from,CatalogState.money(selected.price)));
+            item.mode.setText(CatalogState.mode(teacher.mode));item.modeIcon.setImageResource("TAI_NHA".equals(teacher.mode)?R.drawable.ic_home_soft:R.drawable.ic_video);item.price.setText(getString(R.string.price_from,CatalogState.money(selected.price)));
             item.getRoot().setOnClickListener(v->TutorDetailsDialog.create(teacher.id).show(getParentFragmentManager(),"tutor_details"));
             binding.results.addView(item.getRoot());
         }

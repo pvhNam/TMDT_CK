@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tutor_verified_badge">✓ Đã xác minh</string>
+    <string name="tutor_years">%1$d năm kinh nghiệm</string>
+    <string name="tutor_introduction">Giới thiệu</string>
+
+    <style name="TutorFactRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">32dp</item>
+    </style>
+    <style name="TutorFactIcon">
+        <item name="android:layout_width">18dp</item>
+        <item name="android:layout_height">18dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="tint">#46638C</item>
+    </style>
+    <style name="TutorFactText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textColor">#06164D</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+    <style name="TutorDetailsHeading">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textColor">#06164D</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
