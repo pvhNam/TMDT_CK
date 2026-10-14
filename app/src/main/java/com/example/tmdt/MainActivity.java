@@ -82,12 +82,23 @@ public class MainActivity extends AppCompatActivity {
         if(account.signedIn()&&!intro.introduced())intro.existingAccount();
         String initial=!intro.introduced()?"welcome":intro.pending()&&!account.signedIn()?"register":"home";
         screen=savedInstanceState==null?initial:savedInstanceState.getString("screen",initial);
+        if(getIntent()!=null&&getIntent().hasExtra("screen")){
+            screen=getIntent().getStringExtra("screen");
+            if(getIntent().hasExtra("tutor_id")) classroom.tutorProfileId=getIntent().getStringExtra("tutor_id");
+        }
         show(screen);
         account.changes().observe(this,ignored->{
             classroom.onAccount();
             if(account.destination!=null){String destination=account.destination;account.destination=null;show(destination);}
             renderNavigation();
         });
+    }
+    @Override protected void onNewIntent(android.content.Intent intent){
+        super.onNewIntent(intent);setIntent(intent);
+        if(intent!=null&&intent.hasExtra("screen")){
+            if(intent.hasExtra("tutor_id")) classroom.tutorProfileId=intent.getStringExtra("tutor_id");
+            show(intent.getStringExtra("screen"));
+        }
     }
     public void show(String destination){
         destination=classroom.redirect(destination);
@@ -111,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
             case "otp":fragment=new PhoneVerificationFragment();break;
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
+            case "tutor_profile":fragment=com.example.tmdt.ui.home.TutorProfileFragment.newInstance(classroom.tutorProfileId);break;
             default:destination="home";fragment=new HomeFragment();
         }
         screen=destination;
@@ -203,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
             case "otp":account.clearFeedback();show("account");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("register_tutor");break;
+            case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             default:account.removeDraft("login.password");show("home");
         }
     }

@@ -53,6 +53,9 @@ public final class TutorDetailsDialog extends DialogFragment {
     private static String join(String first,String second){
         String a=first==null?"":first.trim(),b=second==null?"":second.trim();
         return a.isEmpty()?b:b.isEmpty()?a:a+" · "+b;
+        dialog.setNegativeButton(R.string.tutor_profile_full_profile,(d,which)->host.classroom.openTutor(teacher.id,teacher.name,"home"));
+        if(!teacher.offerings.isEmpty())dialog.setNeutralButton(R.string.book_lesson,(d,which)->book(host,catalog,teacher));
+        return dialog.setTitle(teacher.name).setView(binding.getRoot()).create();
     }
     /** Opens the booking form (member 3); a tutor teaching several subjects first asks which one. */
     private static void book(MainActivity host,CatalogState catalog,CatalogState.Teacher teacher){
