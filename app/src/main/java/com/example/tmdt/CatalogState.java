@@ -17,6 +17,8 @@ import java.util.Map;
 public final class CatalogState extends ViewModel {
     public static final class Teacher {
         public String id, name, introduction, region, education, school, mode;
+        /** UID Firebase Auth của gia sư (trường user_id), dùng để mở hội thoại UC21. */
+        public String userId = "";
         public long experience;
         public final List<Offering> offerings = new ArrayList<>();
     }
@@ -37,6 +39,13 @@ public final class CatalogState extends ViewModel {
     public androidx.lifecycle.LiveData<Integer> changes() { return changes; }
     public Map<String,String> subjects() { return java.util.Collections.unmodifiableMap(subjects); }
     public Teacher teacher(String id) { return teachers.get(id); }
+    /** Gia sư trong danh mục có cùng tên (không dấu), dùng khi chỉ biết tên gia sư (UC21); null nếu không có. */
+    public Teacher teacherNamed(String name) {
+        String key = normalize(name == null ? "" : name).trim();
+        if (key.isEmpty()) return null;
+        for (Teacher teacher : teachers.values()) if (normalize(teacher.name).trim().equals(key)) return teacher;
+        return null;
+    }
     public String query() { return query; }
     public void query(String value) { query=value; }
     public String subject() { return subject; }
@@ -67,6 +76,7 @@ public final class CatalogState extends ViewModel {
                         teacher.introduction=text(doc,"gioi_thieu");teacher.region=text(doc,"khu_vuc");
                         teacher.education=text(doc,"hoc_van");teacher.school=text(doc,"truong");
                         teacher.mode=text(doc,"hinh_thuc_day");teacher.experience=number(doc,"so_nam_kinh_nghiem");
+                        teacher.userId=text(doc,"user_id");if(teacher.userId.isEmpty())teacher.userId=teacher.id;
                         teachers.put(teacher.id,teacher);
                     }
                     loaded.add("teachers");errors.remove("teachers");join();
