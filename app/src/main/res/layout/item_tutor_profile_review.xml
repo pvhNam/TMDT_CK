@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="@dimen/soft_field_radius"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:strokeColor="@color/soft_border"
+    app:strokeWidth="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_reviewer_initials"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_pale"
+                android:gravity="center"
+                android:textColor="#006BFF"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginEnd="12dp"
+                tools:text="QH" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_reviewer_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:textColor="#06164D"
+                    android:fontFamily="sans-serif-medium"
+                    tools:text="Phạm Quang Huy" />
+
+                <TextView
+                    android:id="@+id/tv_reviewer_tag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#46638C"
+                    tools:text="Học viên lớp 11" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_review_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#46638C"
+                tools:text="2 tuần trước" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_review_stars"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="★★★★★"
+            android:textColor="#FFB617"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tv_review_comment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#46638C"
+            android:lineSpacingExtra="3dp"
+            android:layout_marginTop="6dp"
+            tools:text="“Cô giảng rất dễ hiểu, nhiệt tình và kiên nhẫn. Mình đã tiến bộ rõ rệt và tự tin hơn khi làm bài thi.”" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

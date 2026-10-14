@@ -37,6 +37,7 @@ public final class TutorDetailsDialog extends DialogFragment {
             binding.offerings.addView(item.getRoot());
         }
         MainActivity host=(MainActivity)requireActivity();
+        dialog.setNegativeButton(R.string.tutor_profile_full_profile,(d,which)->host.classroom.openTutor(teacher.id,teacher.name,"home"));
         if(!teacher.offerings.isEmpty())dialog.setNeutralButton(R.string.book_lesson,(d,which)->book(host,catalog,teacher));
         return dialog.setTitle(teacher.name).setView(binding.getRoot()).create();
     }

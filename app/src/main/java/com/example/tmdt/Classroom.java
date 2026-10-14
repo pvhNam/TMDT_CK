@@ -52,6 +52,8 @@ public final class Classroom {
     private boolean tutorView;
     private String modeOwner="";
     public String tutorKey, lessonId="", classId="";
+    public String tutorProfileId;
+    public String tutorProfileOrigin="home";
     public int scheduleTab, classTab;
     /** Where "Đặt lịch học" was opened from, so back returns there. */
     private String bookingOrigin="home";
@@ -74,6 +76,8 @@ public final class Classroom {
             tutorKey=state.getString("tutor");scheduleTab=state.getInt("tab",0);classTab=state.getInt("classTab",0);
             lessonId=state.getString("lesson","");classId=state.getString("class","");
             bookingOrigin=state.getString("bookingOrigin","home");bookingDraft=state.getBundle("booking");
+            tutorProfileId=state.getString("tutorProfileId",null);
+            tutorProfileOrigin=state.getString("tutorProfileOrigin","home");
         }
         cloud.user(host.account.signedIn()?host.account.uid():"");
         cloud.changes().observe(host,ignored->changed());
@@ -81,6 +85,8 @@ public final class Classroom {
     void save(Bundle out){
         out.putString("tutor",tutorKey);out.putInt("tab",scheduleTab);out.putInt("classTab",classTab);
         out.putString("lesson",lessonId);out.putString("class",classId);out.putString("bookingOrigin",bookingOrigin);
+        out.putString("tutorProfileId",tutorProfileId);
+        out.putString("tutorProfileOrigin",tutorProfileOrigin);
         if(bookingDraft!=null)out.putBundle("booking",bookingDraft);
     }
 
@@ -137,6 +143,7 @@ public final class Classroom {
     /** The fragment of one of these screens, or null for a destination owned by another feature. */
     Fragment fragment(String destination){
         switch(destination){
+            case "tutor_profile":return com.example.tmdt.ui.home.TutorProfileFragment.newInstance(tutorProfileId);
             case "booking":return new BookingFragment();
             case "trial":return new TrialFragment();
             case "lesson":return new LessonDetailFragment();
@@ -174,6 +181,7 @@ public final class Classroom {
     /** Where back leads from one of these screens, or null for other screens. */
     String backTarget(String screen){
         switch(screen){
+            case "tutor_profile":return tutorProfileOrigin!=null?tutorProfileOrigin:"home";
             case "booking":return bookingOrigin;
             case "trial":return "booking";
             case "lesson":return "schedule";
@@ -205,10 +213,13 @@ public final class Classroom {
     }
     /** Public profile of a lesson's or class's tutor, from the home screen catalog when it is still listed. */
     public void openTutor(String tutorId,String name){
-        if(host.catalog.teacher(tutorId)!=null){
-            TutorDetailsDialog.create(tutorId).show(host.getSupportFragmentManager(),"tutor_details");return;
-        }
-        dialog(name,"Gia sư hiện không nhận lớp mới nên hồ sơ không còn hiển thị trên trang chủ.");
+        openTutor(tutorId,name,"home");
+    }
+    public void openTutor(String tutorId,String name,String origin){
+        this.tutorProfileId=tutorId;
+        this.tutorProfileOrigin=origin!=null?origin:"home";
+        this.bookingOrigin=origin!=null?origin:"home";
+        show("tutor_profile");
     }
     public void openBooking(Tutor tutor){
         tutorKey=tutor.key;bookingDraft=null;
