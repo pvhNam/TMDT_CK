@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nhãn ngày giữa các tin nhắn ("Hôm nay", "Hôm qua", dd/MM/yyyy). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="10dp">
+
+    <TextView
+        android:id="@+id/day"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_chat_day"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:textColor="@color/chat_muted"
+        android:textSize="12sp" />
+</FrameLayout>
