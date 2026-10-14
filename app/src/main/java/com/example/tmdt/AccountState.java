@@ -62,6 +62,7 @@ public final class AccountState extends ViewModel {
     public AccountState() { auth.setLanguageCode("vi"); if (auth.getCurrentUser()!=null) loadProfile(false); }
     FirebaseUser user() { return auth.getCurrentUser(); }
     public boolean signedIn() { return user()!=null; }
+    private Onboarding onboarding() { return new Onboarding(com.google.firebase.FirebaseApp.getInstance().getApplicationContext()); }
     public boolean verified() { return user()!=null && user().getPhoneNumber()!=null; }
     String uid() { return user()==null ? "guest" : user().getUid(); }
     void notifyUi() { changes.setValue(changes.getValue()+1); }
@@ -78,7 +79,7 @@ public final class AccountState extends ViewModel {
         });
     }
     public void register(UserProfile value, String password) {
-        if(busy)return; begin(); int token=generation;
+        if(busy)return; onboarding().applyStudent(value); begin(); int token=generation;
         auth.createUserWithEmailAndPassword(value.email,password).addOnCompleteListener(task->{
             if(token!=generation)return;
             if(!task.isSuccessful()){failed(task.getException());return;}
@@ -92,7 +93,7 @@ public final class AccountState extends ViewModel {
                 busy=false;
                 if(saved.isSuccessful()) {
                     user().updateProfile(new UserProfileChangeRequest.Builder().setDisplayName(value.name).build());
-                    destination="account"; notice="Tạo tài khoản thành công. Chào mừng bạn!";
+                    destination=onboarding().finish(profile,"account"); notice="Tạo tài khoản thành công. Chào mừng bạn!";
                 } else {
                     // Auth already exists: let the owner retry saving, never create another account.
                     destination="edit_account";
@@ -113,13 +114,15 @@ public final class AccountState extends ViewModel {
                 else {
                     profile=new UserProfile(); profile.email=user().getEmail()==null?"":user().getEmail();
                     profile.name=user().getDisplayName()==null?"":user().getDisplayName();
+                    onboarding().applyStudent(profile);
                     destination="edit_account"; notice="Hãy hoàn thiện hồ sơ của bạn.";
                 }
                 if(profile!=null && "BANNED".equals(profile.status)) {
                     signOut(); error="Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.";
                 } else {
                     if(task.getResult().exists())syncSavedAvatar(token,uid);
-                    if(navigate && destination==null) destination="home";
+                    if(task.getResult().exists() && destination==null && (navigate||onboarding().pending()))
+                        destination=onboarding().finish(profile,navigate?"home":"account");
                 }
             } else {
                 error="Không tải được hồ sơ. " + message(task.getException());
@@ -149,7 +152,7 @@ public final class AccountState extends ViewModel {
             value.tutor=profile!=null && profile.tutor;
             profile=value; draft.clear(); busy=false;
             user().updateProfile(new UserProfileChangeRequest.Builder().setDisplayName(value.name).build());
-            destination="account"; notice="Đã lưu thông tin cá nhân."; notifyUi();
+            destination=onboarding().finish(profile,"account"); notice="Đã lưu thông tin cá nhân."; notifyUi();
         });
     }
     public void resetPassword(String email) {
@@ -310,6 +313,7 @@ public final class AccountState extends ViewModel {
         });
     }
     public void signOut() {
+        onboarding().existingAccount();
         cancelGooglePicker();
         GoogleSignIn.clearSession(com.google.firebase.FirebaseApp.getInstance().getApplicationContext());
         tutorRegistration=null;

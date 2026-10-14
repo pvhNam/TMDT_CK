@@ -61,6 +61,7 @@ public final class EditAccountFragment extends AccountFragmentBase {
     private void save(){
         if(state.profile()==null||!name(binding.name)||!phone(binding.phone))return;
         UserProfile value=new UserProfile();
+        value.age=state.profile().age;value.grade=state.profile().grade;
         value.name=text(binding.name);value.email=state.profile().email;
         value.phone=AccountValidation.phone(text(binding.phone));value.address=text(binding.address);
         value.level=text(binding.level);value.region=text(binding.region);value.goal=text(binding.goal);
