@@ -11,7 +11,9 @@
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         style="@style/ReferenceToolbar"
-        app:title="@string/personal_info" />
+        app:title="Cá nhân"
+        app:titleCentered="false"
+        app:titleTextAppearance="@style/ProfileTitle" />
     <ScrollView
         android:id="@+id/account_scroll"
         android:layout_width="match_parent"
@@ -23,9 +25,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="8dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="4dp"
             android:paddingBottom="20dp">
             <include layout="@layout/view_account_feedback" />
             <LinearLayout
@@ -38,143 +40,185 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <FrameLayout
-                        android:layout_width="112dp"
-                        android:layout_height="96dp"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="4dp">
+                    <!-- Header: avatar + name + role + edit -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
                         <include
                             android:id="@+id/avatar"
                             layout="@layout/view_avatar"
-                            android:layout_width="88dp"
-                            android:layout_height="88dp"
-                            android:layout_gravity="center"
+                            android:layout_width="100dp"
+                            android:layout_height="100dp"
                             android:layout_marginBottom="0dp" />
-                    </FrameLayout>
-                    <TextView
-                        android:id="@+id/name"
-                        style="@style/ReferenceTitle"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/name"
-                        android:gravity="center"
-                        tools:text="Phạm Nam" />
-                    <TextView
-                        android:id="@+id/role"
-                        style="@style/ReferenceBody"
-                        android:text="@string/role_student"
-                        android:gravity="center"
-                        android:layout_marginBottom="14dp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/edit"
-                        style="@style/ReferencePrimary"
-                        android:text="@string/edit_profile"
-                        android:contentDescription="@string/edit_profile"
-                        android:layout_marginBottom="20dp" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/email"
-                        android:labelFor="@id/email" />
-                    <TextView
-                        android:id="@+id/email"
-                        style="@style/ReferenceProfileEmailValue"
-                        android:drawableStart="@drawable/ic_field_email"
-                        android:text="@string/not_updated"
-                        tools:text="nam@example.com" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/phone"
-                        android:labelFor="@id/phone" />
-                    <TextView
-                        android:id="@+id/phone"
-                        style="@style/ReferenceProfileValue"
-                        android:drawableStart="@drawable/ic_field_phone"
-                        android:text="@string/not_updated"
-                        tools:text="0901 234 567" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/level"
-                        android:labelFor="@id/level" />
-                    <TextView
-                        android:id="@+id/level"
-                        style="@style/ReferenceProfileValue"
-                        android:drawableStart="@drawable/ic_field_level"
-                        android:text="@string/not_updated"
-                        tools:text="Đại học" />
-                    <TextView
-                        android:id="@+id/study_details"
-                        style="@style/ReferenceBody"
-                        android:visibility="gone"
-                        tools:text="Lớp 8 · 13 tuổi" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/region"
-                        android:labelFor="@id/region" />
-                    <TextView
-                        android:id="@+id/region"
-                        style="@style/ReferenceProfileValue"
-                        android:drawableStart="@drawable/ic_field_location"
-                        android:text="@string/not_updated"
-                        tools:text="TP. Hồ Chí Minh" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/goal"
-                        android:labelFor="@id/goal" />
-                    <TextView
-                        android:id="@+id/goal"
-                        style="@style/ReferenceProfileValue"
-                        android:minHeight="72dp"
-                        android:drawableStart="@drawable/ic_field_note"
-                        android:text="@string/not_updated"
-                        tools:text="Củng cố kiến thức và nâng cao kỹ năng." />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/address"
-                        android:labelFor="@id/address" />
-                    <TextView
-                        android:id="@+id/address"
-                        style="@style/ReferenceProfileValue"
-                        android:drawableStart="@drawable/ic_field_address"
-                        android:text="@string/not_updated"
-                        tools:text="Quận 1, TP. Hồ Chí Minh" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/name"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="2"
+                                android:ellipsize="end"
+                                android:textSize="22sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/tutor_ink"
+                                tools:text="Phạm Nam" />
+                            <TextView
+                                android:id="@+id/role"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:paddingStart="12dp"
+                                android:paddingEnd="12dp"
+                                android:paddingTop="4dp"
+                                android:paddingBottom="4dp"
+                                android:background="@drawable/bg_pf_pill"
+                                android:textSize="14sp"
+                                android:textColor="@color/tutor_blue"
+                                tools:text="Học viên" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/edit"
+                                style="@style/ReferenceOutline"
+                                android:layout_width="match_parent"
+                                android:layout_height="44dp"
+                                android:layout_marginTop="10dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="@string/edit_profile"
+                                android:contentDescription="@string/edit_profile"
+                                android:textAllCaps="false"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/tutor_blue"
+                                app:cornerRadius="12dp"
+                                app:icon="@drawable/ic_edit"
+                                app:iconSize="20dp"
+                                app:iconGravity="textStart"
+                                app:iconTint="@color/tutor_blue"
+                                app:strokeColor="@color/tutor_blue"
+                                app:strokeWidth="1.5dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <!-- Stats -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal"
+                            android:paddingTop="16dp"
+                            android:paddingBottom="14dp"
+                            android:background="@drawable/bg_tutor_surface">
+                            <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_pf_calendar" android:importantForAccessibility="no" />
+                            <TextView android:id="@+id/stat_lessons" style="@style/ProfileStatNumber" android:text="0" tools:text="8" />
+                            <TextView style="@style/ProfileStatLabel" android:text="Buổi đã học" />
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal"
+                            android:paddingTop="16dp"
+                            android:paddingBottom="14dp"
+                            android:background="@drawable/bg_tutor_surface">
+                            <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_pf_heart_blue" android:importantForAccessibility="no" />
+                            <TextView android:id="@+id/stat_favorites" style="@style/ProfileStatNumber" android:text="0" tools:text="3" />
+                            <TextView style="@style/ProfileStatLabel" android:text="Gia sư yêu thích" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <!-- Menu -->
+                    <View style="@style/ProfileDivider" android:layout_marginTop="12dp" />
+            <LinearLayout android:id="@+id/row_info" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_user" />
+                <TextView style="@style/ProfileRowLabel" android:text="Thông tin cá nhân" />
+                <ImageView android:id="@+id/info_chevron" style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+
+                    <!-- Expandable personal details -->
+                    <LinearLayout
+                        android:id="@+id/info_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="12dp"
+                        android:visibility="gone">
+                <TextView style="@style/ReferenceLabel" android:text="@string/email" android:labelFor="@id/email" />
+                <TextView android:id="@+id/email" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_email" android:text="@string/not_updated" tools:text="nam@example.com" />
+                <TextView style="@style/ReferenceLabel" android:text="@string/phone" android:labelFor="@id/phone" />
+                <TextView android:id="@+id/phone" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_phone" android:text="@string/not_updated" tools:text="0901 234 567" />
+                <TextView style="@style/ReferenceLabel" android:text="@string/level" android:labelFor="@id/level" />
+                <TextView android:id="@+id/level" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_level" android:text="@string/not_updated" tools:text="Đại học" />
+                <TextView android:id="@+id/study_details" style="@style/ReferenceBody" android:visibility="gone" tools:text="Lớp 8 · 13 tuổi" />
+                <TextView style="@style/ReferenceLabel" android:text="@string/region" android:labelFor="@id/region" />
+                <TextView android:id="@+id/region" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_location" android:text="@string/not_updated" tools:text="TP. Hồ Chí Minh" />
+                <TextView style="@style/ReferenceLabel" android:text="@string/goal" android:labelFor="@id/goal" />
+                <TextView android:id="@+id/goal" style="@style/ReferenceProfileValue" android:minHeight="72dp" android:drawableStart="@drawable/ic_field_note" android:text="@string/not_updated" tools:text="Củng cố kiến thức và nâng cao kỹ năng." />
+                <TextView style="@style/ReferenceLabel" android:text="@string/address" android:labelFor="@id/address" />
+                <TextView android:id="@+id/address" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_address" android:text="@string/not_updated" tools:text="Quận 1, TP. Hồ Chí Minh" />
+                <TextView style="@style/ReferenceSectionTitle" android:text="@string/security" />
+                <TextView style="@style/ReferenceLabel" android:text="@string/phone_verification" android:labelFor="@id/verification" />
+                <TextView android:id="@+id/verification" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_shield" android:text="@string/unverified" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline" android:text="@string/page_otp" android:contentDescription="@string/page_otp" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/reset" style="@style/ReferenceOutline" android:text="@string/reset_password" android:contentDescription="@string/reset_password" />
+                    </LinearLayout>
+            <LinearLayout android:id="@+id/row_favorites" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_heart" />
+                <TextView style="@style/ProfileRowLabel" android:text="Gia sư yêu thích" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_reviews" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_star" />
+                <TextView style="@style/ProfileRowLabel" android:text="Đánh giá của tôi" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" android:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_settings" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_settings_gear" android:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Cài đặt" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+
+                    <!-- Tutor invitation card -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:background="@drawable/bg_tutor_surface"
-                        android:padding="12dp"
-                        android:layout_marginTop="8dp"
+                        android:padding="16dp"
+                        android:layout_marginTop="20dp"
                         android:layout_marginBottom="12dp">
                         <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="69dp">
-                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="4dp" android:paddingEnd="72dp">
-                                <TextView android:id="@+id/tutor_title" style="@style/TutorLabel" android:textSize="20sp" android:text="@string/tutor_invite"/>
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingEnd="84dp">
+                                <TextView android:id="@+id/tutor_title" style="@style/TutorLabel" android:textSize="18sp" android:text="@string/tutor_invite"/>
                                 <TextView android:id="@+id/tutor_caption" style="@style/TutorText" android:textSize="15sp" android:textColor="@color/tutor_muted" android:text="@string/tutor_invite_caption"/>
                             </LinearLayout>
-                            <ImageView android:id="@+id/tutor_books" android:layout_width="70dp" android:layout_height="69dp" android:layout_gravity="top|end" android:importantForAccessibility="no"/>
+                            <ImageView android:id="@+id/tutor_books" android:layout_width="80dp" android:layout_height="69dp" android:layout_gravity="top|end" android:importantForAccessibility="no"/>
                         </FrameLayout>
-                        <com.google.android.material.button.MaterialButton android:id="@+id/tutor_action" style="@style/TutorPrimary" android:text="@string/tutor_register" android:layout_marginTop="8dp"/>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/tutor_action" style="@style/TutorPrimary" android:text="@string/tutor_register" android:layout_marginTop="12dp"/>
                     </LinearLayout>
-                    <TextView
-                        style="@style/ReferenceSectionTitle"
-                        android:text="@string/security" />
-                    <TextView
-                        style="@style/ReferenceLabel"
-                        android:text="@string/phone_verification"
-                        android:labelFor="@id/verification" />
-                    <TextView
-                        android:id="@+id/verification"
-                        style="@style/ReferenceProfileEmailValue"
-                        android:drawableStart="@drawable/ic_field_shield"
-                        android:text="@string/unverified" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/verify"
-                        style="@style/ReferenceOutline"
-                        android:text="@string/page_otp"
-                        android:contentDescription="@string/page_otp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/reset"
-                        style="@style/ReferenceOutline"
-                        android:text="@string/reset_password"
-                        android:contentDescription="@string/reset_password" />
                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/retry"
@@ -185,7 +229,7 @@
                     android:id="@+id/sign_out"
                     style="@style/ReferenceLink"
                     android:layout_width="match_parent"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="4dp"
                     android:textSize="14sp"
                     android:textColor="#B42318"
                     android:text="@string/sign_out"

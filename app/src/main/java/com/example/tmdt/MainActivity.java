@@ -102,7 +102,14 @@ public class MainActivity extends AppCompatActivity {
     }
     public void show(String destination){
         destination=classroom.redirect(destination);
-        if(!account.signedIn()&&(destination.equals("account")||destination.equals("edit_account")||destination.equals("otp")||destination.equals("register_tutor")||destination.equals("review_tutor")))destination="login";
+        if(!account.signedIn()&&(destination.equals("account")
+                ||destination.equals("edit_account")
+                ||destination.equals("otp")
+                ||destination.equals("register_tutor")
+                ||destination.equals("review_tutor")
+                ||destination.equals("favorites")
+                ||destination.equals("settings")))
+            destination="login";
         if((destination.equals("register_tutor")||destination.equals("review_tutor"))&&account.profile()!=null&&account.profile().tutor)destination="account";
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
@@ -117,6 +124,8 @@ public class MainActivity extends AppCompatActivity {
             case "forgot":fragment=new ForgotPasswordFragment();break;
             case "account":fragment=new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
+            case "favorites":fragment=new com.example.tmdt.ui.profile.FavoritesFragment();break;
+            case "settings":fragment=new com.example.tmdt.ui.profile.SettingsFragment();break;
             case "register_tutor":fragment=new com.example.tmdt.ui.profile.RegisterTutorFragment();break;
             case "review_tutor":fragment=new com.example.tmdt.ui.profile.ReviewTutorFragment();break;
             case "otp":fragment=new PhoneVerificationFragment();break;
@@ -213,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
             case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
             case "otp":account.clearFeedback();show("account");break;
+            case "favorites":case "settings":account.clearFeedback();show("account");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("register_tutor");break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;

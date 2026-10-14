@@ -1,6 +1,9 @@
 package com.example.tmdt.ui.profile;
 
+import android.graphics.Outline;
 import android.view.View;
+import android.view.ViewOutlineProvider;
+import android.widget.Toast;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import com.example.tmdt.R;
@@ -14,6 +17,15 @@ public final class AccountFragment extends AccountFragmentBase {
     public AccountFragment(){super(R.layout.fragment_account);}
     @Override protected void bindFields(View view){
         binding=FragmentAccountBinding.bind(view);
+        roundAvatar(binding.avatar.avatarInitials);roundAvatar(binding.avatar.avatarPhoto);
+        binding.rowInfo.setOnClickListener(v->{
+            boolean open=binding.infoDetails.getVisibility()!=View.VISIBLE;
+            binding.infoDetails.setVisibility(open?View.VISIBLE:View.GONE);
+            binding.infoChevron.animate().rotation(open?90f:0f).setDuration(150).start();
+        });
+        View.OnClickListener soon=v->Toast.makeText(requireContext(),"Tính năng sắp ra mắt",Toast.LENGTH_SHORT).show();
+        binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
+        binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
         binding.tutorAction.setOnClickListener(v->{
@@ -27,6 +39,15 @@ public final class AccountFragment extends AccountFragmentBase {
                 .setTitle(R.string.sign_out).setMessage("Bạn có thể đăng nhập lại để xem thông tin cá nhân.")
                 .setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.sign_out,(dialog,which)->state.signOut()).show());
     }
+    /** The reference design shows a rounded square avatar instead of a circle. */
+    private void roundAvatar(View v){
+        final float radius=16*getResources().getDisplayMetrics().density;
+        v.setBackgroundResource(R.drawable.bg_pf_avatar);
+        v.setOutlineProvider(new ViewOutlineProvider(){
+            @Override public void getOutline(View view,Outline outline){outline.setRoundRect(0,0,view.getWidth(),view.getHeight(),radius);}
+        });
+        v.setClipToOutline(true);
+    }
     @Override protected void renderState(){
         UserProfile profile=state.profile();
         binding.profileContent.setVisibility(profile==null?View.GONE:View.VISIBLE);
@@ -34,6 +55,8 @@ public final class AccountFragment extends AccountFragmentBase {
         if(profile==null)return;
         AvatarRenderer.render(binding.avatar,profile.avatar,profile.name);
         binding.name.setText(profile.name);
+        // TODO: replace with real counts (completed lessons / favourite tutors) once Classroom exposes them.
+        binding.statLessons.setText("0");binding.statFavorites.setText(String.valueOf(com.example.tmdt.FavoriteTutors.count(requireContext())));
         binding.tutorAction.setText(profile.tutor?(host().classroom.tutorMode()?R.string.tutor_switch_student:R.string.tutor_switch):R.string.tutor_register);
         binding.tutorTitle.setText(profile.tutor?R.string.tutor_manage_title:R.string.tutor_invite);
         binding.tutorCaption.setText(profile.tutor?R.string.tutor_manage_caption:R.string.tutor_invite_caption);

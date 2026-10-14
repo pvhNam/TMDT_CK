@@ -112,8 +112,21 @@ public final class HomeFragment extends Fragment {
                 TutorDetailsDialog.create(teacher.id).show(getParentFragmentManager(),"tutor_details");
                 return true;
             });
+            bindFavorite(item.favorite,teacher.id);
             binding.results.addView(item.getRoot());
         }
+    }
+    private void bindFavorite(android.widget.ImageView heart,String tutorId){
+        AccountState account=new ViewModelProvider(requireActivity()).get(AccountState.class);
+        final boolean[] saved={account.signedIn()&&com.example.tmdt.FavoriteTutors.contains(requireContext(),tutorId)};
+        heart.setImageResource(saved[0]?R.drawable.ic_pf_heart_filled:R.drawable.ic_pf_heart_blue);
+        heart.setContentDescription(saved[0]?"Bỏ lưu gia sư":"Lưu gia sư");
+        heart.setOnClickListener(v->{
+            if(!account.signedIn()){host().show("login");return;}
+            saved[0]=com.example.tmdt.FavoriteTutors.toggle(requireContext(),tutorId);
+            heart.setImageResource(saved[0]?R.drawable.ic_pf_heart_filled:R.drawable.ic_pf_heart_blue);
+            heart.setContentDescription(saved[0]?"Bỏ lưu gia sư":"Lưu gia sư");
+        });
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
 }
