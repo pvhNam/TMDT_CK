@@ -3,7 +3,9 @@ package com.example.tmdt.ui.tutor;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -158,12 +160,39 @@ public final class TutorHomeFragment extends ScreenFragment {
 
     /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
     private void respond(Lesson lesson) {
-        classroom.ui.dialog().setTitle("Yêu cầu của "+lesson.studentName)
-                .setMessage(lesson.title+"\n"+lesson.dateLabel()+" · "+lesson.timeLabel()+"\n"+lesson.mode+"\n\nMục tiêu: "+lesson.goal+"\nHọc phí: "+Tutor.money(lesson.total()))
-                .setNeutralButton("Đóng",null)
-                .setNegativeButton("Từ chối",(d,w)->finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu."))
-                .setPositiveButton("Chấp nhận",(d,w)->finish(classroom.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy."))
-                .show();
+        LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
+        LinearLayout top = ui.row();
+        top.addView(ui.avatar(lesson.studentId,lesson.studentName,56)); ui.gap(top,14);
+        LinearLayout who = ui.column(); ui.add(who,ui.text(lesson.studentName,20,Ui.INK,true)); ui.space(who,6);
+        who.addView(ui.pill(lesson.trial?"Yêu cầu học thử":"Yêu cầu đặt lịch",13,Ui.ORANGE,Ui.ORANGE_BG),ui.lp(-2,-2));
+        ui.weight(top,who); ui.add(view,top); ui.space(view,16);
+
+        LinearLayout table = ui.table();
+        ui.tableRow(table,R.drawable.ic_file,"Môn học",lesson.title);
+        ui.tableRow(table,R.drawable.ic_calendar,"Ngày học",lesson.dateLabel());
+        ui.tableRow(table,R.drawable.ic_clock,"Thời gian",lesson.timeLabel());
+        ui.tableRow(table,lesson.online()?R.drawable.ic_video:R.drawable.ic_home_soft,"Hình thức",lesson.mode);
+        if (!lesson.address.isEmpty()) ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",lesson.address);
+        ui.add(view,table); ui.space(view,14);
+
+        ui.label(view,"Mục tiêu buổi học");
+        TextView goal = ui.text(lesson.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
+        ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(view,goal); ui.space(view,12);
+
+        LinearLayout price = ui.row(); price.setPadding(ui.dp(14),ui.dp(10),ui.dp(16),ui.dp(10)); ui.fieldSurface(price,Ui.PALE,0);
+        price.addView(ui.icon(R.drawable.ic_wallet,22,Ui.INK)); ui.gap(price,12);
+        ui.weight(price,ui.text("Học phí",16,Ui.INK,false)); price.addView(ui.text(Tutor.money(lesson.total()),19,Ui.INK,true));
+        ui.add(view,price); ui.space(view,18);
+
+        ScrollView scroll = new ScrollView(classroom.context()); scroll.addView(view);
+        AlertDialog dialog = ui.dialog().setView(scroll).create();
+        LinearLayout actions = ui.row();
+        ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->{dialog.dismiss();finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu.");}),46);
+        ui.gap(actions,10);
+        ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->{dialog.dismiss();finish(classroom.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy.");}),46);
+        ui.add(view,actions); ui.space(view,6);
+        TextView later = ui.link("Để sau",15,dialog::dismiss); later.setTextColor(Ui.MUTED); later.setGravity(Gravity.CENTER); ui.add(view,later);
+        dialog.show();
     }
     private void finish(String error, String done) {
         if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }

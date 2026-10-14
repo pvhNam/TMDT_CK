@@ -79,7 +79,7 @@ public final class ScheduleFragment extends ScreenFragment {
         titleRow.addView(ui.lessonStatus(lesson));ui.add(details,titleRow);ui.space(details,2);
         TextView teacher=ui.text(lesson.tutorName,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(lesson.tutorId,lesson.tutorName));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,lesson.dateLabel()+" · "+lesson.timeLabel(),18,14,Ui.MUTED,false));
-        ui.add(details,ui.fact(lesson.mode.equals("Tại nhà")?R.drawable.ic_home:R.drawable.ic_video,lesson.mode+(lesson.trial?" · Học thử":""),18,15,Ui.MUTED,false));
+        ui.add(details,ui.fact(lesson.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,lesson.mode+(lesson.trial?" · Học thử":""),18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);
         if(lesson.proposal()&&lesson.confirmed()) {
             ui.space(card,8);LinearLayout proposal=ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch. Chạm để xem.",Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE);
