@@ -48,6 +48,9 @@ public final class TutorDetailsDialog extends DialogFragment {
         binding.close.setOnClickListener(v->dismiss());
         binding.book.setVisibility(teacher.offerings.isEmpty()?View.GONE:View.VISIBLE);
         binding.book.setOnClickListener(v->{dismiss();book(host,catalog,teacher);});
+        // UC21: nhắn tin với gia sư trước khi đặt lịch.
+        binding.message.setVisibility(teacher.userId.isEmpty()?View.GONE:View.VISIBLE);
+        binding.message.setOnClickListener(v->{dismiss();host.openChat(teacher.userId,teacher.name,"TUTOR",null);});
         return dialog.setView(binding.getRoot()).create();
     }
     private static String join(String first,String second){

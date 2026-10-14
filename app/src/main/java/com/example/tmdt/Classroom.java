@@ -241,7 +241,45 @@ public final class Classroom {
         try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(lesson.roomUrl())));}
         catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+lesson.roomUrl());}
     }
-    public void message(String person){dialog("Nhắn tin với "+person,"Chức năng trò chuyện (màn hình 05–06) do Thành viên 4 phụ trách và sẽ được nối vào đây.");}
+    /**
+     * "Nhắn tin" (UC21, member 4): mở màn 06 với người có tên này, kèm buổi học còn hiệu lực gần nhất giữa hai người.
+     * Không xác định được tài khoản của người đó thì mở danh sách tin nhắn lọc sẵn theo tên.
+     */
+    public void message(String person){
+        String name=person==null?"":person.trim();
+        Lesson lesson=chatLesson(name);
+        if(lesson!=null){
+            boolean iTeach=me().equals(lesson.tutorId);
+            String peerId=iTeach?lesson.studentId:tutorUid(lesson.tutorId);
+            if(peerId!=null&&!peerId.isEmpty()){
+                host.openChat(peerId,iTeach?lesson.studentName:lesson.tutorName,iTeach?"STUDENT":"TUTOR",
+                        Conversation.lesson(lesson.title,lesson.dateLabel()+" · "+lesson.timeLabel(),lesson.statusLabel()));
+                return;
+            }
+        }
+        CatalogState.Teacher teacher=host.catalog.teacherNamed(name);
+        if(teacher!=null&&!teacher.userId.isEmpty()&&!teacher.userId.equals(me())){host.openChat(teacher.userId,teacher.name,"TUTOR",null);return;}
+        host.openMessages(name);
+    }
+    /** UID tài khoản của gia sư: user_id trong hồ sơ gia sư, mặc định chính mã hồ sơ (Rules bắt buộc user_id == mã hồ sơ). */
+    private String tutorUid(String tutorId){
+        CatalogState.Teacher teacher=host.catalog.teacher(tutorId);
+        return teacher!=null&&!teacher.userId.isEmpty()?teacher.userId:tutorId;
+    }
+    /** Buổi học còn hiệu lực sắp tới nhất giữa mình và người có tên này; nếu không có thì buổi gần đây nhất. */
+    private Lesson chatLesson(String person){
+        String key=CatalogState.normalize(person).trim(),mine=me();
+        if(key.isEmpty()||mine.isEmpty())return null;
+        Lesson upcoming=null,recent=null;
+        for(Lesson lesson:lessons){
+            boolean withTutor=mine.equals(lesson.studentId)&&CatalogState.normalize(lesson.tutorName).trim().equals(key);
+            boolean withStudent=mine.equals(lesson.tutorId)&&CatalogState.normalize(lesson.studentName).trim().equals(key);
+            if((!withTutor&&!withStudent)||!lesson.active())continue;
+            if(!lesson.ended()){if(upcoming==null||lesson.start().isBefore(upcoming.start()))upcoming=lesson;}
+            else if(recent==null||lesson.start().isAfter(recent.start()))recent=lesson;
+        }
+        return upcoming!=null?upcoming:recent;
+    }
     public void dialog(String title,String message){ui.dialog().setTitle(title).setMessage(message).setPositiveButton(R.string.understood,null).show();}
     public void notice(String message){
         Snackbar bar=Snackbar.make(host.findViewById(R.id.screen_container),message,Snackbar.LENGTH_LONG);
