@@ -113,10 +113,29 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
 
+        <!-- UC21: nhắn tin với gia sư (mở màn 06). -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/message"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif-condensed"
+            android:text="@string/chat_message_tutor"
+            android:textColor="@color/chat_blue"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_chat"
+            app:iconGravity="textStart"
+            app:iconSize="20dp"
+            app:iconTint="@color/chat_blue"
+            app:strokeColor="@color/chat_blue" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp">
+            android:layout_marginTop="10dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/close"

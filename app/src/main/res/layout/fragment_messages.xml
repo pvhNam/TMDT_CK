@@ -1,14 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Màn 05 – Tin nhắn (UC21): tìm theo tên, lọc chưa đọc, chọn một hội thoại để mở. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="24dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:paddingTop="20dp"
     tools:context="com.example.tmdt.ui.messages.MessagesFragment">
-    <TextView style="@style/ReferenceTitle" android:text="@string/page_messages" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-        android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-        <TextView style="@style/ReferenceBody" android:gravity="center" android:text="@string/feature_unavailable" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/return_home"
-            style="@style/ReferenceOutline" android:text="@string/return_home" />
-    </LinearLayout>
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="@string/chat_title"
+        android:textColor="@color/chat_ink"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/search"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_chat_search"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="10dp"
+        android:hint="@string/chat_search_hint"
+        android:imeOptions="actionSearch"
+        android:importantForAutofill="no"
+        android:inputType="textPersonName"
+        android:paddingHorizontal="14dp"
+        android:saveEnabled="false"
+        android:singleLine="true"
+        android:textColor="@color/chat_ink"
+        android:textColorHint="@color/chat_muted"
+        android:textSize="14sp" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabs"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="10dp"
+        android:background="@android:color/white"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@color/chat_blue"
+        app:tabIndicatorFullWidth="true"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="fixed"
+        app:tabRippleColor="@color/chat_pale"
+        app:tabSelectedTextColor="@color/chat_blue"
+        app:tabTextAppearance="@style/ChatTabText"
+        app:tabTextColor="@color/chat_muted">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/chat_tab_all" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/chat_tab_unread" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="20dp"
+        android:background="@color/chat_border" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="16dp" />
 </LinearLayout>

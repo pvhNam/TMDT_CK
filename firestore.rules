@@ -89,6 +89,12 @@ service cloud.firestore {
     }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }
+    // UC21: tài khoản bị khóa (users/{uid}.trang_thai == 'BANNED') không tạo được hội thoại, tin nhắn.
+    function notBanned() {
+      return request.auth != null
+        && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.trang_thai != 'BANNED');
+    }
     function stamped() { return request.resource.data.updated_at == request.time; }
     function changed(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
     function account() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
@@ -101,7 +107,9 @@ service cloud.firestore {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
-        return d.keys().hasOnly(keys) && d.keys().hasAll(keys)
+        let link = d.get('link_phong_hoc', '');
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc'])) && d.keys().hasAll(keys)
+          && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.tieu_de is string && d.tieu_de.size() <= 100
@@ -113,18 +121,23 @@ service cloud.firestore {
           && (d.doi_lich_bat_dau == null || d.doi_lich_bat_dau is timestamp) && d.doi_lich_ly_do is string && d.doi_lich_ly_do.size() <= 120
           && stamped();
       }
+      function lessonChanged(keys) {
+        return changed(keys.concat(['link_phong_hoc']))
+          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '');
+      }
       function requested() {
         let d = request.resource.data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
           && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
-          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.bat_dau > request.time && d.created_at == request.time
+          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == ''
+          && d.bat_dau > request.time && d.created_at == request.time
           && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
       }
       function answered() {
         let d = request.resource.data;
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'PENDING'
-          && d.trang_thai in ['CONFIRMED', 'REJECTED'] && changed(['trang_thai', 'updated_at'])
+          && d.trang_thai in ['CONFIRMED', 'REJECTED'] && lessonChanged(['trang_thai', 'updated_at'])
           && (d.trang_thai == 'REJECTED' || resource.data.bat_dau > request.time);
       }
       function proposed() {
@@ -132,34 +145,40 @@ service cloud.firestore {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau == null && resource.data.bat_dau > request.time
           && d.doi_lich_bat_dau is timestamp && d.doi_lich_bat_dau > request.time && d.doi_lich_bat_dau != resource.data.bat_dau
-          && d.doi_lich_ly_do.size() > 0 && changed(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.doi_lich_ly_do.size() > 0 && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
       }
       function cancelled() {
         let d = request.resource.data;
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai in ['PENDING', 'CONFIRMED']
           && resource.data.bat_dau > request.time && d.trang_thai == 'CANCELLED' && d.ly_do_huy.size() > 0 && d.doi_lich_bat_dau == null
-          && changed(['trang_thai', 'ly_do_huy', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && lessonChanged(['trang_thai', 'ly_do_huy', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
       }
       function moved() {
         let d = request.resource.data;
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau != null && resource.data.doi_lich_bat_dau > request.time
           && d.bat_dau == resource.data.doi_lich_bat_dau && d.doi_lich_bat_dau == null
-          && changed(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
       }
       function kept() {
         return resource.data.student_id == request.auth.uid && resource.data.doi_lich_bat_dau != null
-          && request.resource.data.doi_lich_bat_dau == null && changed(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && request.resource.data.doi_lich_bat_dau == null && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
       }
       function finished() {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.da_hoan_thanh == false && request.resource.data.da_hoan_thanh == true
           && request.time >= resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
-          && changed(['da_hoan_thanh', 'updated_at']);
+          && lessonChanged(['da_hoan_thanh', 'updated_at']);
+      }
+      function linked() {
+        return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
+          && resource.data.hinh_thuc == 'Trực tuyến'
+          && request.time < resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
+          && changed(['link_phong_hoc', 'updated_at']);
       }
       allow read: if signedIn() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
       allow create: if signedIn() && validLesson() && requested();
-      allow update: if signedIn() && validLesson() && (answered() || proposed() || cancelled() || moved() || kept() || finished());
+      allow update: if signedIn() && validLesson() && (answered() || proposed() || cancelled() || moved() || kept() || finished() || linked());
     }
     match /group_classes/{classId} {
       function validClass() {
@@ -221,6 +240,103 @@ service cloud.firestore {
       allow update: if signedIn() && validRegistration()
         && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at']))
           || reviewed());
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // UC21 – Trao đổi qua tin nhắn (màn 05, 06). Chỉ thành viên hội thoại đọc/ghi; tin nhắn không sửa, không xóa.
+    // Mã hội thoại = uidA + '__' + uidB (đã sắp xếp); một bên phải là gia sư (tutor_profiles/{uid}).
+    // ---------------------------------------------------------------------------------------------
+    match /conversations/{conversationId} {
+      function isMember(data) { return request.auth != null && data.member_ids is list && request.auth.uid in data.member_ids; }
+      function peerOf(data) { return data.member_ids[0] == request.auth.uid ? data.member_ids[1] : data.member_ids[0]; }
+      function isTutor(uid) { return exists(/databases/$(database)/documents/tutor_profiles/$(uid)); }
+      function validMember(m) {
+        return m is map && m.keys().hasOnly(['ho_ten','vai_tro'])
+          && m.ho_ten is string && m.ho_ten.size() <= 100
+          && m.vai_tro in ['STUDENT','TUTOR',''];
+      }
+      function validLesson(l) {
+        return l is map && l.keys().hasOnly(['title','time','status'])
+          && l.title is string && l.title.size() <= 120
+          && l.time is string && l.time.size() <= 60
+          && l.status is string && l.status.size() <= 40;
+      }
+      function validNew(d) {
+        return d.keys().hasAll(['member_ids','members','last_message','last_sender_id','unread_count','read_at','created_by','created_at','updated_at'])
+          && d.keys().hasOnly(['member_ids','members','last_message','last_sender_id','last_message_at','unread_count','read_at','lesson','created_by','created_at','updated_at'])
+          && d.member_ids is list && d.member_ids.size() == 2
+          && d.member_ids[0] is string && d.member_ids[1] is string && d.member_ids[0] < d.member_ids[1]
+          && request.auth.uid in d.member_ids
+          && conversationId == d.member_ids[0] + '__' + d.member_ids[1]
+          && (isTutor(d.member_ids[0]) || isTutor(d.member_ids[1]))
+          && d.members is map && d.members.keys().hasOnly(d.member_ids) && d.members.size() == 2
+          && validMember(d.members[d.member_ids[0]]) && validMember(d.members[d.member_ids[1]])
+          && d.last_message == '' && d.last_sender_id == '' && d.get('last_message_at', null) == null
+          && d.unread_count is map && d.unread_count.keys().hasOnly(d.member_ids) && d.unread_count.values().hasOnly([0])
+          && d.read_at is map && d.read_at.size() == 0
+          && (!('lesson' in d) || validLesson(d.lesson))
+          && d.created_by == request.auth.uid
+          && d.created_at == request.time && d.updated_at == request.time;
+      }
+      function validUnread(before, after, data) {
+        let changed = after.unread_count.diff(before.unread_count).affectedKeys();
+        let me = request.auth.uid;
+        let peer = peerOf(data);
+        return changed.hasOnly([me, peer])
+          && (!(me in changed) || after.unread_count[me] == 0)
+          && (!(peer in changed) || (after.unread_count[peer] == before.unread_count.get(peer, 0) + 1
+                                      && after.last_message_at == request.time));
+      }
+      function validUpdate(before, after) {
+        let changed = after.diff(before).affectedKeys();
+        let me = request.auth.uid;
+        return changed.hasOnly(['members','last_message','last_sender_id','last_message_at','unread_count','read_at','lesson','updated_at'])
+          && after.member_ids == before.member_ids
+          && (!('updated_at' in changed) || after.updated_at == request.time)
+          && (!('members' in changed) || (after.members.diff(before.members).affectedKeys().hasOnly([me]) && validMember(after.members[me])))
+          && (!(('last_message' in changed) || ('last_sender_id' in changed) || ('last_message_at' in changed))
+              || (after.last_sender_id == me && after.last_message is string
+                  && after.last_message.size() > 0 && after.last_message.size() <= 1000
+                  && after.last_message_at == request.time))
+          && (!('unread_count' in changed) || validUnread(before, after, before))
+          && (!('read_at' in changed) || (after.read_at.diff(before.read_at).affectedKeys().hasOnly([me]) && after.read_at[me] == request.time))
+          && (!('lesson' in changed) || validLesson(after.lesson));
+      }
+
+      allow get: if request.auth != null && (resource == null || isMember(resource.data));
+      // Truy vấn danh sách (where member_ids array-contains uid): điều kiện phải chứng minh được từ chính truy vấn.
+      allow list: if request.auth != null && request.auth.uid in resource.data.member_ids;
+      allow create: if notBanned() && validNew(request.resource.data);
+      allow update: if isMember(resource.data) && validUpdate(resource.data, request.resource.data);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function conversationBefore() { return get(/databases/$(database)/documents/conversations/$(conversationId)).data; }
+        function conversationAfter() { return getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data; }
+        allow read: if request.auth != null && request.auth.uid in conversationBefore().member_ids;
+        // Tin phải được ghi cùng batch với phần tóm tắt hội thoại (last_message_at = request.time).
+        allow create: if notBanned()
+          && request.auth.uid in conversationAfter().member_ids
+          && conversationAfter().last_message_at == request.time
+          && request.resource.data.keys().hasAll(['sender_id','client_message_id','content','sent_at'])
+          && request.resource.data.keys().hasOnly(['sender_id','client_message_id','content','sent_at'])
+          && request.resource.data.sender_id == request.auth.uid
+          && request.resource.data.client_message_id == messageId
+          && request.resource.data.content is string
+          && request.resource.data.content.trim().size() > 0
+          && request.resource.data.content.size() <= 1000
+          && request.resource.data.sent_at == request.time;
+        allow update, delete: if false;
+      }
+    }
+    // Trạng thái "Đang hoạt động" ở màn 06: ai đăng nhập cũng xem được, chỉ chủ tài khoản ghi.
+    match /presence/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['online','last_seen'])
+        && request.resource.data.online is bool
+        && request.resource.data.last_seen == request.time;
+      allow delete: if false;
     }
     // All other collections, including the removed flows, are denied by default.
   }

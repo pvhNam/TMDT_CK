@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UC21 Tin nhắn / Trò chuyện (màn 05, 06) -->
+    <color name="chat_ink">#092357</color>
+    <color name="chat_muted">#6A7FA6</color>
+    <color name="chat_blue">#0878FF</color>
+    <color name="chat_pale">#EAF4FF</color>
+    <color name="chat_field">#F2F6FB</color>
+    <color name="chat_bubble_in">#EFF4FA</color>
+    <color name="chat_border">#E3ECF7</color>
+    <color name="chat_green">#12B76A</color>
+    <color name="chat_green_bg">#E3F8EE</color>
+    <color name="chat_red">#E5484D</color>
+</resources>
