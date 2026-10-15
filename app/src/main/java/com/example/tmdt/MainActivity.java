@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     public Classroom classroom;
     String screen="home";
     private String pendingDestination;
+    private String authenticatedDestination;
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean keyboardVisible;
@@ -88,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         if(account.signedIn()&&!intro.introduced())intro.existingAccount();
         String initial=!intro.introduced()?"welcome":intro.pending()&&!account.signedIn()?"register":"home";
         screen=savedInstanceState==null?initial:savedInstanceState.getString("screen",initial);
+        authenticatedDestination=savedInstanceState==null?null:savedInstanceState.getString("authenticated_destination");
         if(getIntent()!=null&&getIntent().hasExtra("screen")){
             screen=getIntent().getStringExtra("screen");
             if(getIntent().hasExtra("tutor_id")) classroom.tutorProfileId=getIntent().getStringExtra("tutor_id");
@@ -95,9 +97,24 @@ public class MainActivity extends AppCompatActivity {
         show(screen);
         account.changes().observe(this,ignored->{
             classroom.onAccount();
-            if(account.destination!=null){String destination=account.destination;account.destination=null;show(destination);}
-            // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
-            if(account.signedIn())chat.start();else chat.reset();
+            if(account.destination!=null){
+    String destination=account.destination;
+    account.destination=null;
+
+    if(authenticatedDestination!=null
+            &&("home".equals(destination)||"account".equals(destination))
+            &&account.signedIn()
+            &&account.profile()!=null
+            &&"ACTIVE".equals(account.profile().status)){
+        destination=authenticatedDestination;
+        authenticatedDestination=null;
+    }
+    show(destination);
+}
+
+  // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
+  if(account.signedIn())chat.start();
+  else chat.reset();
             renderNavigation();
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
@@ -111,6 +128,9 @@ public class MainActivity extends AppCompatActivity {
     }
     public void show(String destination){
         destination=classroom.redirect(destination);
+        if("post_request".equals(destination)&&!account.signedIn()){
+            authenticatedDestination=destination;destination="login";
+        }
         // Màn 06 cần đăng nhập và một hội thoại đang mở (UC21).
         if("chat".equals(destination)&&(!account.signedIn()||chat.openId()==null))destination=account.signedIn()?"messages":"login";
         if(!account.signedIn()&&(destination.equals("account")
@@ -142,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
             case "otp":fragment=new PhoneVerificationFragment();break;
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
+            case "post_request":fragment=new com.example.tmdt.ui.requests.PostTutorRequestFragment();break;
             case "chat":fragment=new ChatFragment();break;
             case "tutor_profile":fragment=com.example.tmdt.ui.home.TutorProfileFragment.newInstance(classroom.tutorProfileId);break;
             default:destination="home";fragment=new HomeFragment();
@@ -221,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
     }
     public void back(){
         if(account.isBusy())return;hideKeyboard();
+        if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
@@ -237,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
             case "favorites":case "settings":account.clearFeedback();show("account");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("register_tutor");break;
+            case "post_request":show("home");break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
             default:account.removeDraft("login.password");show("home");
@@ -286,5 +309,5 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);classroom.save(out);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);}
 }

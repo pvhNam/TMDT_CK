@@ -189,13 +189,13 @@
             </LinearLayout>
             <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" android:tint="@color/tutor_ink" />
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_settings" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_settings_gear" android:tint="@color/tutor_ink" />
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_settings_gear" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Cài đặt" />
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
