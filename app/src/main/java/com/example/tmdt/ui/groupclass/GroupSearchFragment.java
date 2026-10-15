@@ -113,7 +113,7 @@ public final class GroupSearchFragment extends ScreenFragment {
     private View card(GroupClass item) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.art(item.largeArt(),99,133)); ui.gap(top,13);
+        top.addView(ui.photo(item.art(),null,99,133,14)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);
         LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,43)); ui.gap(teacher,12);
         ui.weight(teacher,ui.text(item.tutorName,16,Ui.INK,false)); ui.add(info,teacher); ui.space(info,6);

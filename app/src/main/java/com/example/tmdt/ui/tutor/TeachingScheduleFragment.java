@@ -99,7 +99,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.weight(top,ui.text((withDate?session.date.format(Lesson.DATE).substring(0,5)+" · ":"")+Lesson.range(item.hour,item.minutes).replace("–"," – "),21,Ui.INK,true));
         top.addView(ui.pill("Lớp nhóm",14,Ui.BLUE,Ui.PALE)); ui.add(card,top); ui.space(card,4);
         ui.add(card,ui.text(item.title,21,Ui.INK,true)); ui.space(card,6);
-        LinearLayout row = ui.row(); row.addView(ui.art(item.smallArt(),62,64)); ui.gap(row,12);
+        LinearLayout row = ui.row(); row.addView(ui.photo(item.art(),null,62,64,12)); ui.gap(row,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text("Buổi "+session.number+"/"+item.sessions,14,Ui.MUTED,false)); ui.space(info,4);
         ui.add(info,ui.text(item.members.size()+"/"+item.capacity+" học viên",18,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text("▣ "+item.mode,15,Ui.INK,false)); ui.weight(row,info);

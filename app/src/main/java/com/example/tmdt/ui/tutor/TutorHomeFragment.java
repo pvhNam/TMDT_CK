@@ -149,7 +149,7 @@ public final class TutorHomeFragment extends ScreenFragment {
     private View classTodayCard(GroupClass item) {
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.art(item.smallArt(),69,73)); ui.gap(card,13);
+        card.addView(ui.photo(item.art(),null,69,73,12)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
         ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);

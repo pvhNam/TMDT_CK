@@ -103,7 +103,7 @@ public final class ScheduleFragment extends ScreenFragment {
     private View classCard(GroupClass item, String when, TextView status, String note) {
         LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
-        row.addView(ui.art(item.smallArt(),73,77));ui.gap(row,14);
+        row.addView(ui.photo(item.art(),null,73,77,12));ui.gap(row,14);
         LinearLayout details=ui.column();ui.space(details,4);
         LinearLayout titleRow=ui.row();titleRow.setGravity(Gravity.TOP);
         TextView title=ui.text(item.title,item.title.length()>14?14:17,Ui.INK,true);ui.weight(titleRow,title);ui.gap(titleRow,4);
@@ -131,7 +131,7 @@ public final class ScheduleFragment extends ScreenFragment {
         LinearLayout banner=ui.row();banner.setPadding(ui.dp(16),ui.dp(16),ui.dp(7),ui.dp(10));banner.setMinimumHeight(ui.dp(160));ui.cardSurface(banner,Ui.PALE,0);
         LinearLayout text=ui.column();ui.add(text,ui.text("Sẵn sàng cho buổi học tiếp theo",21,Ui.INK,true));ui.space(text,8);
         ui.add(text,ui.text("Xem lại mục tiêu trước khi bắt đầu.",16,Ui.MUTED,false));ui.weight(banner,text);
-        banner.addView(ui.art(R.drawable.illus_calendar,126,126));
+        banner.addView(ui.art(R.drawable.anh_lich_hoc,126,126));
         return banner;
     }
 }
