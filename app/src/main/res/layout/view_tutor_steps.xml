@@ -22,9 +22,17 @@
             android:textSize="18sp"
             android:text="1" />
         <View
+            android:id="@+id/step_line_one"
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1"
+            android:background="@color/tutor_border" />
+        <TextView
+            android:id="@+id/step_evidence"
+            android:layout_width="30dp" android:layout_height="30dp"
+            android:background="@drawable/bg_tutor_step" android:gravity="center"
+            android:fontFamily="sans-serif" android:textSize="18sp" android:text="2" />
+        <View android:id="@+id/step_line_two" android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"
             android:background="@color/tutor_border" />
         <TextView
             android:id="@+id/step_review"
@@ -34,7 +42,7 @@
             android:gravity="center"
             android:fontFamily="sans-serif"
             android:textSize="18sp"
-            android:text="2" />
+            android:text="3" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -45,18 +53,21 @@
             style="@style/TutorText"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:textSize="15sp"
-            android:gravity="start"
-            android:paddingStart="20dp"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:paddingStart="0dp"
             android:text="@string/tutor_step_info" />
+        <TextView
+            android:id="@+id/label_evidence" style="@style/TutorText" android:layout_width="0dp"
+            android:layout_weight="1" android:textSize="12sp" android:gravity="center" android:text="Minh chứng" />
         <TextView
             android:id="@+id/label_review"
             style="@style/TutorText"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:textSize="15sp"
-            android:gravity="end"
-            android:paddingEnd="20dp"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:paddingEnd="0dp"
             android:text="@string/tutor_step_review" />
     </LinearLayout>
 </LinearLayout>

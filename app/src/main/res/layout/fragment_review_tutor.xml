@@ -18,7 +18,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:scrollbars="none">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,21 +40,21 @@
                 <TextView
                     style="@style/TutorLabel"
                     android:text="@string/tutor_review_title"
-                    android:textSize="23sp"
+                    android:textSize="20sp"
                     android:layout_marginBottom="16dp" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="133dp"
-                    android:padding="16dp"
-                    android:background="@drawable/bg_tutor_field"
+                    android:minHeight="108dp"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_review_card"
                     android:gravity="center_vertical"
                     android:layout_marginBottom="18dp">
                     <include
                         android:id="@+id/avatar"
                         layout="@layout/view_avatar"
-                        android:layout_width="97dp"
-                        android:layout_height="97dp"
+                        android:layout_width="76dp"
+                        android:layout_height="76dp"
                         android:layout_marginBottom="0dp" />
                     <LinearLayout
                         android:layout_width="0dp"
@@ -68,13 +69,13 @@
                         <TextView
                             android:id="@+id/subjects"
                             style="@style/TutorText"
-                            android:textSize="15sp"
+                            android:textSize="13sp"
                             android:textColor="@color/tutor_muted"
                             android:layout_marginBottom="8dp" />
                         <TextView
                             android:id="@+id/mode"
                             style="@style/TutorText"
-                            android:textSize="15sp"
+                            android:textSize="13sp"
                             android:textColor="#009D70" />
                         <TextView
                             android:id="@+id/price"
@@ -84,22 +85,26 @@
                             android:layout_marginBottom="0dp" />
                     </LinearLayout>
                 </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical" android:paddingEnd="8dp">
+                        <TextView style="@style/TutorLabel" android:text="@string/phone" android:textSize="12sp" android:textColor="@color/tutor_muted" />
+                        <TextView android:id="@+id/phone" style="@style/TutorText" android:textSize="13sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical">
+                        <TextView style="@style/TutorLabel" android:text="@string/tutor_experience" android:textSize="12sp" android:textColor="@color/tutor_muted" />
+                        <TextView android:id="@+id/experience" style="@style/TutorText" android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
                 <TextView
-                    style="@style/TutorLabel"
-                    android:text="@string/phone"
-                    android:labelFor="@id/phone" />
-                <TextView
-                    android:id="@+id/phone"
+                    android:id="@+id/education"
                     style="@style/TutorText"
                     android:layout_marginBottom="16dp" />
-                <TextView
-                    style="@style/TutorLabel"
-                    android:text="@string/tutor_experience"
-                    android:labelFor="@id/experience" />
-                <TextView
-                    android:id="@+id/experience"
-                    style="@style/TutorText"
-                    android:layout_marginBottom="24dp" />
+                <TextView style="@style/TutorLabel" android:text="Minh chứng đã chọn" />
+                <LinearLayout android:id="@+id/evidence_files" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp" />
                 <TextView
                     android:id="@+id/review_note"
                     style="@style/TutorText"
@@ -117,17 +122,19 @@
                     android:layout_height="wrap_content"
                     android:minHeight="48dp"
                     android:fontFamily="sans-serif"
-                    android:textSize="15sp"
+                    android:textSize="13sp"
                     android:textColor="@color/tutor_ink"
                     android:text="@string/tutor_confirm"
                     android:layout_marginBottom="12dp" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/submit"
                     style="@style/TutorPrimary"
+                    app:cornerRadius="12dp"
                     android:text="@string/tutor_send" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/edit_again"
                     style="@style/TutorOutline"
+                    app:cornerRadius="12dp"
                     android:text="@string/tutor_edit_again" />
             </LinearLayout>
         </LinearLayout>

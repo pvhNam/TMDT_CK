@@ -49,7 +49,7 @@
     <string
         name="tutor_price_hint">Nhập số tiền (đồng)</string>
     <string
-        name="tutor_next_note">Bước tiếp theo: kiểm tra và gửi hồ sơ xét duyệt.</string>
+        name="tutor_next_note">Bước tiếp theo: bổ sung bằng cấp hoặc thẻ sinh viên.</string>
     <string
         name="tutor_continue">Tiếp tục</string>
     <string
@@ -57,7 +57,7 @@
     <string
         name="tutor_review_note">Hồ sơ sẽ được quản trị viên xét duyệt.</string>
     <string
-        name="tutor_confirm">Tôi xác nhận thông tin đăng ký là chính xác.</string>
+        name="tutor_confirm">Tôi xác nhận thông tin và minh chứng là chính xác.</string>
     <string
         name="tutor_send">Gửi hồ sơ xét duyệt</string>
     <string

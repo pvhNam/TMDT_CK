@@ -36,7 +36,7 @@
                     <TextView style="@style/ProfileRowLabel" android:layout_marginStart="12dp" android:text="Thông báo" android:textStyle="bold" />
                 </LinearLayout>
                 <LinearLayout android:id="@+id/row_reminder" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
-                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" android:tint="@color/tutor_ink" />
+                    <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                     <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Nhắc lịch học" />
                     <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/reminder_switch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:contentDescription="@null" />
                 </LinearLayout>

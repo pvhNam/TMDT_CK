@@ -40,6 +40,7 @@ public final class AccountState extends ViewModel {
     private TutorRegistration tutorRegistration;
     public TutorRegistration tutorRegistration(){return tutorRegistration;}
     public void reviewTutor(TutorRegistration value){tutorRegistration=value;destination="review_tutor";notifyUi();}
+    public void prepareTutor(TutorRegistration value){tutorRegistration=value;destination="tutor_evidence";notifyUi();}
     public void reportError(String value){error=value;notice="";notifyUi();}
 
     public androidx.lifecycle.LiveData<Integer> changes() { return changes; }
@@ -216,7 +217,21 @@ public final class AccountState extends ViewModel {
         TutorRegistration value=tutorRegistration;
         if(busy||user()==null||profile==null||value==null)return;
         if(!value.error().isEmpty()){reportError(value.error());return;}
+        android.content.Context context=com.google.firebase.FirebaseApp.getInstance().getApplicationContext();
+        TutorEvidenceDraft evidence=TutorEvidenceDraft.load(context,uid());
+        if(!evidence.error().isEmpty()){reportError(evidence.error());return;}
         begin();final int token=generation;final String owner=uid();
+        notice="Đang kiểm tra ảnh minh chứng trên Firebase…";notifyUi();
+        TutorEvidenceAccess.verify(evidence.files,owner).addOnCompleteListener(checked->{
+            if(!current(token,owner))return;
+            if(!checked.isSuccessful()){
+                busy=false;notice="";error=TutorEvidenceAccess.message(checked.getException());notifyUi();return;
+            }
+            notice="Đang gửi hồ sơ xét duyệt…";notifyUi();
+            submitVerifiedTutor(value,evidence,token,owner,context);
+        });
+    }
+    private void submitVerifiedTutor(TutorRegistration value,TutorEvidenceDraft evidence,int token,String owner,android.content.Context context){
         db.runTransaction(tx->{
             com.google.firebase.firestore.DocumentReference userRef=db.collection("users").document(owner);
             com.google.firebase.firestore.DocumentReference tutorRef=db.collection("tutor_profiles").document(owner);
@@ -228,12 +243,17 @@ public final class AccountState extends ViewModel {
             if(!accountDoc.exists())throw new IllegalStateException("Missing account");
             Map<String,Object> data=new HashMap<>();
             data.put("user_id",owner);data.put("ho_ten",value.name);data.put("hoc_van",accountDoc.getString("cap_hoc")==null?"":accountDoc.getString("cap_hoc"));
-            data.put("truong","");data.put("chuyen_nganh","");data.put("gioi_thieu","");
+            data.put("truong",evidence.school.trim());data.put("chuyen_nganh",evidence.major.trim());data.put("gioi_thieu","");
             data.put("khu_vuc",accountDoc.getString("khu_vuc")==null?"":accountDoc.getString("khu_vuc"));
             data.put("so_nam_kinh_nghiem",value.experience);data.put("hinh_thuc_day",value.mode);
             data.put("nhan_lop",true);data.put("trang_thai_xac_minh","PENDING");
             data.put("created_at",FieldValue.serverTimestamp());data.put("updated_at",FieldValue.serverTimestamp());
             tx.set(tutorRef,data);
+            Map<String,Object> application=evidence.fields();application.put("user_id",owner);application.put("ho_ten",value.name);
+            application.put("mon_hoc",value.subjectName);application.put("cap_lop",value.levelLabel());application.put("hoc_phi",value.price);
+            application.put("trang_thai_xac_minh","PENDING");application.put("submitted_at",FieldValue.serverTimestamp());
+            application.put("created_at",FieldValue.serverTimestamp());application.put("updated_at",FieldValue.serverTimestamp());
+            tx.set(db.collection("tutor_applications").document(owner),application);
             for(String level:value.levels){
                 Map<String,Object> offering=new HashMap<>();offering.put("tutor_id",owner);
                 offering.put("subject_id",value.subjectId);offering.put("cap_lop",level);offering.put("hoc_phi_moi_buoi",value.price);
@@ -244,12 +264,19 @@ public final class AccountState extends ViewModel {
             tx.update(userRef,update);return null;
         }).addOnCompleteListener(task->{
             if(!current(token,owner))return;
-            if(!task.isSuccessful()){failed(task.getException());return;}
+            if(!task.isSuccessful()){
+                android.util.Log.w("TutorEvidence","Tutor application transaction failed",task.getException());
+                if(task.getException() instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)task.getException()).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED){
+                    busy=false;notice="";error="Ảnh đã được kiểm tra nhưng Firebase từ chối gửi hồ sơ. Kiểm tra rules của hồ sơ, môn giảng dạy và thông tin tài khoản. (PERMISSION_DENIED)";notifyUi();
+                }else failed(task.getException());
+                return;
+            }
             if(task.getResult()!=null)profile=task.getResult();
             else {profile.tutor=true;profile.name=value.name;profile.phone=value.phone;}
             tutorRegistration=null;draft.keySet().removeIf(key->key.startsWith("tutor."));
-            busy=false;destination="account";
-            notice="Đã gửi hồ sơ gia sư. Bạn có thể chuyển qua gia sư; hồ sơ cần được duyệt trước khi nhận lớp.";
+            TutorEvidenceDraft.clear(context,owner);
+            busy=false;destination="tutor_pending";
+            notice="Đã gửi hồ sơ gia sư thành công. Bạn có thể theo dõi kết quả xét duyệt.";
             notifyUi();
         });
     }

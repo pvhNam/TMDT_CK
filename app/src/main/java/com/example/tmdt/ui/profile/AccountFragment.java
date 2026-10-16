@@ -29,9 +29,13 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
         binding.tutorAction.setOnClickListener(v->{
-            if(state.profile()!=null&&state.profile().tutor){state.clearFeedback();host().classroom.setTutorMode(!host().classroom.tutorMode());}
+            com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
+            if(state.profile()!=null&&"ADMIN".equals(state.profile().role))go("admin_tutors");
+            else if(state.profile()!=null&&state.profile().tutor&&"VERIFIED".equals(review.status())){state.clearFeedback();host().classroom.setTutorMode(!host().classroom.tutorMode());}
+            else if(state.profile()!=null&&state.profile().tutor)go("tutor_pending");
             else go("register_tutor");
         });
+        new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class).changes.observe(getViewLifecycleOwner(),ignored->renderState());
         binding.verify.setOnClickListener(v->go("otp"));
         binding.reset.setOnClickListener(v->{if(state.profile()!=null)state.resetPassword(state.profile().email);});
         binding.retry.setOnClickListener(v->state.loadProfile(false));
@@ -60,6 +64,9 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.tutorAction.setText(profile.tutor?(host().classroom.tutorMode()?R.string.tutor_switch_student:R.string.tutor_switch):R.string.tutor_register);
         binding.tutorTitle.setText(profile.tutor?R.string.tutor_manage_title:R.string.tutor_invite);
         binding.tutorCaption.setText(profile.tutor?R.string.tutor_manage_caption:R.string.tutor_invite_caption);
+        com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
+        if("ADMIN".equals(profile.role)){binding.tutorAction.setText("Duyệt hồ sơ gia sư");binding.tutorTitle.setText("Quản trị gia sư");binding.tutorCaption.setText("Kiểm tra minh chứng và cập nhật kết quả xét duyệt.");}
+        else if(profile.tutor&&!"VERIFIED".equals(review.status())){binding.tutorAction.setText("Theo dõi hồ sơ gia sư");binding.tutorCaption.setText("Xem trạng thái xét duyệt và yêu cầu bổ sung.");}
         binding.role.setText("ADMIN".equals(profile.role)?R.string.role_admin:host().classroom.tutorMode()?R.string.role_tutor:R.string.role_student);
         value(binding.email,profile.email);value(binding.phone,profile.phone);value(binding.address,profile.address);
         value(binding.level,profile.level);value(binding.region,profile.region);value(binding.goal,profile.goal);

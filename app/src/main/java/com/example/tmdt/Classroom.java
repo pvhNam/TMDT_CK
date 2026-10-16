@@ -112,8 +112,9 @@ public final class Classroom {
         CatalogState.Teacher teacher=host.catalog.teacher(me());
         return teacher!=null?teacher.name:myName();
     }
-    /** Registration enables the tutor view; server rules still require VERIFIED for teaching. */
-    public boolean isTutor(){UserProfile profile=host.account.profile();return host.account.signedIn()&&profile!=null&&profile.tutor;}
+    /** A submitted application does not grant teaching access; approval is required. */
+    public boolean isTutor(){UserProfile profile=host.account.profile();return host.account.signedIn()&&profile!=null&&profile.tutor
+            &&"VERIFIED".equals(host.tutorReviews.status());}
     public boolean tutorMode(){return tutorView&&isTutor();}
 
     private void changed(){

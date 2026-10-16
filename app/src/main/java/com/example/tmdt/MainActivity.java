@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     CatalogState catalog;
     /** Tin nhắn (member 4, UC21). */
     public ChatState chat;
+    TutorReviewState tutorReviews;
     /** Lessons and group classes (member 3). */
     public Classroom classroom;
     String screen="home";
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         account=new ViewModelProvider(this).get(AccountState.class);
         catalog=new ViewModelProvider(this).get(CatalogState.class);
         chat=new ViewModelProvider(this).get(ChatState.class);
+        tutorReviews=new ViewModelProvider(this).get(TutorReviewState.class);
         classroom=new Classroom(this,savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
@@ -94,10 +96,17 @@ public class MainActivity extends AppCompatActivity {
         }
         show(screen);
         account.changes().observe(this,ignored->{
+            tutorReviews.account(account);
             classroom.onAccount();
             if(account.destination!=null){String destination=account.destination;account.destination=null;show(destination);}
             // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
             if(account.signedIn())chat.start();else chat.reset();
+            renderNavigation();
+        });
+        tutorReviews.changes.observe(this,ignored->{
+            if(tutorReviews.destination!=null){String next=tutorReviews.destination;tutorReviews.destination=null;show(next);}
+            else if(classroom.tutorMode()&&"home".equals(screen))show("tutorHome");
+            else if(!classroom.isTutor()&&java.util.Arrays.asList("tutorHome","teaching","classes","openClass","review").contains(screen))show("tutor_pending");
             renderNavigation();
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
@@ -118,16 +127,25 @@ public class MainActivity extends AppCompatActivity {
                 ||destination.equals("otp")
                 ||destination.equals("register_tutor")
                 ||destination.equals("review_tutor")
+                ||destination.equals("tutor_evidence")||destination.equals("tutor_pending")
+                ||destination.equals("tutor_submitted")||destination.equals("tutor_supplement")||destination.equals("admin_tutors")
                 ||destination.equals("favorites")
                 ||destination.equals("settings")))
             destination="login";
-        if((destination.equals("register_tutor")||destination.equals("review_tutor"))&&account.profile()!=null&&account.profile().tutor)destination="account";
+        if((destination.equals("register_tutor")||destination.equals("review_tutor")||destination.equals("tutor_evidence"))&&account.profile()!=null&&account.profile().tutor)destination="tutor_pending";
+        if(destination.equals("admin_tutors")&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
+        if(destination.equals("tutor_evidence")&&account.tutorRegistration()==null)destination="register_tutor";
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)switch(destination){
+            case "tutor_evidence":fragment=new com.example.tmdt.ui.profile.TutorEvidenceFragment();break;
+            case "tutor_supplement":fragment=com.example.tmdt.ui.profile.TutorEvidenceFragment.supplementScreen();break;
+            case "tutor_pending":fragment=new com.example.tmdt.ui.profile.PendingTutorFragment();break;
+            case "tutor_submitted":fragment=new com.example.tmdt.ui.profile.SubmittedTutorFragment();break;
+            case "admin_tutors":fragment=new com.example.tmdt.ui.profile.AdminTutorReviewFragment();break;
             case "welcome":fragment=new com.example.tmdt.ui.onboarding.WelcomeFragment();break;
             case "student_intro":fragment=new com.example.tmdt.ui.onboarding.StudentIntroFragment();break;
             case "login":fragment=new LoginFragment();break;
@@ -152,7 +170,8 @@ public class MainActivity extends AppCompatActivity {
         if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
             androidx.fragment.app.FragmentTransaction transaction=getSupportFragmentManager().beginTransaction().setReorderingAllowed(true);
             if(current!=null && com.example.tmdt.ui.common.Motion.enabled()
-                    && (classroom.tutorMode() || current.getClass().getPackage().getName().endsWith(".tutor")))
+                    && (classroom.tutorMode() || current.getClass().getPackage().getName().endsWith(".tutor")
+                    || java.util.Arrays.asList("tutor_evidence","review_tutor","tutor_pending","tutor_supplement","tutor_submitted").contains(screen)))
                 transaction.setCustomAnimations(R.anim.teacher_enter,R.anim.teacher_exit);
             final String target=screen;navigatingTo=target;
             transaction.replace(R.id.screen_container,fragment,screen).runOnCommit(()->{
@@ -236,7 +255,10 @@ public class MainActivity extends AppCompatActivity {
             case "otp":account.clearFeedback();show("account");break;
             case "favorites":case "settings":account.clearFeedback();show("account");break;
             case "register_tutor":account.clearFeedback();show("account");break;
-            case "review_tutor":account.clearFeedback();show("register_tutor");break;
+            case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
+            case "tutor_evidence":show("register_tutor");break;
+            case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
+            case "tutor_pending":case "admin_tutors":show("account");break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
             default:account.removeDraft("login.password");show("home");
