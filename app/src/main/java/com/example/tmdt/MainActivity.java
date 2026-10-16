@@ -281,7 +281,6 @@ public class MainActivity extends AppCompatActivity {
             case "tutor_evidence":show("register_tutor");break;
             case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
             case "tutor_pending":case "admin_tutors":show("account");break;
-            case "review_tutor":account.clearFeedback();show("register_tutor");break;
             case "post_request":show("home");break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
