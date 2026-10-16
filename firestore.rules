@@ -64,13 +64,112 @@ service cloud.firestore {
           && d.hinh_thuc_day in ['TRUC_TUYEN','TAI_NHA','CA_HAI'] && d.nhan_lop == true
           && d.trang_thai_xac_minh == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
       }
-      allow get: if (request.auth != null && request.auth.uid == tutorId) || resource.data.trang_thai_xac_minh == 'VERIFIED';
-      allow list: if resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow get: if (request.auth != null && request.auth.uid == tutorId) || admin() || resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow list: if admin() || resource.data.trang_thai_xac_minh == 'VERIFIED';
       allow create: if signedIn() && request.auth.uid == tutorId && account().trang_thai == 'ACTIVE'
         && account().la_gia_su == false && validRegistration()
+        && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.created_at == request.time
+        && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == 'PENDING'
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.la_gia_su == true
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.ho_ten == request.resource.data.ho_ten;
-      allow update, delete: if false;
+      allow update: if stamped() && (
+        (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
+          && request.resource.data.trang_thai_xac_minh in ['IN_REVIEW','VERIFIED','NEEDS_REVISION','REJECTED']
+          && changed(['trang_thai_xac_minh','updated_at'])
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == request.resource.data.trang_thai_xac_minh
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.nguoi_duyet_id == request.auth.uid
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.reviewed_at == request.time)
+        || (signedIn() && request.auth.uid == tutorId && account().trang_thai == 'ACTIVE'
+          && resource.data.trang_thai_xac_minh == 'NEEDS_REVISION' && request.resource.data.trang_thai_xac_minh == 'PENDING'
+          && changed(['trang_thai_xac_minh','truong','chuyen_nganh','updated_at'])
+          && request.resource.data.truong is string && request.resource.data.truong.size() <= 150
+          && request.resource.data.chuyen_nganh is string && request.resource.data.chuyen_nganh.size() <= 150
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == 'PENDING'
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.submitted_at == request.time));
+      allow delete: if false;
+    }
+    // Application evidence is private; never store it in the public tutor catalog.
+    match /tutor_applications/{uid} {
+      function evidence(f) {
+        let image = get(/databases/$(database)/documents/tutor_applications/$(uid)/evidence_images/$(f.path.split('/')[3])).data;
+        return f is map && f.keys().hasAll(['name','path','type','size','kind'])
+          && f.keys().hasOnly(['name','path','type','size','kind'])
+          && f.name is string && f.name.size() > 0 && f.name.size() <= 150
+          && f.path is string && f.path.matches('tutor_applications/' + uid + '/evidence_images/[a-zA-Z0-9-]+')
+          && f.type == 'image/jpeg'
+          && f.size is int && f.size > 0 && f.size <= 307200 && f.kind in ['diploma','certificate']
+          && image.user_id == uid && image.name == f.name
+          && image.type == f.type && image.size == f.size && image.kind == f.kind;
+      }
+      function validEvidence() {
+        let d=request.resource.data;let f=d.minh_chung;
+        return d.user_id == uid && d.truong is string && d.truong.size() > 0 && d.truong.size() <= 150
+          && d.chuyen_nganh is string && d.chuyen_nganh.size() > 0 && d.chuyen_nganh.size() <= 150
+          && d.ghi_chu is string && d.ghi_chu.size() <= 500 && f is list && f.size() >= 1 && f.size() <= 4
+          && evidence(f[0]) && (f.size() < 2 || evidence(f[1])) && (f.size() < 3 || evidence(f[2])) && (f.size() < 4 || evidence(f[3]))
+          && (f[0].kind == 'diploma' || (f.size() >= 2 && f[1].kind == 'diploma') || (f.size() >= 3 && f[2].kind == 'diploma') || (f.size() == 4 && f[3].kind == 'diploma'));
+      }
+      function imageForApproval(){
+        let f=request.resource.data.get('minh_chung',[]);
+        return f is list && f.size() > 0 && (
+          (f[0].kind == 'diploma' && evidence(f[0]))
+          || (f.size() > 1 && f[1].kind == 'diploma' && evidence(f[1]))
+          || (f.size() > 2 && f[2].kind == 'diploma' && evidence(f[2]))
+          || (f.size() > 3 && f[3].kind == 'diploma' && evidence(f[3])));
+      }
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create: if (signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE' && validEvidence()
+          && request.resource.data.keys().hasOnly(['user_id','ho_ten','truong','chuyen_nganh','ghi_chu','minh_chung','mon_hoc','cap_lop','hoc_phi','trang_thai_xac_minh','submitted_at','created_at','updated_at'])
+          && request.resource.data.ho_ten is string && request.resource.data.ho_ten.size() <= 100
+          && request.resource.data.mon_hoc is string && request.resource.data.mon_hoc.size() <= 150
+          && request.resource.data.cap_lop is string && request.resource.data.cap_lop.size() <= 150
+          && request.resource.data.hoc_phi is int && request.resource.data.hoc_phi >= 50000 && request.resource.data.hoc_phi <= 2000000
+          && request.resource.data.trang_thai_xac_minh == 'PENDING' && stamped()
+          && request.resource.data.created_at == request.time && request.resource.data.submitted_at == request.time
+          && getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'PENDING')
+        || (admin() && stamped() && request.resource.data.user_id == uid
+          && request.resource.data.nguoi_duyet_id == request.auth.uid && request.resource.data.reviewed_at == request.time
+          && request.resource.data.keys().hasOnly(['user_id','ho_ten','created_at','updated_at','reviewed_at','nguoi_duyet_id','ly_do','trang_thai_xac_minh'])
+          && request.resource.data.ly_do is string && request.resource.data.ly_do.size() <= 500
+          && request.resource.data.trang_thai_xac_minh != 'VERIFIED'
+          && (request.resource.data.trang_thai_xac_minh == 'IN_REVIEW' || request.resource.data.ly_do.size() > 0)
+          && request.resource.data.trang_thai_xac_minh == getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh);
+      allow update: if stamped() && request.resource.data.user_id == uid && (
+        (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
+          && changed(['trang_thai_xac_minh','nguoi_duyet_id','reviewed_at','ly_do','updated_at'])
+          && request.resource.data.trang_thai_xac_minh in ['IN_REVIEW','VERIFIED','NEEDS_REVISION','REJECTED']
+          && (request.resource.data.trang_thai_xac_minh != 'VERIFIED' || imageForApproval())
+          && request.resource.data.nguoi_duyet_id == request.auth.uid && request.resource.data.reviewed_at == request.time
+          && request.resource.data.ly_do is string && request.resource.data.ly_do.size() <= 500
+          && (request.resource.data.trang_thai_xac_minh in ['VERIFIED','IN_REVIEW'] || request.resource.data.ly_do.size() > 0)
+          && request.resource.data.trang_thai_xac_minh == getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh)
+        || (signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE' && validEvidence()
+          && resource.data.trang_thai_xac_minh == 'NEEDS_REVISION' && request.resource.data.trang_thai_xac_minh == 'PENDING'
+          && changed(['truong','chuyen_nganh','ghi_chu','minh_chung','trang_thai_xac_minh','submitted_at','updated_at'])
+          && request.resource.data.submitted_at == request.time
+          && getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'PENDING'));
+      allow delete: if false;
+      // One compressed image per document; the parent application contains metadata only.
+      match /evidence_images/{imageId} {
+        function ownerCanUpload() {
+          return signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE'
+            && ((!exists(/databases/$(database)/documents/tutor_profiles/$(uid)) && account().la_gia_su == false)
+              || get(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'NEEDS_REVISION');
+        }
+        allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (request.auth.uid == uid || admin());
+        allow list: if false;
+        allow create: if ownerCanUpload() && imageId.matches('[a-zA-Z0-9-]+')
+          && request.resource.data.keys().hasAll(['user_id','name','type','size','kind','anh','created_at'])
+          && request.resource.data.keys().hasOnly(['user_id','name','type','size','kind','anh','created_at'])
+          && request.resource.data.user_id == uid
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 150
+          && request.resource.data.type == 'image/jpeg' && request.resource.data.kind in ['diploma','certificate']
+          && request.resource.data.anh is bytes && request.resource.data.anh.size() > 0 && request.resource.data.anh.size() <= 307200
+          && request.resource.data.size is int && request.resource.data.size == request.resource.data.anh.size()
+          && request.resource.data.created_at == request.time;
+        allow update, delete: if false;
+      }
     }
     match /tutor_subjects/{offeringId} {
       allow read: if true;
@@ -87,8 +186,35 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.created_at == request.time;
       allow update, delete: if false;
     }
+    // UC11: students publish a need; only the owner and verified tutors may read it.
+    match /tutor_requests/{requestId} {
+      function validRequest() {
+        let d = request.resource.data;
+        let subject = get(/databases/$(database)/documents/subjects/$(d.subject_id)).data;
+        let keys = ['student_id','ten_hoc_vien','tieu_de','subject_id','mon_hoc','cap_hoc','ngan_sach','lich_hoc','mo_ta','trang_thai','created_at','updated_at'];
+        return d.keys().hasAll(keys) && d.keys().hasOnly(keys)
+          && d.student_id == request.auth.uid && account().trang_thai == 'ACTIVE'
+          && d.ten_hoc_vien == account().ho_ten
+          && d.tieu_de is string && d.tieu_de.matches('.*[^\\s].*') && d.tieu_de.size() <= 120
+          && d.subject_id is string && d.subject_id.size() > 0 && d.subject_id.size() <= 150
+          && subject.dang_su_dung == true && d.mon_hoc == subject.ten_mon
+          && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 100
+          && d.cap_hoc in ['TIEU_HOC','THCS','THPT','LUYEN_THI','KHAC']
+          && d.ngan_sach is int && d.ngan_sach >= 1 && d.ngan_sach <= 10000000
+          && d.lich_hoc is string && d.lich_hoc.matches('[\\s\\S]*[^\\s][\\s\\S]*') && d.lich_hoc.size() <= 300
+          && d.mo_ta is string && d.mo_ta.matches('[\\s\\S]*[^\\s][\\s\\S]*') && d.mo_ta.size() <= 2000
+          && d.trang_thai == 'OPEN' && d.created_at == request.time && d.updated_at == request.time;
+      }
+      allow get: if signedIn() && (requestId.matches(request.auth.uid + '_[0-9a-f-]{36}')
+        || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid) && account().trang_thai == 'ACTIVE'));
+      allow list: if signedIn() && (resource.data.student_id == request.auth.uid
+        || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid) && account().trang_thai == 'ACTIVE'));
+      allow create: if signedIn() && requestId.matches(request.auth.uid + '_[0-9a-f-]{36}') && validRequest();
+      allow update, delete: if false;
+    }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }
+    function admin() { return signedIn() && account().vai_tro == 'ADMIN' && account().trang_thai == 'ACTIVE'; }
     // UC21: tài khoản bị khóa (users/{uid}.trang_thai == 'BANNED') không tạo được hội thoại, tin nhắn.
     function notBanned() {
       return request.auth != null
@@ -304,7 +430,7 @@ service cloud.firestore {
       }
 
       allow get: if request.auth != null && (resource == null || isMember(resource.data));
-      // Truy vấn danh sách (where member_ids array-contains uid): điều kiện phải chứng minh được từ chính truy vấn.
+      allow list: if isMember(resource.data);
       allow list: if request.auth != null && request.auth.uid in resource.data.member_ids;
       allow create: if notBanned() && validNew(request.resource.data);
       allow update: if isMember(resource.data) && validUpdate(resource.data, request.resource.data);

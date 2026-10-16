@@ -99,7 +99,7 @@ public final class RegisterTutorFragment extends AccountFragmentBase {
         String error=value.error();
         if(error.isEmpty()&&!catalog.subjects().containsKey(subjectId))error="Môn học này chưa khả dụng. Vui lòng tải lại danh mục và chọn môn.";
         if(!error.isEmpty()){state.reportError(error);binding.accountScroll.smoothScrollTo(0,0);return;}
-        state.clearFeedback();state.draft("tutor.confirmed","false",false);host().hideKeyboard();state.reviewTutor(value);
+        state.clearFeedback();state.draft("tutor.confirmed","false",false);host().hideKeyboard();state.prepareTutor(value);
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
 }

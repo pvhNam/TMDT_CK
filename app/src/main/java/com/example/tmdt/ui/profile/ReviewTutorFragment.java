@@ -12,12 +12,16 @@ import java.util.Locale;
 
 public final class ReviewTutorFragment extends AccountFragmentBase {
     private FragmentReviewTutorBinding binding;
+    private String shownError="";
     public ReviewTutorFragment(){super(R.layout.fragment_review_tutor);}
     @Override protected void bindFields(View view){
         binding=FragmentReviewTutorBinding.bind(view);
         binding.toolbar.setNavigationIcon(TutorDesignAssets.icon(requireContext(),"back"));
         binding.steps.stepInfo.setSelected(true);binding.steps.stepReview.setSelected(true);
         binding.steps.stepInfo.setText("✓");
+        binding.steps.stepEvidence.setSelected(true);binding.steps.stepEvidence.setText("✓");
+        binding.steps.stepEvidence.setTextColor(requireContext().getColor(android.R.color.white));
+        binding.steps.labelEvidence.setTextColor(requireContext().getColor(R.color.tutor_blue));
         binding.steps.stepInfo.setTextColor(requireContext().getColor(android.R.color.white));
         binding.steps.stepReview.setTextColor(requireContext().getColor(android.R.color.white));
         binding.steps.labelInfo.setTextColor(requireContext().getColor(R.color.tutor_blue));
@@ -33,12 +37,30 @@ public final class ReviewTutorFragment extends AccountFragmentBase {
             AvatarRenderer.render(binding.avatar,state.profile()==null?"":state.profile().avatar,value.name);
         }
         binding.confirm.setChecked(Boolean.parseBoolean(state.draft("tutor.confirmed","false")));
+        com.example.tmdt.TutorEvidenceDraft evidence=com.example.tmdt.TutorEvidenceDraft.load(requireContext(),com.google.firebase.auth.FirebaseAuth.getInstance().getUid());
+        binding.education.setText("Trường / đơn vị: "+evidence.school+"\nChuyên ngành: "+evidence.major);
+        com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
+        com.example.tmdt.ui.common.Ui ui=new com.example.tmdt.ui.common.Ui(requireContext());
+        binding.steps.stepLineOne.setBackgroundColor(com.example.tmdt.ui.common.Ui.BLUE);
+        binding.steps.stepLineTwo.setBackgroundColor(com.example.tmdt.ui.common.Ui.BLUE);
+        for(java.util.Map<String,Object> file:evidence.files){
+            ui.add(binding.evidenceFiles,TutorReviewDesign.file(ui,file,null));ui.space(binding.evidenceFiles,8);
+        }
+        ui.surface(binding.avatar.avatarInitials,com.example.tmdt.ui.common.Ui.PALE,12,0);
+        ui.surface(binding.avatar.avatarPhoto,com.example.tmdt.ui.common.Ui.PALE,12,0);
+        com.example.tmdt.ui.common.Motion.press(binding.submit);
+        com.example.tmdt.ui.common.Motion.press(binding.editAgain);
         binding.confirm.setOnCheckedChangeListener((button,checked)->state.draft("tutor.confirmed",String.valueOf(checked),false));
-        binding.editAgain.setOnClickListener(v->go("register_tutor"));
+        binding.editAgain.setOnClickListener(v->go("tutor_evidence"));
         binding.submit.setOnClickListener(v->{
             if(!binding.confirm.isChecked()){state.reportError(getString(R.string.tutor_confirm_error));binding.accountScroll.smoothScrollTo(0,0);return;}
             state.submitTutor();
         });
     }
-    @Override public void onDestroyView(){super.onDestroyView();binding=null;}
+    @Override protected void renderState(){
+        if(binding!=null&&!state.error().isEmpty()&&!state.isBusy()&&!state.error().equals(shownError)){
+            shownError=state.error();binding.accountScroll.smoothScrollTo(0,0);
+        }
+    }
+    @Override public void onDestroyView(){super.onDestroyView();binding=null;shownError="";}
 }
