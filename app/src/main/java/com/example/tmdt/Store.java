@@ -97,10 +97,21 @@ public final class Store {
     public String setRoomLink(Lesson lesson, String link) {
         if (!lesson.confirmed() || lesson.ended()) return "Chỉ gắn link cho buổi học đã xác nhận và chưa kết thúc.";
         if (!lesson.online()) return "Buổi học tại nhà không cần link phòng học.";
-        String value = link.trim();
+        String value = roomLink(link);
+        if (value == null) return "Link phòng học chưa hợp lệ. Ví dụ: meet.google.com/abc-defg-hij";
         if (value.length() > 300) return "Link phòng học quá dài.";
-        if (!value.isEmpty() && !value.matches("(?i)https?://\\S+")) return "Link phòng học cần bắt đầu bằng https://";
         lesson.roomLink = value; remote.save(lesson); return null;
+    }
+
+    /** Accepts links copied without "https://" or inside a shared invitation text; empty means the app's own room. */
+    static String roomLink(String text) {
+        String value = text.trim();
+        if (value.isEmpty()) return "";
+        java.util.regex.Matcher match = java.util.regex.Pattern
+                .compile("(?i)(https?://\\S+|(?:[a-z0-9-]+\\.)+[a-z]{2,}(?:[/?#]\\S*)?)").matcher(value);
+        if (!match.find()) return null;
+        String found = match.group(1).replaceAll("[).,;\\]]+$","");
+        return found.matches("(?i)https?://.*") ? found : "https://"+found;
     }
 
     public String cancel(Lesson lesson, String reason) {

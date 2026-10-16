@@ -320,7 +320,8 @@ service cloud.firestore {
           && d.mo_ta is string && d.mo_ta.size() > 0 && d.mo_ta.size() <= 200
           && d.ngay_bat_dau is string && d.ngay_bat_dau.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
           && d.thu is list && d.thu.size() >= 1 && d.thu.size() <= 7
-          && d.gio is int && d.gio >= 0 && d.gio <= 23 && d.thoi_luong in [60, 90, 120]
+          && d.gio is int && d.gio >= 0 && d.gio <= 23
+          && d.thoi_luong is int && d.thoi_luong >= 30 && d.thoi_luong % 30 == 0 && d.gio * 60 + d.thoi_luong <= 1440
           && d.so_buoi is int && d.so_buoi >= 1 && d.so_buoi <= 12
           && d.hoc_phi is int && d.hoc_phi >= 50000 && d.hoc_phi <= 10000000 && d.tinh_theo_buoi is bool
           && d.suc_chua is int && d.suc_chua >= 2 && d.suc_chua <= 10 && d.thanh_vien is list && d.thanh_vien.size() <= d.suc_chua

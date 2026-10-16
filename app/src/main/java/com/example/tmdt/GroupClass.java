@@ -111,8 +111,15 @@ public final class GroupClass {
     public String priceLabel() { return Tutor.money(price)+(perSession?" / buổi":" / khóa"); }
     public String startLabel() { return LocalDate.parse(startDate).format(Lesson.DATE); }
     /** art: 0 = maths (board/course artwork), 1 = maths (stacked books), 2 = English. */
-    public int smallArt() { return art==0 ? R.drawable.illus_math_board : R.drawable.illus_stack_books; }
-    public int largeArt() { return art==2 ? R.drawable.illus_english_course : R.drawable.illus_math_course; }
+    /** Cover photo of the class, chosen by its subject. */
+    public int art() {
+        switch (subject) {
+            case "Tiếng Anh": return R.drawable.anh_lop_anh;
+            case "Vật lý": return R.drawable.anh_lop_ly;
+            case "Hóa học": return R.drawable.anh_lop_hoa;
+            default: return R.drawable.anh_lop_toan;
+        }
+    }
 
     /** True when both classes meet on a shared weekday at overlapping times. */
     public boolean clashes(int[] otherDays, int otherHour, int otherMinutes) {

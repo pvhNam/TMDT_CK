@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="request_heading">Đăng tin tìm gia sư</string>
+    <string name="request_caption">Chia sẻ nhu cầu học để gia sư phù hợp có thể tìm thấy bạn.</string>
+    <string name="request_intro">Điền đầy đủ thông tin bên dưới. Ngân sách tính theo mỗi buổi học.</string>
+    <string name="request_title">Tiêu đề *</string>
+    <string name="request_title_hint">Ví dụ: Tìm gia sư Toán lớp 9</string>
+    <string name="request_subject">Môn học *</string>
+    <string name="request_subject_hint">Chọn môn học</string>
+    <string name="request_level">Cấp học *</string>
+    <string name="request_level_hint">Chọn cấp học</string>
+    <string name="request_budget">Ngân sách (đồng/buổi) *</string>
+    <string name="request_budget_hint">Ví dụ: 150000</string>
+    <string name="request_schedule">Lịch học mong muốn *</string>
+    <string name="request_schedule_hint">Ví dụ: Thứ 2, 4, 6 từ 19:00–20:30</string>
+    <string name="request_description">Mô tả nhu cầu *</string>
+    <string name="request_description_hint">Mục tiêu học, kiến thức cần hỗ trợ, hình thức học và yêu cầu với gia sư…</string>
+    <string name="request_required">Vui lòng nhập hoặc chọn thông tin này.</string>
+    <string name="request_budget_error">Nhập số tiền từ 1 đến 10.000.000 đồng/buổi.</string>
+    <string name="request_subject_unavailable">Chưa tải được môn học hoặc môn đã ngừng sử dụng. Hãy tải lại danh mục và chọn lại.</string>
+    <string name="request_publish">Đăng tin</string>
+    <string name="request_publishing">Đang đăng tin…</string>
+    <string name="request_success">Đăng tin thành công</string>
+    <string name="request_success_caption">Tin tìm gia sư của bạn đã được lưu và đang mở.</string>
+    <string name="request_new">Đăng tin khác</string>
+    <string name="request_home">Về trang chủ</string>
+</resources>

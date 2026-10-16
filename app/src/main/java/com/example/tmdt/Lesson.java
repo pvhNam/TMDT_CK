@@ -48,7 +48,10 @@ public final class Lesson {
         try { String host = new java.net.URI(roomLink).getHost(); return host == null ? roomLink : host.replaceFirst("^www\\.",""); }
         catch (java.net.URISyntaxException invalid) { return roomLink; }
     }
-    public String roomUrl() { return roomLink.isEmpty() ? "https://meet.jit.si/TMDT-" + id : roomLink; }
+    public String roomUrl() {
+        if (roomLink.isEmpty()) return "https://meet.jit.si/TMDT-" + id;
+        return roomLink.matches("(?i)https?://.*") ? roomLink : "https://" + roomLink;
+    }
     public boolean needsConfirmation() { return confirmed() && ended() && !finished; }
 
     public boolean overlaps(String otherDate, int otherHour, int otherMinutes) {

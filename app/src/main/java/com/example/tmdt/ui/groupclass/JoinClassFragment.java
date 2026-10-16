@@ -23,7 +23,7 @@ public final class JoinClassFragment extends ScreenFragment {
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(6),ui.dp(11),ui.dp(8),ui.dp(11));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.art(item.largeArt(),108,112)); ui.gap(card,14);
+        card.addView(ui.photo(item.art(),null,108,112,14)); ui.gap(card,14);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,23,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text(item.subject+" · "+item.level,16,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,48)); ui.gap(teacher,11);
