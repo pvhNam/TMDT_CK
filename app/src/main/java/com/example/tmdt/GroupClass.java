@@ -16,6 +16,8 @@ public final class GroupClass {
     public static final class Registration {
         public final String classId, tutorId, studentId, studentName, goal, date;
         public String status;
+        /** When the tutor last answered, read from Firestore; null until the server has stamped it. */
+        public java.time.LocalDateTime updated;
         public Registration(String classId, String tutorId, String studentId, String studentName, String goal, String date, String status) {
             this.classId=classId; this.tutorId=tutorId; this.studentId=studentId; this.studentName=studentName; this.goal=goal; this.date=date; this.status=status;
         }
@@ -31,6 +33,7 @@ public final class GroupClass {
             Registration registration = new Registration(Lesson.text(data,"class_id"),Lesson.text(data,"tutor_id"),Lesson.text(data,"student_id"),
                     Lesson.text(data,"ten_hoc_vien"),Lesson.text(data,"muc_tieu"),Lesson.text(data,"ngay_gui"),Lesson.text(data,"trang_thai"));
             try { LocalDate.parse(registration.date); } catch (RuntimeException invalid) { return null; }
+            registration.updated = Lesson.time(data.get("updated_at"));
             return registration.classId.isEmpty() || registration.studentId.isEmpty() || registration.status.isEmpty() ? null : registration;
         }
     }

@@ -54,6 +54,8 @@ public final class Store {
     public String request(Lesson lesson) {
         if (!lesson.start().isAfter(LocalDateTime.now())) return "Thời gian học cần ở trong tương lai.";
         if (lesson.tutorId.equals(lesson.studentId)) return "Bạn không thể đặt lịch với chính mình.";
+        if (lesson.hour*60+lesson.minute+lesson.minutes > Lesson.DAY) return "Buổi học cần kết thúc trong ngày.";
+        if (lesson.price > Lesson.MAX_PRICE) return "Học phí một buổi vượt quá "+Tutor.money(Lesson.MAX_PRICE)+". Hãy chọn thời lượng ngắn hơn.";
         if (lesson.trial) { String used = trialError(lesson.tutorId,lesson.studentId); if (used != null) return used; }
         String clash = conflict(lesson.tutorId,lesson.studentId,lesson.date,lesson.hour,lesson.minutes,"");
         if (clash != null) return clash;
@@ -81,6 +83,7 @@ public final class Store {
         if (lesson.proposal()) return "Buổi học này đang chờ học viên phản hồi một đề nghị khác.";
         if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất cần ở trong tương lai.";
         if (date.toString().equals(lesson.date) && hour == lesson.hour) return "Thời gian đề xuất đang trùng với lịch hiện tại.";
+        if (hour*60+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
         String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, lesson.minutes, lesson.id);
         if (clash != null) return clash;
         lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposalReason = reason; remote.save(lesson); return null;
