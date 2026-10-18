@@ -3,7 +3,6 @@ package com.example.tmdt.ui.groupclass;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.time.LocalDate;
@@ -66,14 +65,12 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
         int[] counts = new int[FILTERS.length];
         for (Entry entry : all) { counts[ALL]++; counts[group(entry.registration)]++; }
 
-        HorizontalScrollView scroll = new HorizontalScrollView(classroom.context()); scroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout chips = ui.row(); scroll.addView(chips);
+        LinearLayout chips = ui.row();
         for (int i = 0; i < FILTERS.length; i++) {
-            int filter = i; if (i > 0) ui.gap(chips,8);
-            TextView chip = ui.choice(FILTERS[i]+" · "+counts[i],filter==classroom.registrationFilter,()->{classroom.registrationFilter=filter;classroom.show("registrations");});
-            chip.setTextSize(14); chip.setPadding(ui.dp(12),0,ui.dp(12),0); chips.addView(chip,ui.lp(-2,38));
+            if (i > 0) ui.gap(chips,8);
+            chips.addView(filter(i,counts[i]),new LinearLayout.LayoutParams(0,ui.dp(58),1));
         }
-        ui.add(body,scroll); ui.space(body,14);
+        ui.add(body,chips); ui.space(body,14);
 
         int shown = 0;
         for (Entry entry : all) {
@@ -89,6 +86,18 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
             ui.add(body,empty);
         }
         return root;
+    }
+
+    /** Equal-width filter with the count above its label, so all four fit on one line. */
+    private View filter(int filter, int count) {
+        boolean selected = filter == classroom.registrationFilter;
+        LinearLayout chip = ui.column(); chip.setGravity(Gravity.CENTER);
+        ui.fieldSurface(chip,selected?Ui.BLUE:Ui.WHITE,selected?Ui.BLUE:Ui.BORDER);
+        TextView number = ui.text(String.valueOf(count),17,selected?Ui.WHITE:Ui.INK,true); number.setGravity(Gravity.CENTER); ui.add(chip,number);
+        TextView label = ui.text(FILTERS[filter],12,selected?Ui.WHITE:Ui.MUTED,false); label.setGravity(Gravity.CENTER); label.setSingleLine(true); ui.add(chip,label);
+        chip.setSelected(selected); chip.setContentDescription(FILTERS[filter]+" "+count+(selected?", đang chọn":""));
+        ui.clickable(chip,()->{classroom.registrationFilter=filter;classroom.show("registrations");});
+        return chip;
     }
 
     private View card(Entry entry) {
