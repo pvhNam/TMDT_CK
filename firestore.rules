@@ -239,9 +239,10 @@ service cloud.firestore {
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.tieu_de is string && d.tieu_de.size() <= 100
-          && d.bat_dau is timestamp && d.thoi_luong in [30, 45, 60, 90, 120] && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
+          && d.bat_dau is timestamp && d.thoi_luong is int && d.thoi_luong >= 30 && d.thoi_luong % 15 == 0 && d.thoi_luong <= 1440
+          && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
           && d.dia_chi is string && d.dia_chi.size() <= 255 && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 300
-          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 10000000
+          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 50000000
           && d.trang_thai in ['PENDING', 'CONFIRMED', 'CANCELLED', 'REJECTED'] && d.da_hoan_thanh is bool
           && d.noi_dung is string && d.noi_dung.size() <= 500 && d.ly_do_huy is string && d.ly_do_huy.size() <= 150
           && (d.doi_lich_bat_dau == null || d.doi_lich_bat_dau is timestamp) && d.doi_lich_ly_do is string && d.doi_lich_ly_do.size() <= 120

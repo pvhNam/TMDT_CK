@@ -8,8 +8,7 @@ import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.content.res.ColorStateList;
-import com.google.android.material.slider.Slider;
+import com.example.tmdt.ui.common.TimeRange;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,12 +21,12 @@ import com.example.tmdt.Tutor;
 public final class BookingFragment extends ScreenFragment {
     private Tutor tutor;
     private LocalDate selectedDate;
-    private static final int FIRST_HOUR=7, LAST_HOUR=21;
+    private static final int FIRST_HOUR=7, LAST_END=23;
     private int hour=19, minutes=60;
     private String mode="Trực tuyến", savedGoal, savedAddress="";
     private LinearLayout modes, days, addressBox;
     private HorizontalScrollView daysScroll;
-    private TextView month, durationLabel, hourLabel, subtotal, total;
+    private TextView month, subtotal, total;
     private EditText goal, address;
 
     /** Defaults for a new booking, or the draft kept while the trial screen was open or the classroom was recreated. */
@@ -74,19 +73,9 @@ public final class BookingFragment extends ScreenFragment {
         ui.clickable(month,this::datePicker);ui.add(body,month);
         daysScroll=new HorizontalScrollView(classroom.context());daysScroll.setHorizontalScrollBarEnabled(false);
         days=ui.row();daysScroll.addView(days);ui.add(body,daysScroll);renderDays(true);ui.space(body,15);
-        LinearLayout hourHead=ui.row();hourHead.setGravity(Gravity.CENTER_VERTICAL);ui.weight(hourHead,ui.text("Chọn giờ học",18,Ui.INK,true));
-        hourLabel=ui.text("",17,Ui.BLUE,true);hourHead.addView(hourLabel);ui.add(body,hourHead);ui.space(body,4);
-        ui.add(body,hourSlider());
-        LinearLayout ends=ui.row();ends.setPadding(ui.dp(6),0,ui.dp(6),0);
-        ui.weight(ends,ui.text(String.format("%02d:00",FIRST_HOUR),13,Ui.MUTED,false));ends.addView(ui.text(LAST_HOUR+":00",13,Ui.MUTED,false));
-        ui.add(body,ends);updateHour();ui.space(body,15);
-        LinearLayout duration=ui.row();ui.weight(duration,ui.text("Thời lượng",17,Ui.INK,true));
-        durationLabel=ui.value(minutes+" phút");
-        LinearLayout picker=ui.picker(R.drawable.ic_clock,durationLabel,()->classroom.ui.dialog().setTitle("Thời lượng buổi học")
-                .setSingleChoiceItems(new String[]{"60 phút","90 phút","120 phút"},minutes==60?0:minutes==90?1:2,(dialog,which)->{
-                    minutes=new int[]{60,90,120}[which];durationLabel.setText(minutes+" phút");updatePrice();updateHour();dialog.dismiss();
-                }).setNegativeButton("Đóng",null).show());
-        duration.addView(picker,ui.lp(148,40));ui.add(body,duration);ui.space(body,13);
+        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,m)->{hour=h;minutes=m;updatePrice();});
+        hour=time.hour();minutes=time.minutes();
+        ui.add(body,time.view("Chọn giờ học"));ui.space(body,15);
         ui.label(body,"Mục tiêu buổi học");goal=ui.entry("Bạn muốn học nội dung gì?",false);goal.setText(savedGoal);
         goal.setSingleLine(false);goal.setMaxLines(3);goal.setContentDescription("Mục tiêu buổi học");
         goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(300)});
@@ -127,18 +116,6 @@ public final class BookingFragment extends ScreenFragment {
         },selectedDate.getYear(),selectedDate.getMonthValue()-1,selectedDate.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000);dialog.show();
     }
-    private Slider hourSlider() {
-        Slider slider=new Slider(classroom.context());
-        slider.setValueFrom(FIRST_HOUR);slider.setValueTo(LAST_HOUR);slider.setStepSize(1);
-        slider.setValue(Math.max(FIRST_HOUR,Math.min(LAST_HOUR,hour)));hour=(int)slider.getValue();
-        slider.setTickVisible(false);slider.setLabelFormatter(value->String.format("%02d:00",(int)value));
-        slider.setThumbTintList(ColorStateList.valueOf(Ui.BLUE));slider.setHaloTintList(ColorStateList.valueOf(0x33006BFF));
-        slider.setTrackActiveTintList(ColorStateList.valueOf(Ui.BLUE));slider.setTrackInactiveTintList(ColorStateList.valueOf(Ui.BORDER));
-        slider.setContentDescription("Giờ bắt đầu buổi học");
-        slider.addOnChangeListener((view,value,user)->{hour=(int)value;updateHour();});
-        return slider;
-    }
-    private void updateHour(){if(hourLabel!=null)hourLabel.setText(Lesson.range(hour,minutes).replace("–"," – "));}
     private void updatePrice(){String price=Tutor.money(tutor.price(minutes));subtotal.setText(price);total.setText(price);}
     private void submit() {
         if(!selectedDate.atTime(hour,0).isAfter(LocalDateTime.now())) {

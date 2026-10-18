@@ -1,6 +1,5 @@
 package com.example.tmdt.ui.tutor;
 
-import android.content.res.ColorStateList;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -13,7 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.time.LocalDate;
 import com.example.tmdt.R;
-import com.google.android.material.slider.RangeSlider;
+import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
@@ -32,9 +31,9 @@ public final class OpenClassFragment extends ScreenFragment {
     private int[] days = {6};
     private LocalDate start;
     private EditText name, price, address, description;
-    private TextView capacityValue, sessionsValue, timeValue, lengthValue, startHint, counter;
+    private TextView capacityValue, sessionsValue, startHint, counter;
     private LinearLayout subjects, modes, addressField, weekdays, dates;
-    private RangeSlider slider;
+    private TimeRange time;
 
     /** A new class starts from the defaults; an edited one (UC17) from its saved values. */
     private void start() {
@@ -78,17 +77,9 @@ public final class OpenClassFragment extends ScreenFragment {
         ui.add(plan,stepper("Số buổi","Tối đa 12 buổi",sessionsValue,()->{if(sessions>1)sessions--;render();},()->{if(sessions<12)sessions++;render();}));
         ui.space(plan,14);
         ui.label(plan,"Ngày học trong tuần *"); weekdays = ui.row(); ui.add(plan,weekdays); ui.space(plan,14);
-        LinearLayout timeHead = ui.row(); timeHead.setGravity(Gravity.CENTER_VERTICAL);
-        ui.weight(timeHead,ui.text("Thời gian dạy *",16,Ui.INK,true));
-        timeHead.addView(arrow(true)); ui.gap(timeHead,6);
-        lengthValue = ui.pill("",15,Ui.BLUE,Ui.PALE); timeHead.addView(lengthValue,ui.lp(-2,-2));
-        ui.gap(timeHead,6); timeHead.addView(arrow(false)); ui.add(plan,timeHead); ui.space(plan,6);
-        timeValue = ui.text("",28,Ui.BLUE,true); timeValue.setSingleLine(true); ui.add(plan,timeValue); ui.space(plan,2);
-        ui.add(plan,timeSlider());
-        LinearLayout ends = ui.row(); ends.setPadding(ui.dp(6),0,ui.dp(6),0);
-        ui.weight(ends,ui.text(String.format("%02d:00",FIRST_HOUR),14,Ui.MUTED,false)); ends.addView(ui.text(LAST_END+":00",14,Ui.MUTED,false));
-        ui.add(plan,ends); ui.space(plan,4);
-        ui.add(plan,ui.text("Kéo 2 đầu để chọn giờ bắt đầu và giờ kết thúc.",14,Ui.MUTED,false)); ui.space(plan,14);
+        time = new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,m)->{hour=h;minutes=m;showHint();});
+        hour = time.hour(); minutes = time.minutes();
+        ui.add(plan,time.view("Thời gian dạy *")); ui.space(plan,14);
         ui.label(plan,"Ngày khai giảng *");
         HorizontalScrollView scroll = new HorizontalScrollView(classroom.context()); scroll.setHorizontalScrollBarEnabled(false);
         dates = ui.row(); scroll.addView(dates); ui.add(plan,scroll); ui.space(plan,6);
@@ -135,7 +126,6 @@ public final class OpenClassFragment extends ScreenFragment {
             TextView chip = ui.choice(WEEKDAYS[i],on,()->{days=new int[]{day};start=nextClassDay(LocalDate.now().plusDays(1));render();});
             chip.setTextSize(14); chip.setContentDescription(GroupClass.DAYS[i]+(on?", đã chọn":"")); ui.weight(weekdays,chip);
         }
-        showTime();
         dates.removeAllViews();
         LocalDate date = nextClassDay(LocalDate.now().plusDays(1));
         if (start.isBefore(date)) start = date;
@@ -143,47 +133,9 @@ public final class OpenClassFragment extends ScreenFragment {
             LocalDate value = date; if (i > 0) ui.gap(dates,8);
             dates.addView(dateCell(value,value.equals(start),()->{start=value;render();}),ui.lp(64,70));
         }
-        startHint.setText(label()+" · khai giảng "+start.format(Lesson.DATE)+", "+sessions+" buổi");
+        showHint();
     }
-    private RangeSlider timeSlider() {
-        slider = new RangeSlider(classroom.context());
-        slider.setValueFrom(FIRST_HOUR); slider.setValueTo(LAST_END); slider.setStepSize(0.5f); slider.setMinSeparationValue(0.5f);
-        hour = Math.max(FIRST_HOUR,Math.min(hour,(int)Math.floor(LAST_END-minutes/60f)));
-        slider.setValues(hour*1f,hour+minutes/60f);
-        slider.setTickVisible(false); slider.setLabelFormatter(value->String.format("%02d:%02d",(int)value,Math.round((value%1)*60)));
-        slider.setThumbWidth(ui.dp(22)); slider.setThumbHeight(ui.dp(22)); slider.setThumbTrackGapSize(0); slider.setTrackHeight(ui.dp(14));
-        slider.setMinimumHeight(ui.dp(64));
-        slider.setThumbStrokeColor(ColorStateList.valueOf(Ui.WHITE)); slider.setThumbStrokeWidth(ui.dp(3));
-        slider.setThumbTintList(ColorStateList.valueOf(Ui.BLUE)); slider.setHaloTintList(ColorStateList.valueOf(0x33006BFF));
-        slider.setTrackActiveTintList(ColorStateList.valueOf(Ui.BLUE)); slider.setTrackInactiveTintList(ColorStateList.valueOf(Ui.BORDER));
-        slider.setContentDescription("Thời gian dạy: giờ bắt đầu và giờ kết thúc");
-        slider.addOnChangeListener((view,value,user)->{
-            if (!user) return;
-            java.util.List<Float> values = slider.getValues(); float begin = values.get(0), end = values.get(1);
-            if (Math.round(begin) != hour || begin % 1 != 0) {
-                hour = Math.round(begin); if (hour + minutes/60f > LAST_END) hour = (int)Math.floor(LAST_END - minutes/60f);
-            } else minutes = Math.max(30,Math.round((end-begin)*2)*30);
-            float wantBegin = hour, wantEnd = hour + minutes/60f;
-            if (wantBegin != begin || wantEnd != end) slider.post(()->slider.setValues(wantBegin,wantEnd));
-            showTime();
-        });
-        return slider;
-    }
-    /** Arrow buttons beside the duration for exact 30-minute steps when dragging is imprecise. */
-    private View arrow(boolean shorter) {
-        android.widget.FrameLayout button = new android.widget.FrameLayout(classroom.context()); ui.fieldSurface(button,Ui.PALE,0);
-        android.widget.ImageView image = ui.art(R.drawable.mui_ten,20,20); if (shorter) image.setRotation(180);
-        button.addView(image,new android.widget.FrameLayout.LayoutParams(ui.dp(20),ui.dp(20),Gravity.CENTER));
-        button.setContentDescription(shorter?"Giảm thời lượng 30 phút":"Tăng thời lượng 30 phút");
-        ui.clickable(button,()->changeLength(shorter?-30:30)); button.setLayoutParams(ui.lp(36,36)); return button;
-    }
-    private void changeLength(int delta) {
-        int next = Math.max(30,Math.min(LAST_END*60-hour*60,minutes+delta));
-        if (next == minutes) return;
-        minutes = next; slider.setValues(hour*1f,hour+minutes/60f); showTime();
-    }
-    private void showTime() {
-        timeValue.setText(Lesson.range(hour,minutes).replace("–"," – ")); lengthValue.setText("⏱ "+minutes+" phút");
+    private void showHint() {
         startHint.setText(label()+" · khai giảng "+start.format(Lesson.DATE)+", "+sessions+" buổi");
     }
     private View dateCell(LocalDate date, boolean selected, Runnable click) {
