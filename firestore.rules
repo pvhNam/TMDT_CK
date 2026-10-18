@@ -234,8 +234,9 @@ service cloud.firestore {
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
         let link = d.get('link_phong_hoc', '');
-        return d.keys().hasOnly(keys.concat(['link_phong_hoc'])) && d.keys().hasAll(keys)
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi'])) && d.keys().hasAll(keys)
           && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
+          && d.get('doi_lich_phan_hoi', '') in ['', 'DONG_Y', 'GIU_LICH']
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.tieu_de is string && d.tieu_de.size() <= 100
@@ -249,15 +250,17 @@ service cloud.firestore {
           && stamped();
       }
       function lessonChanged(keys) {
-        return changed(keys.concat(['link_phong_hoc']))
-          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '');
+        return changed(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi']))
+          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '')
+          && (keys.hasAny(['doi_lich_phan_hoi'])
+            || request.resource.data.get('doi_lich_phan_hoi', '') == resource.data.get('doi_lich_phan_hoi', ''));
       }
       function requested() {
         let d = request.resource.data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
           && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
-          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == ''
+          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == '' && d.get('doi_lich_phan_hoi', '') == ''
           && d.bat_dau > request.time && d.created_at == request.time
           && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
       }
@@ -272,7 +275,8 @@ service cloud.firestore {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau == null && resource.data.bat_dau > request.time
           && d.doi_lich_bat_dau is timestamp && d.doi_lich_bat_dau > request.time && d.doi_lich_bat_dau != resource.data.bat_dau
-          && d.doi_lich_ly_do.size() > 0 && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.doi_lich_ly_do.size() > 0 && d.get('doi_lich_phan_hoi', '') == ''
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function cancelled() {
         let d = request.resource.data;
@@ -285,11 +289,13 @@ service cloud.firestore {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau != null && resource.data.doi_lich_bat_dau > request.time
           && d.bat_dau == resource.data.doi_lich_bat_dau && d.doi_lich_bat_dau == null
-          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.get('doi_lich_phan_hoi', '') == 'DONG_Y'
+          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function kept() {
         return resource.data.student_id == request.auth.uid && resource.data.doi_lich_bat_dau != null
-          && request.resource.data.doi_lich_bat_dau == null && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && request.resource.data.doi_lich_bat_dau == null && request.resource.data.get('doi_lich_phan_hoi', '') == 'GIU_LICH'
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function finished() {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'

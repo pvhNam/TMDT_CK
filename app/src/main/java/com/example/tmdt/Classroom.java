@@ -28,6 +28,8 @@ import com.example.tmdt.ui.tutor.TeachingScheduleFragment;
 import com.example.tmdt.ui.tutor.TutorHomeFragment;
 import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -121,7 +123,25 @@ public final class Classroom {
             &&"VERIFIED".equals(host.tutorReviews.status());}
     public boolean tutorMode(){return tutorView&&isTutor();}
 
+    /** Last known answer to a proposal per lesson the user teaches, to announce new answers while the app is open. */
+    private final Map<String,String> replies=new HashMap<>();
+    private void announceReplies(){
+        for(Lesson lesson:lessons){
+            if(!lesson.tutorId.equals(me()))continue;
+            String before=replies.put(lesson.id,lesson.reply);
+            if(before!=null&&!before.equals(lesson.reply)&&lesson.replied())notice(lesson.replyText());
+        }
+    }
+    public boolean replySeen(Lesson lesson){
+        return preferences.getStringSet("reply_seen_"+me(),new HashSet<>()).contains(lesson.id+":"+lesson.reply);
+    }
+    public void markReplySeen(Lesson lesson){
+        Set<String> seen=new HashSet<>(preferences.getStringSet("reply_seen_"+me(),new HashSet<>()));
+        seen.add(lesson.id+":"+lesson.reply);preferences.edit().putStringSet("reply_seen_"+me(),seen).apply();
+    }
+
     private void changed(){
+        announceReplies();
         String error=cloud.takeError();
         if(!error.isEmpty())dialog("Lịch học và lớp nhóm",error);
         if(LIVE.contains(host.screen))show(host.screen);

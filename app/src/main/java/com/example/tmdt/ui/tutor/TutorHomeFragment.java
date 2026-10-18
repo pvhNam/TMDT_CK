@@ -67,6 +67,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->classroom.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
+        replies(body);
 
         requestsToggle=sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;animateRequests(pending);});
         requests = ui.column(); ui.add(body,requests); renderRequests(pending); ui.space(body,10);
@@ -76,6 +77,23 @@ public final class TutorHomeFragment extends ScreenFragment {
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
         if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
         return root;
+    }
+
+    /** Answers to reschedule proposals not dismissed yet; tapping one opens that day of the teaching schedule. */
+    private void replies(LinearLayout body) {
+        List<Lesson> answers = new ArrayList<>();
+        for (Lesson lesson : classroom.lessons)
+            if (lesson.tutorId.equals(classroom.me()) && lesson.replied() && !classroom.replySeen(lesson)) answers.add(lesson);
+        if (answers.isEmpty()) return;
+        ui.section(body,"Phản hồi đổi lịch",19); ui.space(body,6);
+        for (Lesson lesson : answers) {
+            LinearLayout note = ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
+                    lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK);
+            ui.gap(note,8); note.addView(ui.link("Đã xem",14,()->{classroom.markReplySeen(lesson);classroom.show("tutorHome");}));
+            ui.clickable(note,()->{classroom.teachingDay=LocalDate.parse(lesson.date);classroom.teachingMonth=false;classroom.show("teaching");});
+            ui.add(body,note); ui.space(body,8);
+        }
+        ui.space(body,12);
     }
 
     private static String givenName(String name) {

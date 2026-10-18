@@ -16,6 +16,7 @@ import java.util.List;
 import com.example.tmdt.R;
 import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
+import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
@@ -23,7 +24,6 @@ import com.example.tmdt.Tutor;
 
 /** Screen 45 · Lịch dạy gia sư (UC24): week or month view, lesson details and reschedule proposals. */
 public final class TeachingScheduleFragment extends ScreenFragment {
-    private static final int[] HOURS = {17, 18, 19, 20, 21};
     private LinearLayout content;
 
     @Override protected View build() {
@@ -75,6 +75,11 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         for (Lesson lesson : mine()) if (lesson.proposal()) {
             ui.add(content,ui.note(R.drawable.ic_clock,"Chờ học viên đồng ý · "+lesson.studentName+" · "+lesson.title+"\n"
                     +lesson.dateLabel()+" "+lesson.timeLabel()+" → "+lesson.proposalLabel(),Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE));
+            ui.space(content,8); proposals++;
+        }
+        for (Lesson lesson : mine()) if (lesson.replied()) {
+            ui.add(content,ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
+                    lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK));
             ui.space(content,8); proposals++;
         }
         if (proposals == 0) ui.add(content,ui.note(R.drawable.ic_info,"Chưa có đề nghị thay đổi nào.",Ui.PALE,Ui.BLUE,Ui.MUTED));
@@ -243,19 +248,13 @@ public final class TeachingScheduleFragment extends ScreenFragment {
                     date[0].getYear(),date[0].getMonthValue()-1,date[0].getDayOfMonth());
             picker.getDatePicker().setMinDate(System.currentTimeMillis()-1000); picker.show();
         }));
-        ui.space(form,12); ui.label(form,"Giờ bắt đầu"); LinearLayout hours = ui.row(); ui.add(form,hours);
-        Runnable[] renderHours = new Runnable[1];
-        renderHours[0] = () -> {
-            hours.removeAllViews();
-            for (int i = 0; i < HOURS.length; i++) {
-                int value = HOURS[i]; if (i > 0) ui.gap(hours,5);
-                ui.weight(hours,ui.choice(value+"h",value==hour[0],()->{hour[0]=value;renderHours[0].run();}));
-            }
-        };
-        renderHours[0].run();
+        ui.space(form,14);
+        TimeRange time = new TimeRange(ui,7,23,lesson.minutes,lesson.minutes,lesson.hour,lesson.minutes,(h,m)->hour[0]=h);
+        hour[0] = time.hour(); ui.add(form,time.view("Giờ học mới"));
         ui.space(form,12); ui.label(form,"Lý do đề xuất"); EditText reason = ui.entry("Ví dụ: Gia sư có lịch công tác.",false);
         reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)}); ui.add(form,reason);
-        AlertDialog dialog = classroom.ui.dialog().setTitle("Đề nghị đổi lịch").setView(form)
+        android.widget.ScrollView scroll = new android.widget.ScrollView(classroom.context()); scroll.addView(form);
+        AlertDialog dialog = classroom.ui.dialog().setTitle("Đề nghị đổi lịch").setView(scroll)
                 .setNegativeButton("Hủy",null).setPositiveButton("Gửi đề nghị",null).create();
         dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String text = reason.getText().toString().trim();

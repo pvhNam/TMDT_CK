@@ -86,7 +86,7 @@ public final class Store {
         if (hour*60+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
         String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, lesson.minutes, lesson.id);
         if (clash != null) return clash;
-        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposalReason = reason; remote.save(lesson); return null;
+        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposalReason = reason; lesson.reply = ""; remote.save(lesson); return null;
     }
     /** The lesson only moves after the student agrees and the proposed slot is still free. */
     public String acceptProposal(Lesson lesson) {
@@ -94,7 +94,12 @@ public final class Store {
         if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
         String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.minutes, lesson.id);
         if (clash != null) return "Khung giờ đề xuất không còn trống. Lịch hiện tại được giữ nguyên.";
-        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = 0; clearProposal(lesson); return null;
+        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = 0; lesson.reply = Lesson.REPLY_ACCEPTED; clearProposal(lesson); return null;
+    }
+    /** The student keeps the current slot; the answer stays on the lesson so the tutor learns about it. */
+    public String keepSchedule(Lesson lesson) {
+        if (!lesson.proposal()) return "Đề nghị đổi lịch không còn hiệu lực.";
+        lesson.reply = Lesson.REPLY_KEPT; clearProposal(lesson); return null;
     }
     public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = ""; remote.save(lesson); }
     public String setRoomLink(Lesson lesson, String link) {
