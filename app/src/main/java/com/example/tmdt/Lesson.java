@@ -13,7 +13,7 @@ import java.util.Map;
 /** One lesson between a tutor and a student: a booking request, a trial or a confirmed session (Firestore "lessons"). */
 public final class Lesson {
     public static final String PENDING = "PENDING", CONFIRMED = "CONFIRMED", CANCELLED = "CANCELLED", REJECTED = "REJECTED";
-    public static final int TRIAL_PRICE = 50000;
+    public static final int TRIAL_PRICE = 50000, MAX_PRICE = 50000000, DAY = 24*60;
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy"), TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     public final String id, tutorId, tutorName, studentId, studentName, title, mode, goal, address;
@@ -24,6 +24,9 @@ public final class Lesson {
     public boolean finished;
     /** A tutor's proposal to move the lesson; the current slot stays until the student agrees (UC24). */
     public String proposedDate, proposalReason = "";
+    /** The student's answer to the last proposal, kept after the proposal itself is cleared so the tutor can see it. */
+    public static final String REPLY_ACCEPTED = "DONG_Y", REPLY_KEPT = "GIU_LICH";
+    public String reply = "";
     public int proposedHour = -1;
 
     public Lesson(String id, String tutorId, String tutorName, String studentId, String studentName, String title, String date, int hour,
@@ -51,6 +54,13 @@ public final class Lesson {
     public String roomUrl() {
         if (roomLink.isEmpty()) return "https://meet.jit.si/TMDT-" + id;
         return roomLink.matches("(?i)https?://.*") ? roomLink : "https://" + roomLink;
+    }
+    /** An answer the tutor should still see: the lesson has not started and no newer proposal is waiting. */
+    public boolean replied() { return !reply.isEmpty() && !proposal() && !started(); }
+    public boolean kept() { return REPLY_KEPT.equals(reply); }
+    public String replyText() {
+        return kept() ? studentName+" giữ lịch cũ cho buổi "+title+" · "+dateLabel()+" "+timeLabel()+"."
+                : studentName+" đã đồng ý đổi buổi "+title+" sang "+dateLabel()+" "+timeLabel()+".";
     }
     public boolean needsConfirmation() { return confirmed() && ended() && !finished; }
 
@@ -82,6 +92,7 @@ public final class Lesson {
         data.put("dia_chi",address); data.put("muc_tieu",goal); data.put("hoc_thu",trial); data.put("hoc_phi",price); data.put("trang_thai",status);
         data.put("da_hoan_thanh",finished); data.put("noi_dung",content); data.put("ly_do_huy",cancelReason);
         data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour):null); data.put("doi_lich_ly_do",proposalReason);
+        data.put("doi_lich_phan_hoi",reply);
         data.put("link_phong_hoc",roomLink);
         return data;
     }
@@ -90,11 +101,11 @@ public final class Lesson {
         LocalDateTime start = time(data.get("bat_dau"));
         int minutes = number(data,"thoi_luong");
         String tutor = text(data,"tutor_id"), student = text(data,"student_id"), status = text(data,"trang_thai");
-        if (start == null || minutes < 30 || minutes > 120 || tutor.isEmpty() || student.isEmpty() || status.isEmpty()) return null;
+        if (start == null || minutes < 30 || minutes > DAY || tutor.isEmpty() || student.isEmpty() || status.isEmpty()) return null;
         Lesson lesson = new Lesson(id,tutor,text(data,"ten_gia_su"),student,text(data,"ten_hoc_vien"),text(data,"tieu_de"),
                 start.toLocalDate().toString(),start.getHour(),minutes,text(data,"hinh_thuc"),text(data,"muc_tieu"),text(data,"dia_chi"),
                 Boolean.TRUE.equals(data.get("hoc_thu")),number(data,"hoc_phi"),status);
-        lesson.minute = start.getMinute(); lesson.roomLink = text(data,"link_phong_hoc");
+        lesson.minute = start.getMinute(); lesson.roomLink = text(data,"link_phong_hoc"); lesson.reply = text(data,"doi_lich_phan_hoi");
         lesson.finished = Boolean.TRUE.equals(data.get("da_hoan_thanh"));
         lesson.content = text(data,"noi_dung"); lesson.cancelReason = text(data,"ly_do_huy");
         LocalDateTime proposed = time(data.get("doi_lich_bat_dau"));

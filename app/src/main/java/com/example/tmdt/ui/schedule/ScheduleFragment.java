@@ -23,6 +23,10 @@ public final class ScheduleFragment extends ScreenFragment {
         ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},classroom.scheduleTab,index->{classroom.scheduleTab=index;classroom.show("schedule");});
         LinearLayout content=ui.page(root);ui.space(content,6);
         int tab=classroom.scheduleTab;
+        if(tab==1){
+            TextView history=ui.link("Xem lịch sử đăng ký lớp học  ›",15,classroom::openRegistrations);
+            history.setGravity(android.view.Gravity.END|android.view.Gravity.CENTER_VERTICAL);ui.add(content,history);ui.space(content,2);
+        }
         List<Entry> visible=new ArrayList<>();
         for(Lesson lesson:classroom.lessons) {
             if(!lesson.studentId.equals(classroom.me()))continue;

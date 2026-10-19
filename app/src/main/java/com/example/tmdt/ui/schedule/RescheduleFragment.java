@@ -56,7 +56,8 @@ public final class RescheduleFragment extends ScreenFragment {
         classroom.show("lesson"); classroom.notice("Đã đổi lịch sang "+lesson.dateLabel()+" · "+lesson.timeLabel()+".");
     }
     private void keep() {
-        classroom.store.clearProposal(lesson);
+        String error = classroom.store.keepSchedule(lesson);
+        if (error != null) { classroom.dialog("Chưa gửi được phản hồi",error); return; }
         classroom.show("lesson"); classroom.notice("Đã giữ lịch hiện tại. Gia sư sẽ nhận được phản hồi của bạn.");
     }
 }
