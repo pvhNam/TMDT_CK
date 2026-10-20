@@ -25,6 +25,7 @@ public final class AccountFragment extends AccountFragmentBase {
         });
         View.OnClickListener soon=v->Toast.makeText(requireContext(),"Tính năng sắp ra mắt",Toast.LENGTH_SHORT).show();
         binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
+        binding.rowContracts.setOnClickListener(v->host().exchange.openContracts()); // UC23: Hợp đồng của tôi
         binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));

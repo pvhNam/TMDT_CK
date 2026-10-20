@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hợp đồng / báo cáo -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M14,3H6.5A1.5,1.5 0 0,0 5,4.5V19.5A1.5,1.5 0 0,0 6.5,21H17.5A1.5,1.5 0 0,0 19,19.5V8L14,3ZM14,3V8H19M8.5,12.5H15.5M8.5,16H13"
+        android:strokeColor="#FF0878FF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

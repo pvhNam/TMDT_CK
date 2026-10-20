@@ -60,8 +60,8 @@ public final class ChatFragment extends Fragment {
         binding.back.setOnClickListener(v -> host.back());
         binding.video.setOnClickListener(v -> snack(getString(R.string.chat_video_info)));
         binding.attach.setOnClickListener(this::showTemplates);
-        // Nút ⋮ (Hợp đồng dạy, Xem đánh giá, Báo cáo vi phạm) thuộc UC23/UC26/UC27, sẽ bật khi push các UC đó.
-        binding.more.setVisibility(View.GONE);
+        // Nút ⋮: Hợp đồng dạy (UC23). Xem đánh giá (UC26), Báo cáo vi phạm (UC27) sẽ thêm khi push các UC đó.
+        binding.more.setOnClickListener(this::showMore);
 
         binding.input.setText(chat.draft());
         binding.input.addTextChangedListener(new TextWatcher() {
@@ -107,6 +107,18 @@ public final class ChatFragment extends Fragment {
             binding.input.setSelection(Math.min(text.length(), at + prefix.length() + template.length()));
             android.view.inputmethod.InputMethodManager keyboard = requireContext().getSystemService(android.view.inputmethod.InputMethodManager.class);
             if (keyboard != null) keyboard.showSoftInput(binding.input, 0);
+            return true;
+        });
+        menu.show();
+    }
+
+    private void showMore(View anchor) {
+        Conversation conversation = chat.conversation();
+        if (conversation == null || conversation.peerId.isEmpty()) return;
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(Menu.NONE, 1, 1, R.string.chat_contract);
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) ((MainActivity) requireActivity()).exchange.openContractFor(conversation);
             return true;
         });
         menu.show();

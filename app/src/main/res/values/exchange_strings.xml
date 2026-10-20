@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chuỗi giao diện của Thành viên 4: UC23, UC26, UC27, UC29, UC30, UC31. -->
+<resources>
+    <!-- Menu trên trang Cá nhân -->
+    <string name="ex_menu_title">Học tập và giao dịch</string>
+    <string name="ex_menu_contracts">Hợp đồng của tôi</string>
+    <string name="ex_menu_reviews">Đánh giá về tôi</string>
+    <string name="ex_menu_reports">Báo cáo của tôi</string>
+    <string name="ex_menu_new_report">Gửi báo cáo vi phạm</string>
+    <string name="ex_menu_admin">Quản trị hệ thống</string>
+    <string name="ex_menu_stats">Thống kê hệ thống</string>
+    <string name="ex_menu_handle_reports">Xử lý báo cáo vi phạm</string>
+    <string name="ex_menu_users">Quản lý tài khoản</string>
+    <string name="ex_admin_subtitle">Quản trị viên</string>
+
+    <!-- 40 Chốt hợp đồng -->
+    <string name="ex_contract_title">Chốt hợp đồng dạy</string>
+    <string name="ex_contracts_title">Hợp đồng của tôi</string>
+    <string name="ex_parties">Thông tin các bên</string>
+    <string name="ex_student">Học viên</string>
+    <string name="ex_tutor">Gia sư</string>
+    <string name="ex_class_info">Thông tin lớp học</string>
+    <string name="ex_cost">Chi phí</string>
+    <string name="ex_per_session">/ buổi</string>
+    <string name="ex_total">Tổng cộng</string>
+    <string name="ex_terms">Nội dung thỏa thuận</string>
+    <string name="ex_terms_note">Hai bên xác nhận lịch và học phí. Tiền ký quỹ được giải ngân theo buổi học hoàn thành.</string>
+    <string name="ex_agree">Tôi đồng ý với nội dung thỏa thuận</string>
+    <string name="ex_effective_note">Hợp đồng có hiệu lực sau khi hai bên xác nhận và hoàn tất ký quỹ.</string>
+    <string name="ex_subject">Môn học</string>
+    <string name="ex_sessions">Số buổi</string>
+    <string name="ex_minutes">Thời lượng mỗi buổi</string>
+    <string name="ex_start_date">Ngày bắt đầu</string>
+    <string name="ex_time">Giờ học</string>
+    <string name="ex_mode">Hình thức</string>
+    <string name="ex_fee">Học phí mỗi buổi (đ)</string>
+    <string name="ex_online">Trực tuyến</string>
+    <string name="ex_home">Tại nhà</string>
+    <string name="ex_decrease">Giảm</string>
+    <string name="ex_increase">Tăng</string>
+    <string name="ex_terms_base">1. Hai bên dạy và học đúng lịch đã thống nhất; đổi lịch cần báo trước ít nhất 24 giờ qua ứng dụng.\n2. Học phí được ký quỹ trên nền tảng và giải ngân cho gia sư sau mỗi buổi học hoàn thành.\n3. Không giao dịch hay thanh toán ngoài nền tảng.\n4. Hủy buổi học trong vòng 24 giờ có thể không được hoàn học phí buổi đó.\n5. Tranh chấp được giải quyết qua chức năng báo cáo vi phạm.</string>
+    <string name="ex_terms_extra">Thỏa thuận thêm</string>
+    <string name="ex_terms_extra_hint">Ví dụ: tài liệu, mục tiêu điểm số, địa điểm học…</string>
+
+    <!-- 09 / 46 / 10 Đánh giá -->
+    <string name="ex_review_tutor_title">Viết đánh giá</string>
+    <string name="ex_review_student_title">Đánh giá học viên</string>
+    <string name="ex_review_tutor_question">Buổi học của bạn thế nào?</string>
+    <string name="ex_review_student_question">Học viên tham gia buổi học thế nào?</string>
+    <string name="ex_review_topics">Chủ đề đánh giá</string>
+    <string name="ex_review_highlights">Những điểm nổi bật</string>
+    <string name="ex_optional">(tùy chọn)</string>
+    <string name="ex_review_comment">Nhận xét của bạn</string>
+    <string name="ex_review_comment_hint">Chia sẻ cảm nhận về buổi học…</string>
+    <string name="ex_review_tutor_note">Đánh giá dành cho buổi học đã hoàn thành.</string>
+    <string name="ex_review_student_note">Đánh giá được hiển thị trong hồ sơ học viên.</string>
+    <string name="ex_send_review">Gửi đánh giá</string>
+    <string name="ex_reviews_title">Đánh giá gia sư</string>
+    <string name="ex_my_reviews_title">Đánh giá về tôi</string>
+    <string name="ex_more_reviews">Xem thêm đánh giá</string>
+    <string name="ex_no_reviews">Chưa có đánh giá nào.</string>
+
+    <!-- 47 / 48 Báo cáo vi phạm -->
+    <string name="ex_report_title">Gửi báo cáo vi phạm</string>
+    <string name="ex_report_subject">Đối tượng báo cáo</string>
+    <string name="ex_report_subject_hint">Chọn hợp đồng hoặc cuộc trò chuyện</string>
+    <string name="ex_report_person">Người liên quan</string>
+    <string name="ex_report_reason">Lý do báo cáo</string>
+    <string name="ex_report_reason_hint">Chọn lý do</string>
+    <string name="ex_report_description">Mô tả chi tiết</string>
+    <string name="ex_report_description_hint">Mô tả điều đã xảy ra, thời gian và các thông tin liên quan…</string>
+    <string name="ex_report_evidence">Minh chứng</string>
+    <string name="ex_report_evidence_hint">(ảnh, chụp màn hình…)</string>
+    <string name="ex_report_add_evidence">Thêm ảnh minh chứng</string>
+    <string name="ex_report_evidence_limit">Hỗ trợ JPG, PNG · tối đa 5 ảnh</string>
+    <string name="ex_report_confirm">Tôi xác nhận thông tin phản ánh là đúng.</string>
+    <string name="ex_report_note">Quản trị viên sẽ xem xét báo cáo và minh chứng. Người bị báo cáo không xem được nội dung này.</string>
+    <string name="ex_send_report">Gửi báo cáo</string>
+    <string name="ex_remove">Xóa</string>
+    <string name="ex_my_reports_title">Báo cáo của tôi</string>
+    <string name="ex_tab_processing">Đang xử lý</string>
+    <string name="ex_tab_resolved">Đã giải quyết</string>
+    <string name="ex_evidence_sent">Minh chứng đã gửi</string>
+    <string name="ex_report_content">Nội dung phản ánh</string>
+    <string name="ex_add_more_evidence">Bổ sung minh chứng</string>
+    <string name="ex_new_report">Báo cáo mới</string>
+
+    <!-- 50 Xử lý báo cáo -->
+    <string name="ex_handle_title">Xử lý báo cáo</string>
+    <string name="ex_admin_reports_title">Báo cáo vi phạm</string>
+    <string name="ex_tab_pending">Chờ xử lý</string>
+    <string name="ex_tab_done">Đã xử lý</string>
+    <string name="ex_reporter">Người báo cáo</string>
+    <string name="ex_reported">Người bị báo cáo</string>
+    <string name="ex_report_body">Nội dung báo cáo</string>
+    <string name="ex_attached">Minh chứng đính kèm</string>
+    <string name="ex_view_file">Xem tệp</string>
+    <string name="ex_outcome">Hướng xử lý</string>
+    <string name="ex_outcome_hint">Chọn hướng xử lý</string>
+    <string name="ex_refund_amount">Số tiền hoàn (đ)</string>
+    <string name="ex_conclusion">Kết luận xử lý</string>
+    <string name="ex_conclusion_hint">Nhập kết luận sau khi kiểm tra hai bên…</string>
+    <string name="ex_request_info">Nội dung cần bổ sung</string>
+    <string name="ex_handle_note">Chỉ xác nhận sau khi kiểm tra thông tin và minh chứng.</string>
+    <string name="ex_confirm_handle">Xác nhận xử lý</string>
+    <string name="ex_decision">Kết quả xử lý</string>
+
+    <!-- 51 Quản lý tài khoản -->
+    <string name="ex_users_title">Quản lý tài khoản</string>
+    <string name="ex_users_search">Tìm tên hoặc email…</string>
+    <string name="ex_lock">Khóa tài khoản</string>
+    <string name="ex_unlock">Mở khóa</string>
+
+    <!-- 52 Thống kê -->
+    <string name="ex_stats_title">Thống kê hệ thống</string>
+    <string name="ex_realtime">Dữ liệu thời gian thực</string>
+    <string name="ex_stat_users">Người dùng</string>
+    <string name="ex_stat_tutors">Gia sư</string>
+    <string name="ex_stat_contracts">Lớp đang hoạt động</string>
+    <string name="ex_stat_profiles">Hồ sơ chờ duyệt</string>
+    <string name="ex_month_activity">Hoạt động trong tháng</string>
+    <string name="ex_month_contracts">Hợp đồng đã chốt</string>
+    <string name="ex_month_users">Đăng ký mới</string>
+    <string name="ex_month_reports">Báo cáo mới</string>
+    <string name="ex_todo">Cần xử lý</string>
+    <string name="ex_todo_profiles">Duyệt hồ sơ gia sư</string>
+    <string name="ex_todo_reports">Báo cáo vi phạm</string>
+    <string name="ex_refresh">Làm mới</string>
+</resources>
