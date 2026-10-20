@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kiểu dùng chung cho các màn của Thành viên 4 (40, 09, 10, 46, 47, 48, 50, 51, 52). -->
+<resources>
+    <style name="ExSection">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textColor">@color/chat_ink</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="ExLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/chat_muted</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+    <style name="ExValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/chat_ink</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="ExName" parent="ExValue">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+    <style name="ExCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_ex_card</item>
+        <item name="android:padding">14dp</item>
+    </style>
+    <style name="ExInfoRow" parent="ExValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:drawablePadding">12dp</item>
+        <item name="android:drawableTint">@color/chat_ink</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">30dp</item>
+    </style>
+    <style name="ExField">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:background">@drawable/bg_ex_field</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:drawableEnd">@drawable/ic_ex_chevron_down</item>
+        <item name="android:textColor">@color/chat_ink</item>
+        <item name="android:textColorHint">@color/chat_muted</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+    </style>
+    <style name="ExTextInput">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:background">@drawable/bg_ex_field</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textColor">@color/chat_ink</item>
+        <item name="android:textColorHint">@color/chat_muted</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:importantForAutofill">no</item>
+        <item name="android:saveEnabled">false</item>
+    </style>
+    <style name="ExMultiInput" parent="ExTextInput">
+        <item name="android:minHeight">112dp</item>
+        <item name="android:gravity">top|start</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:inputType">textMultiLine|textCapSentences</item>
+        <item name="android:maxLength">500</item>
+    </style>
+    <style name="ExCounter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:gravity">end</item>
+        <item name="android:textColor">@color/chat_muted</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+    <style name="ExNote">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:drawableStart">@drawable/ic_info</item>
+        <item name="android:drawableTint">@color/chat_muted</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:textColor">@color/chat_muted</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+    <style name="ExPill">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:textSize">11.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+    </style>
+    <style name="ExPrimary" parent="ReferencePrimary">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">10dp</item>
+        <item name="iconTint">@android:color/white</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+    <style name="ExOutline" parent="ReferenceOutline">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/chat_blue</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconTint">@color/chat_blue</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+    <style name="ExDanger" parent="ExOutline">
+        <item name="android:textColor">@color/chat_red</item>
+        <item name="strokeColor">@color/chat_red</item>
+        <item name="iconTint">@color/chat_red</item>
+    </style>
+    <style name="ExChip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textSize">13sp</item>
+        <item name="chipBackgroundColor">@color/ex_chip_background</item>
+        <item name="chipStrokeColor">@color/ex_chip_stroke</item>
+        <item name="android:textColor">@color/ex_chip_text</item>
+        <item name="checkedIconTint">@color/chat_blue</item>
+        <item name="chipCornerRadius">10dp</item>
+    </style>
+    <style name="ExTabText" parent="ChatTabText" />
+</resources>
