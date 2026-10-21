@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@android:color/white">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar"
+        style="@style/ReferenceToolbar" app:title="@string/email_verification_title" />
+    <ScrollView android:id="@+id/account_scroll" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true" android:scrollbars="none">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingHorizontal="24dp" android:paddingBottom="24dp">
+            <include layout="@layout/view_account_feedback" />
+            <LinearLayout android:id="@+id/form" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView android:layout_width="match_parent" android:layout_height="160dp"
+                    android:layout_marginTop="20dp" android:layout_marginBottom="16dp"
+                    android:src="@drawable/illustration_reset" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+                <TextView style="@style/ReferenceTitle" android:text="@string/email_verification_heading"
+                    android:textSize="24sp" android:gravity="center" />
+                <TextView style="@style/ReferenceBody" android:text="@string/email_verification_caption" android:gravity="center" />
+                <TextView android:id="@+id/email" style="@style/ReferenceLabel" android:gravity="center"
+                    android:textColor="@color/account_blue" android:layout_marginTop="8dp" android:layout_marginBottom="24dp" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/open_email" style="@style/ReferencePrimary"
+                    android:text="@string/email_verification_open" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline"
+                    android:text="@string/email_verification_confirm" android:contentDescription="@string/email_verification_confirm" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/resend" style="@style/ReferenceOutline"
+                    android:text="@string/email_verification_resend" android:contentDescription="@string/email_verification_resend" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/change_account" style="@style/ReferenceOutline"
+                    android:text="@string/email_verification_change" android:contentDescription="@string/email_verification_change" />
+                <TextView style="@style/ReferenceBody" android:text="@string/email_verification_note"
+                    android:layout_marginTop="20dp" android:background="@drawable/bg_account_note"
+                    android:padding="16dp" android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

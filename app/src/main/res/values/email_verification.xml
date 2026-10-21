@@ -1,0 +1,13 @@
+<resources>
+    <string name="email_verification_title">Xác thực email</string>
+    <string name="email_verification_heading">Kiểm tra hộp thư của bạn</string>
+    <string name="email_verification_caption">Bấm liên kết xác thực trong email Firebase gửi đến địa chỉ bên dưới. Sau đó quay lại app để hoàn tất đăng ký.</string>
+    <string name="email_verification_open">Mở ứng dụng email</string>
+    <string name="email_verification_confirm">Tôi đã xác thực email</string>
+    <string name="email_verification_processing">Đang kiểm tra…</string>
+    <string name="email_verification_resend">Gửi lại email xác thực</string>
+    <string name="email_verification_resend_wait">Gửi lại sau %1$d giây</string>
+    <string name="email_verification_change">Dùng tài khoản khác</string>
+    <string name="email_verification_note">Chưa thấy email? Kiểm tra mục Thư rác hoặc gửi lại. Bạn có thể mở email trên thiết bị khác, rồi quay về app bấm “Tôi đã xác thực email”.</string>
+    <string name="email_verification_no_mail_app">Hãy mở Gmail trong trình duyệt hoặc trên thiết bị khác, bấm liên kết xác thực rồi quay lại app.</string>
+</resources>
