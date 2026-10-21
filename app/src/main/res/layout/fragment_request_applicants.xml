@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@android:color/white">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar" style="@style/ReferenceToolbar" app:title="@string/requests_applicants" />
+    <ScrollView android:id="@+id/applicants_scroll" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="20dp">
+            <TextView android:id="@+id/applicants_request_title" style="@style/ScreenTitle" android:textSize="22sp" />
+            <TextView android:id="@+id/applicants_offline" style="@style/BodyText"
+                android:text="@string/requests_applicants_offline" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+            <TextView android:id="@+id/applicants_error" style="@style/BodyText"
+                android:textColor="#B3261E" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/retry_applicants"
+                style="@style/SecondaryButton" android:text="@string/requests_retry" android:visibility="gone" />
+            <ProgressBar android:id="@+id/applicants_progress" android:layout_width="32dp"
+                android:layout_height="32dp" android:layout_gravity="center_horizontal"
+                android:contentDescription="@string/requests_loading" android:visibility="gone" />
+            <TextView android:id="@+id/applicants_empty" style="@style/BodyText" android:padding="20dp"
+                android:background="@drawable/bg_pale" android:text="@string/requests_applicants_empty"
+                android:accessibilityLiveRegion="polite" android:visibility="gone" />
+            <LinearLayout android:id="@+id/applicants_list" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
