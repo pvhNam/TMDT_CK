@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     TutorReviewState tutorReviews;
     /** Lessons and group classes (member 3). */
     public Classroom classroom;
+    /** Hợp đồng dạy (member 4, UC23). */
+    public Exchange exchange;
     String screen="home";
     private String pendingDestination;
     private String authenticatedDestination;
@@ -57,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         chat=new ViewModelProvider(this).get(ChatState.class);
         tutorReviews=new ViewModelProvider(this).get(TutorReviewState.class);
         classroom=new Classroom(this,savedInstanceState);
+        exchange=new Exchange(this,savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             bottomInset=safe.bottom;
@@ -138,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         if(account.requiresEmailVerification())destination="email_verification";
         if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
+        destination=exchange.redirect(destination);
         if("post_request".equals(destination)&&!account.signedIn()){
             authenticatedDestination=destination;destination="login";
         }
@@ -161,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
+        if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
             case "tutor_evidence":fragment=new com.example.tmdt.ui.profile.TutorEvidenceFragment();break;
             case "tutor_supplement":fragment=com.example.tmdt.ui.profile.TutorEvidenceFragment.supplementScreen();break;
@@ -265,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
         if(account.isBusy())return;hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
+        if(target==null)target=exchange.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
             case "welcome":finish();break;
@@ -334,5 +340,5 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);exchange.save(out);}
 }

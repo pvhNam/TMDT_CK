@@ -28,6 +28,8 @@ import com.example.tmdt.ui.tutor.TeachingScheduleFragment;
 import com.example.tmdt.ui.tutor.TutorHomeFragment;
 import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,10 +43,10 @@ import java.util.Set;
  */
 public final class Classroom {
     private static final Set<String> PRIVATE = new HashSet<>(Arrays.asList("schedule","booking","trial","lesson","confirm","cancel",
-            "reschedule","join","tutorHome","teaching","classes","openClass","review"));
+            "reschedule","join","registrations","registration","tutorHome","teaching","classes","openClass","review"));
     private static final Set<String> TUTOR = new HashSet<>(Arrays.asList("tutorHome","teaching","classes","openClass","review"));
     /** Screens without text fields, rebuilt as soon as Firestore sends new data. */
-    private static final Set<String> LIVE = new HashSet<>(Arrays.asList("schedule","lesson","reschedule","groups","full",
+    private static final Set<String> LIVE = new HashSet<>(Arrays.asList("schedule","lesson","reschedule","groups","full","registrations","registration",
             "tutorHome","teaching","classes","review"));
     private final MainActivity host;
     private final SharedPreferences preferences;
@@ -57,7 +59,9 @@ public final class Classroom {
     public String tutorKey, lessonId="", classId="";
     public String tutorProfileId;
     public String tutorProfileOrigin="home";
-    public int scheduleTab, classTab;
+    public int scheduleTab, classTab, registrationFilter;
+    /** Where the registration history was opened from (class search or schedule), so back returns there. */
+    private String registrationsOrigin="groups";
     /** Where "Đặt lịch học" was opened from, so back returns there. */
     private String bookingOrigin="home";
     /** Booking form kept while the trial screen is open or the activity is recreated. */
@@ -81,6 +85,7 @@ public final class Classroom {
             bookingOrigin=state.getString("bookingOrigin","home");bookingDraft=state.getBundle("booking");
             tutorProfileId=state.getString("tutorProfileId",null);
             tutorProfileOrigin=state.getString("tutorProfileOrigin","home");
+            registrationsOrigin=state.getString("registrationsOrigin","groups");registrationFilter=state.getInt("registrationFilter",0);
         }
         cloud.user(host.account.signedIn()?host.account.uid():"");
         cloud.changes().observe(host,ignored->changed());
@@ -90,6 +95,7 @@ public final class Classroom {
         out.putString("lesson",lessonId);out.putString("class",classId);out.putString("bookingOrigin",bookingOrigin);
         out.putString("tutorProfileId",tutorProfileId);
         out.putString("tutorProfileOrigin",tutorProfileOrigin);
+        out.putString("registrationsOrigin",registrationsOrigin);out.putInt("registrationFilter",registrationFilter);
         if(bookingDraft!=null)out.putBundle("booking",bookingDraft);
     }
 
@@ -117,7 +123,25 @@ public final class Classroom {
             &&"VERIFIED".equals(host.tutorReviews.status());}
     public boolean tutorMode(){return tutorView&&isTutor();}
 
+    /** Last known answer to a proposal per lesson the user teaches, to announce new answers while the app is open. */
+    private final Map<String,String> replies=new HashMap<>();
+    private void announceReplies(){
+        for(Lesson lesson:lessons){
+            if(!lesson.tutorId.equals(me()))continue;
+            String before=replies.put(lesson.id,lesson.reply);
+            if(before!=null&&!before.equals(lesson.reply)&&lesson.replied())notice(lesson.replyText());
+        }
+    }
+    public boolean replySeen(Lesson lesson){
+        return preferences.getStringSet("reply_seen_"+me(),new HashSet<>()).contains(lesson.id+":"+lesson.reply);
+    }
+    public void markReplySeen(Lesson lesson){
+        Set<String> seen=new HashSet<>(preferences.getStringSet("reply_seen_"+me(),new HashSet<>()));
+        seen.add(lesson.id+":"+lesson.reply);preferences.edit().putStringSet("reply_seen_"+me(),seen).apply();
+    }
+
     private void changed(){
+        announceReplies();
         String error=cloud.takeError();
         if(!error.isEmpty())dialog("Lịch học và lớp nhóm",error);
         if(LIVE.contains(host.screen))show(host.screen);
@@ -139,7 +163,7 @@ public final class Classroom {
     private boolean missingSelection(String destination){
         switch(destination){
             case "lesson":case "confirm":case "cancel":case "reschedule":return store.lesson(lessonId)==null;
-            case "join":case "full":case "review":return store.groupClass(classId)==null;
+            case "join":case "full":case "review":case "registration":return store.groupClass(classId)==null;
             case "booking":case "trial":return Tutor.get(tutorKey)==null;
             default:return false;
         }
@@ -157,6 +181,8 @@ public final class Classroom {
             case "groups":return new GroupSearchFragment();
             case "join":return new JoinClassFragment();
             case "full":return new ClassFullFragment();
+            case "registrations":return new com.example.tmdt.ui.groupclass.RegistrationHistoryFragment();
+            case "registration":return new com.example.tmdt.ui.groupclass.RegistrationDetailFragment();
             case "tutorHome":return new TutorHomeFragment();
             case "teaching":return new TeachingScheduleFragment();
             case "classes":return new OpenedClassesFragment();
@@ -168,7 +194,7 @@ public final class Classroom {
     boolean mainScreen(String screen){
         switch(screen){
             case "tutorHome":case "teaching":case "classes":case "groups":
-            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":return true;
+            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":case "registrations":case "registration":return true;
             default:return false;
         }
     }
@@ -179,6 +205,7 @@ public final class Classroom {
         switch(screen){
             case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":return R.id.nav_home;
             case "teaching":case "lesson":case "confirm":case "cancel":case "reschedule":return R.id.nav_schedule;
+            case "registrations":case "registration":return "schedule".equals(registrationsOrigin)?R.id.nav_schedule:R.id.nav_home;
             default:return fallback;
         }
     }
@@ -192,6 +219,8 @@ public final class Classroom {
             case "confirm":case "cancel":case "reschedule":return "lesson";
             case "join":case "full":return "groups";
             case "openClass":case "review":return "classes";
+            case "registrations":return registrationsOrigin;
+            case "registration":return "registrations";
             default:return null;
         }
     }
@@ -232,6 +261,12 @@ public final class Classroom {
     }
     public void openLesson(Lesson lesson){lessonId=lesson.id;show("lesson");}
     public void openClass(GroupClass item,String destination){classId=item==null?"":item.id;show(destination);}
+    /** Lịch sử đăng ký lớp học, opened from the class search or the schedule. */
+    public void openRegistrations(){
+        if(!"registrations".equals(host.screen)&&!"registration".equals(host.screen))registrationsOrigin=host.screen;
+        show("registrations");
+    }
+    public void openRegistration(GroupClass item){classId=item.id;show("registration");}
     /** Tutors switch between their teaching view and their own student view. */
     public void setTutorMode(boolean value){
         if(value&&!isTutor())return;

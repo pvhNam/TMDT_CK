@@ -42,6 +42,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         search.setOnEditorActionListener((v,id,event)->{classroom.hideKeyboard();return true;});
         ui.weight(box,search); ui.add(body,box); ui.space(body,13);
         filters = ui.row(); ui.add(body,filters); ui.space(body,13);
+        ui.add(body,historyLink()); ui.space(body,13);
         results = ui.column(); ui.add(body,results);
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
@@ -123,6 +124,23 @@ public final class GroupSearchFragment extends ScreenFragment {
         info.addView(availability(item),ui.lp(-2,28)); ui.weight(top,info); ui.add(card,top); ui.space(card,8);
         ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,item.full()?"full":"join")),41);
         return card;
+    }
+
+    /** Shortcut to Lịch sử đăng ký lớp học with the number of registrations still waiting. */
+    private View historyLink() {
+        int sent = 0, waiting = 0;
+        for (GroupClass item : classroom.store.classes)
+            for (GroupClass.Registration registration : item.registrations)
+                if (registration.studentId.equals(classroom.me())) { sent++; if (registration.pending()) waiting++; }
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE)); ui.gap(row,12);
+        LinearLayout text = ui.column(); ui.add(text,ui.text("Lớp đã đăng ký",16,Ui.INK,true)); ui.space(text,2);
+        ui.add(text,ui.text(sent==0?"Xem trạng thái các lớp bạn đăng ký":sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
+        ui.weight(row,text);
+        if (waiting > 0) { row.addView(ui.pill(String.valueOf(waiting),13,Ui.WHITE,Ui.ORANGE),ui.lp(-2,-2)); ui.gap(row,6); }
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Lớp đã đăng ký"); ui.clickable(row,classroom::openRegistrations); return row;
     }
 
     private TextView availability(GroupClass item) {

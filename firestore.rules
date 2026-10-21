@@ -234,29 +234,33 @@ service cloud.firestore {
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
         let link = d.get('link_phong_hoc', '');
-        return d.keys().hasOnly(keys.concat(['link_phong_hoc'])) && d.keys().hasAll(keys)
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi'])) && d.keys().hasAll(keys)
           && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
+          && d.get('doi_lich_phan_hoi', '') in ['', 'DONG_Y', 'GIU_LICH']
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.tieu_de is string && d.tieu_de.size() <= 100
-          && d.bat_dau is timestamp && d.thoi_luong in [30, 45, 60, 90, 120] && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
+          && d.bat_dau is timestamp && d.thoi_luong is int && d.thoi_luong >= 30 && d.thoi_luong % 15 == 0 && d.thoi_luong <= 1440
+          && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
           && d.dia_chi is string && d.dia_chi.size() <= 255 && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 300
-          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 10000000
+          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 50000000
           && d.trang_thai in ['PENDING', 'CONFIRMED', 'CANCELLED', 'REJECTED'] && d.da_hoan_thanh is bool
           && d.noi_dung is string && d.noi_dung.size() <= 500 && d.ly_do_huy is string && d.ly_do_huy.size() <= 150
           && (d.doi_lich_bat_dau == null || d.doi_lich_bat_dau is timestamp) && d.doi_lich_ly_do is string && d.doi_lich_ly_do.size() <= 120
           && stamped();
       }
       function lessonChanged(keys) {
-        return changed(keys.concat(['link_phong_hoc']))
-          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '');
+        return changed(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi']))
+          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '')
+          && (keys.hasAny(['doi_lich_phan_hoi'])
+            || request.resource.data.get('doi_lich_phan_hoi', '') == resource.data.get('doi_lich_phan_hoi', ''));
       }
       function requested() {
         let d = request.resource.data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
           && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
-          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == ''
+          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == '' && d.get('doi_lich_phan_hoi', '') == ''
           && d.bat_dau > request.time && d.created_at == request.time
           && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
       }
@@ -271,7 +275,8 @@ service cloud.firestore {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau == null && resource.data.bat_dau > request.time
           && d.doi_lich_bat_dau is timestamp && d.doi_lich_bat_dau > request.time && d.doi_lich_bat_dau != resource.data.bat_dau
-          && d.doi_lich_ly_do.size() > 0 && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.doi_lich_ly_do.size() > 0 && d.get('doi_lich_phan_hoi', '') == ''
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function cancelled() {
         let d = request.resource.data;
@@ -284,11 +289,13 @@ service cloud.firestore {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau != null && resource.data.doi_lich_bat_dau > request.time
           && d.bat_dau == resource.data.doi_lich_bat_dau && d.doi_lich_bat_dau == null
-          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.get('doi_lich_phan_hoi', '') == 'DONG_Y'
+          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function kept() {
         return resource.data.student_id == request.auth.uid && resource.data.doi_lich_bat_dau != null
-          && request.resource.data.doi_lich_bat_dau == null && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && request.resource.data.doi_lich_bat_dau == null && request.resource.data.get('doi_lich_phan_hoi', '') == 'GIU_LICH'
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function finished() {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
@@ -463,6 +470,70 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['online','last_seen'])
         && request.resource.data.online is bool
         && request.resource.data.last_seen == request.time;
+      allow delete: if false;
+    }
+    // ---------------------------------------------------------------------------------------------
+    // UC23 – Chốt hợp đồng dạy (màn 40, Hợp đồng của tôi). contracts/{id}: chỉ 2 bên (và quản trị viên) đọc.
+    // Bên đề nghị tạo ở trạng thái CHO_XAC_NHAN và tự xác nhận phần của mình; bên còn lại xác nhận (→ CHO_KY_QUY)
+    // hoặc từ chối (→ TU_CHOI); bên đề nghị được hủy (→ DA_HUY). Nội dung không sửa được sau khi gửi.
+    // ---------------------------------------------------------------------------------------------
+    match /contracts/{contractId} {
+      function isParty(data) { return request.auth != null && request.auth.uid in [data.student_id, data.tutor_id]; }
+      function validContract(d) {
+        let conversation = get(/databases/$(database)/documents/conversations/$(d.conversation_id)).data;
+        let me = request.auth.uid;
+        return d.keys().hasOnly(['code','conversation_id','student_id','tutor_id','member_ids','student_name','tutor_name',
+                                 'subject','sessions','minutes','schedule','start_date','start_at','mode','fee','total','terms',
+                                 'proposed_by','student_confirmed','tutor_confirmed','status','reject_reason','confirmed_at',
+                                 'created_at','updated_at'])
+          && d.student_id is string && d.tutor_id is string && d.student_id != d.tutor_id
+          && d.member_ids == [d.student_id, d.tutor_id]
+          && me in d.member_ids && d.proposed_by == me
+          && d.conversation_id is string && conversation.member_ids.hasAll([d.student_id, d.tutor_id])
+          && verifiedTutor(d.tutor_id)
+          && d.code is string && d.code.size() <= 12
+          && d.student_name is string && d.student_name.size() <= 100
+          && d.tutor_name is string && d.tutor_name.size() <= 100
+          && d.subject is string && d.subject.size() >= 2 && d.subject.size() <= 120
+          && d.sessions is int && d.sessions >= 1 && d.sessions <= 60
+          && d.minutes in [60, 90, 120]
+          && d.fee is int && d.fee >= 50000 && d.fee <= 2000000
+          && d.total == d.fee * d.sessions
+          && d.schedule is string && d.schedule.size() <= 80
+          && d.start_date is string && d.start_date.size() <= 20
+          && d.start_at is timestamp && d.start_at > request.time
+          && d.mode in ['Trực tuyến', 'Tại nhà']
+          && d.terms is string && d.terms.size() <= 1000
+          && d.student_confirmed == (me == d.student_id) && d.tutor_confirmed == (me == d.tutor_id)
+          && d.status == 'CHO_XAC_NHAN' && d.reject_reason == '' && d.confirmed_at == null
+          && d.created_at == request.time && d.updated_at == request.time;
+      }
+      function contractChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function confirming() {
+        let flag = request.auth.uid == resource.data.student_id ? 'student_confirmed' : 'tutor_confirmed';
+        return contractChanged().hasOnly([flag, 'status', 'confirmed_at', 'updated_at'])
+          && request.resource.data[flag] == true
+          && request.resource.data.status == 'CHO_KY_QUY'
+          && request.resource.data.confirmed_at == request.time;
+      }
+      function rejecting() {
+        return contractChanged().hasOnly(['status', 'reject_reason', 'updated_at'])
+          && request.resource.data.status == 'TU_CHOI'
+          && request.resource.data.reject_reason is string && request.resource.data.reject_reason.size() <= 300;
+      }
+      function cancelling() {
+        return contractChanged().hasOnly(['status', 'updated_at']) && request.resource.data.status == 'DA_HUY';
+      }
+
+      allow get: if isParty(resource.data) || admin();
+      // Truy vấn whereArrayContains("member_ids", uid): điều kiện phải chứng minh được từ chính truy vấn.
+      allow list: if request.auth != null && request.auth.uid in resource.data.member_ids;
+      allow create: if notBanned() && validContract(request.resource.data);
+      allow update: if isParty(resource.data) && notBanned()
+        && resource.data.status == 'CHO_XAC_NHAN'
+        && request.resource.data.updated_at == request.time
+        && ((request.auth.uid != resource.data.proposed_by && (confirming() || rejecting()))
+            || (request.auth.uid == resource.data.proposed_by && cancelling()));
       allow delete: if false;
     }
     // All other collections, including the removed flows, are denied by default.
