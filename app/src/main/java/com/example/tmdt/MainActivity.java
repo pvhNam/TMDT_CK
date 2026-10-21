@@ -101,23 +101,21 @@ public class MainActivity extends AppCompatActivity {
             tutorReviews.account(account);
             classroom.onAccount();
             if(account.destination!=null){
-    String destination=account.destination;
-    account.destination=null;
-
-    if(authenticatedDestination!=null
-            &&("home".equals(destination)||"account".equals(destination))
-            &&account.signedIn()
-            &&account.profile()!=null
-            &&"ACTIVE".equals(account.profile().status)){
-        destination=authenticatedDestination;
-        authenticatedDestination=null;
-    }
-    show(destination);
-}
-
-  // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
-  if(account.signedIn())chat.start();
-  else chat.reset();
+                String destination=account.destination;
+                account.destination=null;
+                if(authenticatedDestination!=null
+                        &&("home".equals(destination)||"account".equals(destination))
+                        &&account.signedIn()
+                        &&account.profile()!=null
+                        &&"ACTIVE".equals(account.profile().status)){
+                    destination=authenticatedDestination;
+                    authenticatedDestination=null;
+                }
+                show(destination);
+            }
+            // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
+            if(account.signedIn())chat.start();
+            else chat.reset();
             renderNavigation();
         });
         tutorReviews.changes.observe(this,ignored->{
@@ -136,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void show(String destination){
+        if("email_otp".equals(destination))destination="email_verification"; // Older saved navigation state.
+        if(account.requiresEmailVerification())destination="email_verification";
+        if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
         if("post_request".equals(destination)&&!account.signedIn()){
             authenticatedDestination=destination;destination="login";
@@ -170,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
             case "student_intro":fragment=new com.example.tmdt.ui.onboarding.StudentIntroFragment();break;
             case "login":fragment=new LoginFragment();break;
             case "register":fragment=new RegisterFragment();break;
+            case "email_verification":fragment=new com.example.tmdt.ui.auth.EmailVerificationFragment();break;
             case "forgot":fragment=new ForgotPasswordFragment();break;
             case "account":fragment=new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
@@ -275,6 +277,7 @@ public class MainActivity extends AppCompatActivity {
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
             case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
             case "otp":account.clearFeedback();show("account");break;
+            case "email_verification":account.leaveEmailVerification();break;
             case "favorites":case "settings":account.clearFeedback();show("account");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
