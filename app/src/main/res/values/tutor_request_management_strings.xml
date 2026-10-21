@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manage_requests_title">Quản lý tin đăng</string>
+    <string name="requests_heading">Quản lý tin đăng</string>
+    <string name="requests_intro">Xem và cập nhật tin tìm gia sư của bạn, theo dõi những gia sư đã ứng tuyển.</string>
+    <string name="requests_status_filter">Lọc tin theo trạng thái</string>
+    <string name="requests_open">Đang mở</string>
+    <string name="requests_closed">Đã đóng</string>
+    <string name="requests_empty_open">Bạn chưa có tin đang mở. Đăng tin tìm gia sư để chia sẻ nhu cầu học.</string>
+    <string name="requests_empty_closed">Bạn chưa có tin đã đóng.</string>
+    <string name="requests_loading">Đang tải thông tin…</string>
+    <string name="requests_retry">Thử lại</string>
+    <string name="requests_offline">Đang hiển thị dữ liệu đã lưu trên máy. Hãy kết nối mạng để sửa, đóng hoặc xóa tin.</string>
+    <string name="requests_subject_level">%1$s · %2$s</string>
+    <string name="requests_budget_value">Ngân sách: %1$s/buổi</string>
+    <string name="requests_schedule_value">Lịch học: %1$s</string>
+    <string name="requests_edit">Sửa tin</string>
+    <string name="requests_close">Đóng tin</string>
+    <string name="requests_delete">Xóa tin</string>
+    <string name="requests_close_title">Đóng tin tìm gia sư?</string>
+    <string name="requests_close_confirm">Đóng “%1$s”? Tin sẽ chuyển sang mục Đã đóng và ngừng nhận ứng tuyển mới. Bạn vẫn có thể xem những ứng tuyển trước đó.</string>
+    <string name="requests_delete_title">Xóa tin tìm gia sư?</string>
+    <string name="requests_delete_confirm">Xóa “%1$s” khỏi danh sách tin của bạn? Không thể khôi phục tin từ ứng dụng.</string>
+    <string name="requests_edit_heading">Sửa tin tìm gia sư</string>
+    <string name="requests_edit_intro">Cập nhật nhu cầu học bên dưới rồi lưu thay đổi. Trạng thái mở hoặc đóng của tin được giữ nguyên.</string>
+    <string name="requests_edit_syncing">Tin đang đồng bộ thời gian cập nhật. Vui lòng tải lại rồi thử sửa.</string>
+    <string name="requests_save">Lưu thay đổi</string>
+    <string name="requests_saving">Đang lưu…</string>
+    <string name="requests_unavailable">Tin không còn tồn tại hoặc bạn không có quyền truy cập.</string>
+    <string name="requests_applicants">Danh sách ứng tuyển</string>
+    <string name="requests_applicants_caption">Các gia sư đã ứng tuyển vào tin của bạn.</string>
+    <string name="requests_applicants_empty">Chưa có gia sư ứng tuyển vào tin này.</string>
+    <string name="requests_applicants_offline">Đang hiển thị dữ liệu ứng tuyển đã lưu trên máy. Kết nối mạng để nhận thông tin mới nhất.</string>
+    <string name="requests_applicant_unnamed">Gia sư chưa cập nhật tên</string>
+    <string name="requests_applicant_no_message">Không có lời giới thiệu.</string>
+    <string name="requests_application_date">Ứng tuyển lúc %1$s</string>
+    <string name="requests_application_pending">Đang chờ phản hồi</string>
+    <string name="requests_application_accepted">Đã chấp nhận</string>
+    <string name="requests_application_rejected">Đã từ chối</string>
+    <string name="requests_application_withdrawn">Đã rút ứng tuyển</string>
+    <string name="requests_application_status">Trạng thái: %1$s</string>
+    <string name="requests_reload">Tải lại tin</string>
+    <string name="requests_reload_title">Tải lại nội dung tin?</string>
+    <string name="requests_reload_confirm">Các thay đổi chưa lưu trong bản nháp sẽ được bỏ để mở nội dung mới nhất đã tải của tin. Bạn muốn tiếp tục?</string>
+</resources>
