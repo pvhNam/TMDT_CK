@@ -49,6 +49,7 @@ public final class PostTutorRequestFragment extends Fragment {
         binding.publishRequest.setOnClickListener(v -> publish());
         binding.newRequest.setOnClickListener(v -> { state.reset(); clearInputs(); });
         binding.requestHome.setOnClickListener(v -> host().show("home"));
+        binding.manageRequests.setOnClickListener(v -> host().openMyRequests("post_request"));
         state.changes().observe(getViewLifecycleOwner(), ignored -> render());
     }
     private void input(EditText input, String key) {
