@@ -186,31 +186,96 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.created_at == request.time;
       allow update, delete: if false;
     }
-    // UC11: students publish a need; only the owner and verified tutors may read it.
+    // UC11 / UC12: only the active owner manages a request; deleted records retain applications.
     match /tutor_requests/{requestId} {
+      function activeAccount() {
+        return signedIn() && account().trang_thai == 'ACTIVE';
+      }
+      function owner() {
+        return resource.data.student_id == request.auth.uid;
+      }
+      function ownRequestId() {
+        let suffix = requestId.replace('^.*_', '');
+        return requestId == request.auth.uid + '_' + suffix
+          && suffix.matches('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
+      }
+      function nonblank(value, maximum) {
+        return value is string && value.trim().size() > 0 && value.size() <= maximum;
+      }
+      function validSubject(data) {
+        let subject = get(/databases/$(database)/documents/subjects/$(data.subject_id)).data;
+        return subject.dang_su_dung == true && subject.ten_mon == data.mon_hoc;
+      }
       function validRequest() {
         let d = request.resource.data;
-        let subject = get(/databases/$(database)/documents/subjects/$(d.subject_id)).data;
-        let keys = ['student_id','ten_hoc_vien','tieu_de','subject_id','mon_hoc','cap_hoc','ngan_sach','lich_hoc','mo_ta','trang_thai','created_at','updated_at'];
-        return d.keys().hasAll(keys) && d.keys().hasOnly(keys)
-          && d.student_id == request.auth.uid && account().trang_thai == 'ACTIVE'
-          && d.ten_hoc_vien == account().ho_ten
-          && d.tieu_de is string && d.tieu_de.matches('.*[^\\s].*') && d.tieu_de.size() <= 120
-          && d.subject_id is string && d.subject_id.size() > 0 && d.subject_id.size() <= 150
-          && subject.dang_su_dung == true && d.mon_hoc == subject.ten_mon
-          && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 100
+        let keys = ['student_id','ten_hoc_vien','tieu_de','subject_id','mon_hoc','cap_hoc',
+          'ngan_sach','lich_hoc','mo_ta','trang_thai','created_at','updated_at'];
+        return d.keys().hasAll(keys) && d.keys().hasOnly(keys.concat(['deleted_at']))
+          && d.student_id is string && nonblank(d.ten_hoc_vien, 100)
+          && nonblank(d.tieu_de, 120) && nonblank(d.subject_id, 150) && nonblank(d.mon_hoc, 100)
           && d.cap_hoc in ['TIEU_HOC','THCS','THPT','LUYEN_THI','KHAC']
           && d.ngan_sach is int && d.ngan_sach >= 1 && d.ngan_sach <= 10000000
-          && d.lich_hoc is string && d.lich_hoc.matches('[\\s\\S]*[^\\s][\\s\\S]*') && d.lich_hoc.size() <= 300
-          && d.mo_ta is string && d.mo_ta.matches('[\\s\\S]*[^\\s][\\s\\S]*') && d.mo_ta.size() <= 2000
-          && d.trang_thai == 'OPEN' && d.created_at == request.time && d.updated_at == request.time;
+          && nonblank(d.lich_hoc, 300) && nonblank(d.mo_ta, 2000)
+          && d.created_at is timestamp && d.updated_at == request.time
+          && d.trang_thai in ['OPEN','CLOSED','DELETED']
+          && ((d.trang_thai == 'DELETED' && d.deleted_at == request.time)
+            || (d.trang_thai != 'DELETED' && !('deleted_at' in d)));
       }
-      allow get: if signedIn() && (requestId.matches(request.auth.uid + '_[0-9a-f-]{36}')
-        || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid) && account().trang_thai == 'ACTIVE'));
-      allow list: if signedIn() && (resource.data.student_id == request.auth.uid
-        || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid) && account().trang_thai == 'ACTIVE'));
-      allow create: if signedIn() && requestId.matches(request.auth.uid + '_[0-9a-f-]{36}') && validRequest();
-      allow update, delete: if false;
+      function edited() {
+        let d = request.resource.data;
+        return resource.data.trang_thai in ['OPEN','CLOSED']
+          && d.trang_thai == resource.data.trang_thai
+          && changed(['tieu_de','subject_id','mon_hoc','cap_hoc','ngan_sach','lich_hoc','mo_ta','updated_at'])
+          && ((d.subject_id == resource.data.subject_id && d.mon_hoc == resource.data.mon_hoc)
+            || validSubject(d));
+      }
+      function closed() {
+        return resource.data.trang_thai == 'OPEN' && request.resource.data.trang_thai == 'CLOSED'
+          && changed(['trang_thai','updated_at']);
+      }
+      function removed() {
+        return resource.data.trang_thai in ['OPEN','CLOSED'] && request.resource.data.trang_thai == 'DELETED'
+          && changed(['trang_thai','deleted_at','updated_at']);
+      }
+      // An owner's missing deterministic ID is readable for the UC11 idempotent transaction.
+      allow get: if activeAccount() && ((resource == null && ownRequestId())
+        || (resource != null && (owner() || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid)))));
+      allow list: if activeAccount()
+        && (owner() || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid)));
+      allow create: if activeAccount() && ownRequestId() && validRequest()
+        && request.resource.data.student_id == request.auth.uid
+        && request.resource.data.ten_hoc_vien == account().ho_ten
+        && request.resource.data.trang_thai == 'OPEN'
+        && request.resource.data.created_at == request.time && validSubject(request.resource.data);
+      allow update: if activeAccount() && owner() && validRequest() && (edited() || closed() || removed());
+      allow delete: if false;
+
+      match /applications/{tutorId} {
+        function parentRequest() {
+          return get(/databases/$(database)/documents/tutor_requests/$(requestId)).data;
+        }
+        function visibleParent() {
+          return exists(/databases/$(database)/documents/tutor_requests/$(requestId))
+            && parentRequest().trang_thai in ['OPEN','CLOSED'];
+        }
+        function validApplication() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['tutor_id','ten_gia_su','gioi_thieu','trang_thai','created_at','updated_at'])
+            && d.keys().hasOnly(['tutor_id','ten_gia_su','gioi_thieu','trang_thai','created_at','updated_at'])
+            && tutorId == request.auth.uid && d.tutor_id == request.auth.uid
+            && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.ho_ten
+            && nonblank(d.ten_gia_su, 100) && nonblank(d.gioi_thieu, 2000)
+            && d.trang_thai == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
+        }
+        allow read: if activeAccount() && visibleParent()
+          && (parentRequest().student_id == request.auth.uid
+            || (tutorId == request.auth.uid && resource.data.tutor_id == request.auth.uid));
+        allow create: if activeAccount() && visibleParent() && verifiedTutor(request.auth.uid)
+          && parentRequest().trang_thai == 'OPEN' && parentRequest().student_id != request.auth.uid
+          && validApplication();
+        // UC12 opens the applicant list. Application decisions belong to a separate use case.
+        allow update, delete: if false;
+      }
     }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }
