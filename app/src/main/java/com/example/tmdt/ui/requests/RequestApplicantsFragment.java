@@ -17,7 +17,7 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/** UC12: read the real applications attached to an owned request. */
+/** UC12/UC15: inspect and select applications attached to an owned request. */
 public final class RequestApplicantsFragment extends Fragment {
     private FragmentRequestApplicantsBinding binding;
     private TutorRequestManager manager;
@@ -46,6 +46,7 @@ public final class RequestApplicantsFragment extends Fragment {
         if (binding == null) return;
         TutorRequestRecord request = manager.request(requestId);
         binding.applicantsRequestTitle.setText(request == null ? getString(R.string.requests_applicants_caption) : request.title);
+        binding.applicantsSelection.setVisibility(request != null && !request.selectedTutorId.isEmpty() ? View.VISIBLE : View.GONE);
         binding.applicantsProgress.setVisibility(manager.applicantsLoading() ? View.VISIBLE : View.GONE);
         binding.applicantsOffline.setVisibility(manager.applicantsOffline() ? View.VISIBLE : View.GONE);
         binding.applicantsError.setText(manager.applicantsError());
@@ -59,7 +60,12 @@ public final class RequestApplicantsFragment extends Fragment {
             ItemTutorApplicationBinding row = ItemTutorApplicationBinding.inflate(getLayoutInflater(), binding.applicantsList, false);
             row.applicantName.setText(application.tutorName.isEmpty() ? getString(R.string.requests_applicant_unnamed) : application.tutorName);
             row.applicantMessage.setText(application.introduction.isEmpty() ? getString(R.string.requests_applicant_no_message) : application.introduction);
-            row.applicantStatus.setText(status(application.status));
+            row.applicantStatus.setText(request != null && !request.selectedTutorId.isEmpty()
+                    ? getString(request.selectedTutorId.equals(application.tutorId) ? R.string.application_selected : R.string.application_other_selected)
+                    : status(application.status));
+            row.viewApplicantProfile.setEnabled(request != null);
+            row.viewApplicantProfile.setOnClickListener(v -> ApplicantProfileDialog.newInstance(requestId, application.tutorId)
+                    .show(getParentFragmentManager(), "applicant_profile"));
             row.applicantDate.setVisibility(application.createdAtMillis > 0 ? View.VISIBLE : View.GONE);
             if (application.createdAtMillis > 0) {
                 String date = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT,
