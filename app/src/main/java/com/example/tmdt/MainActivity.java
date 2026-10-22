@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private String selectedRequestId="";
     private String requestManagementOrigin="home";
     private String postRequestOrigin="home";
+    private String requestSearchOrigin="home";
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean keyboardVisible;
@@ -102,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
             selectedRequestId=savedInstanceState.getString("request_id","");
             requestManagementOrigin=savedInstanceState.getString("request_origin","home");
             postRequestOrigin=savedInstanceState.getString("post_request_origin","home");
+            requestSearchOrigin=savedInstanceState.getString("request_search_origin","home");
         }
         if(savedInstanceState==null&&getIntent()!=null&&getIntent().hasExtra("screen")){
             screen=getIntent().getStringExtra("screen");
@@ -152,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         destination=exchange.redirect(destination);
         if("post_request".equals(destination)&&!"post_request".equals(screen))
             postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
-        if(isRequestScreen(destination)&&!account.signedIn()){
+        if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
             authenticatedDestination=destination;destination="login";
         }
         if(("edit_request".equals(destination)||"request_applicants".equals(destination))&&selectedRequestId.isEmpty())
@@ -201,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
             case "messages":fragment=new MessagesFragment();break;
             case "post_request":fragment=new com.example.tmdt.ui.requests.PostTutorRequestFragment();break;
             case "my_requests":fragment=new com.example.tmdt.ui.requests.ManageTutorRequestsFragment();break;
+            case "search_requests":fragment=new com.example.tmdt.ui.requests.SearchTutorRequestsFragment();break;
             case "edit_request":fragment=com.example.tmdt.ui.requests.EditTutorRequestFragment.newInstance(selectedRequestId);break;
             case "request_applicants":fragment=com.example.tmdt.ui.requests.RequestApplicantsFragment.newInstance(selectedRequestId);break;
             case "chat":fragment=new ChatFragment();break;
@@ -250,6 +253,7 @@ public class MainActivity extends AppCompatActivity {
         else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
         else if(!"home".equals(screen))selected=R.id.nav_account;
         if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
+        if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
         selected=classroom.navigationItem(menu,screen,selected);
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
@@ -310,10 +314,16 @@ public class MainActivity extends AppCompatActivity {
             case "edit_request":requestManager().resetEdit();show("my_requests");break;
             case "request_applicants":show("my_requests");break;
             case "my_requests":show(requestManagementOrigin);break;
+            case "search_requests":show(requestSearchOrigin);break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
             default:account.removeDraft("login.password");show("home");
         }
+    }
+    /** UC13 keeps the entry screen separate from the owner's UC12 navigation. */
+    public void openRequestSearch(String origin){
+        requestSearchOrigin="account".equals(origin)?"account":"tutorHome".equals(origin)?"tutorHome":"home";
+        hideKeyboard();show("search_requests");
     }
     // UC12: owner request management and navigation back to the entry screen.
     private static boolean isRequestScreen(String destination){
@@ -382,5 +392,5 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);classroom.save(out);exchange.save(out);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);classroom.save(out);exchange.save(out);}
 }
