@@ -83,6 +83,8 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         return GroupClass.OPEN.equals(item.status) ? "Gia sư chưa nhận đăng ký này" : "Đăng ký không được duyệt";
     }
     private String explanation(int group) {
+        if (group == RegistrationHistoryFragment.WAITING) return "Chưa thu học phí. Gia sư sẽ xem xét đăng ký của bạn trước.";
+        if (group == RegistrationHistoryFragment.ACCEPTED) return "Thanh toán đầy đủ học phí khóa qua VNPay. Xác nhận từng buổi trong mục Thanh toán để ghi nhận tiền dạy.";
         if (item.cancelled()) return "Gia sư đã hủy lớp. Lý do: "+item.cancelReason+"."
                 +(item.members.contains(classroom.me())?" Học phí ký quỹ của bạn đang chờ hoàn tiền.":"");
         if (group == RegistrationHistoryFragment.WAITING) return "Chưa thu học phí. Gia sư sẽ xem xét đăng ký của bạn trước.";
