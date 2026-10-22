@@ -27,7 +27,7 @@ public final class OpenClassFragment extends ScreenFragment {
     private GroupClass editing;
     private boolean started;
     private String subject = "Toán", mode = "Trực tuyến";
-    private int capacity = 5, sessions = 4, hour = 19, minutes = 60;
+    private int capacity = 5, sessions = 4, hour = 19, minute = 0, minutes = 60;
     private int[] days = {6};
     private LocalDate start;
     private EditText name, price, address, description;
@@ -40,7 +40,7 @@ public final class OpenClassFragment extends ScreenFragment {
         started = true; editing = classroom.store.groupClass(classroom.classId);
         start = nextClassDay(LocalDate.now().plusDays(1));
         if (editing != null) {
-            subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour;
+            subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour; minute=editing.minute;
             minutes=editing.minutes; days=editing.days; start=LocalDate.parse(editing.startDate);
         }
     }
@@ -77,8 +77,8 @@ public final class OpenClassFragment extends ScreenFragment {
         ui.add(plan,stepper("Số buổi","Tối đa 12 buổi",sessionsValue,()->{if(sessions>1)sessions--;render();},()->{if(sessions<12)sessions++;render();}));
         ui.space(plan,14);
         ui.label(plan,"Ngày học trong tuần *"); weekdays = ui.row(); ui.add(plan,weekdays); ui.space(plan,14);
-        time = new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,m)->{hour=h;minutes=m;showHint();});
-        hour = time.hour(); minutes = time.minutes();
+        time = new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,30,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;showHint();});
+        hour = time.hour(); minute = time.minute(); minutes = time.minutes();
         ui.add(plan,time.view("Thời gian dạy *")); ui.space(plan,14);
         ui.label(plan,"Ngày khai giảng *");
         HorizontalScrollView scroll = new HorizontalScrollView(classroom.context()); scroll.setHorizontalScrollBarEnabled(false);
@@ -160,7 +160,7 @@ public final class OpenClassFragment extends ScreenFragment {
         button.setContentDescription(description); ui.clickable(button,click); button.setLayoutParams(ui.lp(38,38)); return button;
     }
     private String label() {
-        GroupClass preview = new GroupClass("",classroom.me(),""); preview.days=days; preview.hour=hour; preview.minutes=minutes;
+        GroupClass preview = new GroupClass("",classroom.me(),""); preview.days=days; preview.hour=hour; preview.minute=minute; preview.minutes=minutes;
         return preview.scheduleLabel();
     }
     private LocalDate nextClassDay(LocalDate from) {
@@ -181,13 +181,13 @@ public final class OpenClassFragment extends ScreenFragment {
         if (editing != null && capacity < editing.members.size()) {
             classroom.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = classroom.store.classClash(classroom.me(),days,hour,minutes,start,sessions,editing==null?"":editing.id);
+        String clash = classroom.store.classClash(classroom.me(),days,hour*60+minute,minutes,start,sessions,editing==null?"":editing.id);
         if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
         GroupClass item = editing != null ? editing : new GroupClass(classroom.store.newId("group_classes"),classroom.me(),classroom.tutorName());
         item.title=title; item.subject=subject; item.level=levelOf(title); item.mode=mode; item.address=mode.equals("Tại nhà")?place:"";
         item.description=about; item.startDate=start.toString(); item.sessions=sessions; item.price=fee; item.capacity=capacity;
-        item.days=days; item.hour=hour; item.minutes=minutes;
+        item.days=days; item.hour=hour; item.minute=minute; item.minutes=minutes;
         if (editing == null) {
             item.status=GroupClass.OPEN; item.art=subject.equals("Tiếng Anh")?2:subject.equals("Toán")?0:1;
         }

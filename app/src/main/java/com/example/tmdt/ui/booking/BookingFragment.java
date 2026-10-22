@@ -73,7 +73,7 @@ public final class BookingFragment extends ScreenFragment {
         ui.clickable(month,this::datePicker);ui.add(body,month);
         daysScroll=new HorizontalScrollView(classroom.context());daysScroll.setHorizontalScrollBarEnabled(false);
         days=ui.row();daysScroll.addView(days);ui.add(body,daysScroll);renderDays(true);ui.space(body,15);
-        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,m)->{hour=h;minutes=m;updatePrice();});
+        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,mi,m)->{hour=h;minutes=m;updatePrice();});
         hour=time.hour();minutes=time.minutes();
         ui.add(body,time.view("Chọn giờ học"));ui.space(body,15);
         ui.label(body,"Mục tiêu buổi học");goal=ui.entry("Bạn muốn học nội dung gì?",false);goal.setText(savedGoal);
