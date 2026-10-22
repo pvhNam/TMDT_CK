@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tutor_profile_title">Hồ sơ gia sư</string>
+    <string name="tutor_profile_no_introduction">Gia sư chưa bổ sung giới thiệu.</string>
+    <string name="tutor_profile_no_reviews">Chưa có dữ liệu đánh giá.</string>
     <string name="tutor_profile_save">Lưu gia sư</string>
     <string name="tutor_profile_unsave">Bỏ lưu gia sư</string>
     <string name="tutor_profile_saved_toast">Đã lưu gia sư vào danh sách quan tâm</string>

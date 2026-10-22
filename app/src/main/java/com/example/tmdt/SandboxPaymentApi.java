@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.function.LongSupplier;
 
-/** Classroom-only ledger. No write from this class targets the real financial collections. */
+/** Ledger for transactions returned by the VNPay TEST gateway. */
 final class SandboxPaymentApi {
     private static final ExecutorService IO=Executors.newFixedThreadPool(2);
     private static final ZoneId VN=ZoneId.of("Asia/Ho_Chi_Minh");
@@ -91,7 +91,7 @@ final class SandboxPaymentApi {
         return new SourceInfo(map("type",type,"source_id",id,"student_id",d.get("student_id"),"tutor_id",d.get("tutor_id"),"student_name",studentName,"tutor_name",tutorName,"title",title,"amount",amount,"session_count",count,"currency","VND"),end,group);
     }
     private JSONObject checkout(String uid,String type,String sourceId)throws Exception{
-        check(gateway.ready(),"Chưa có cấu hình VNPay TEST trong payment-server/.env. Build lại sau khi điền cấu hình.");
+        check(gateway.ready(),"Chưa có cấu hình VNPay TEST trong vnpay.properties. Build lại sau khi điền cấu hình.");
         String id=PaymentState.id(type,sourceId);DocumentReference ref=ref("payments",id);long now=clock.getAsLong();
         Map<String,Object> payment=Tasks.await(db.runTransaction(tx->{
             Map<String,Object> old=data(tx.get(ref));

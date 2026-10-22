@@ -162,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
         destination=exchange.redirect(destination);
         if(java.util.Arrays.asList("payments","payment_detail","tutor_income","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
         if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
-        if("post_request".equals(destination)&&!account.signedIn()){
         if("post_request".equals(destination)&&!"post_request".equals(screen))
             postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
         if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
@@ -245,8 +244,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
-        if(account.isBusy()||account.isSendingCode()||payments.busy)return false;
-        if(account.isBusy()||account.isSendingCode()||(isRequestScreen(screen)&&requestManager().busy()))return false;
+        if(account.isBusy()||account.isSendingCode()||payments.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
         else if(itemId==R.id.nav_messages)destination="messages";
@@ -419,6 +417,12 @@ public class MainActivity extends AppCompatActivity {
         openPayment(type,sourceId,lesson==null?payments.owner:lesson.studentId);
     }
     public void openPayment(String type,String sourceId,String studentId){hideKeyboard();payments.open(type,sourceId,screen,studentId);}
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);exchange.save(out);out.putString("payment_id",payments.selected);out.putString("payout_id",payments.selectedPayout);out.putString("payment_origin",payments.origin);}
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);classroom.save(out);exchange.save(out);}
+    @Override protected void onSaveInstanceState(Bundle out){
+        super.onSaveInstanceState(out);
+        out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);
+        out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);
+        out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);
+        out.putString("payment_id",payments.selected);out.putString("payout_id",payments.selectedPayout);out.putString("payment_origin",payments.origin);
+        classroom.save(out);exchange.save(out);
+    }
 }

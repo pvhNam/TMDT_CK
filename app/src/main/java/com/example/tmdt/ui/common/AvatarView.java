@@ -37,6 +37,7 @@ public final class AvatarView extends FrameLayout {
         draw();
     }
     public void bind(String userId,String displayName){
+        if(!currentAccount && uid.equals(userId==null?"":userId) && name.equals(displayName==null?"":displayName))return;
         stop();currentAccount=false;uid=userId==null?"":userId;name=displayName==null?"":displayName;
         encoded="";viewer=null;draw();if(isAttachedToWindow())refresh();
     }

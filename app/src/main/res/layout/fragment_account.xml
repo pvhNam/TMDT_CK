@@ -194,6 +194,17 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_payments" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_wallet" />
+                <TextView android:id="@+id/payments_label" style="@style/ProfileRowLabel" android:text="Thanh toán của tôi" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_income" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_coin" />
+                <TextView style="@style/ProfileRowLabel" android:text="Thu nhập gia sư" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
             <LinearLayout android:id="@+id/row_favorites" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_heart" />
                 <TextView style="@style/ProfileRowLabel" android:text="Gia sư yêu thích" />
