@@ -62,7 +62,7 @@ public final class JoinClassFragment extends ScreenFragment {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã gửi đăng ký ngày "+LocalDate.parse(sent.date).format(Lesson.DATE)+". Đăng ký đang chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,16); ui.addAction(body,ui.action("Đã gửi đăng ký",0,Ui.DISABLED,null),52);
         } else {
-            ui.add(body,ui.note(R.drawable.ic_info,"Bước tiếp theo: ký quỹ học phí và gửi đăng ký chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
+            ui.add(body,ui.note(R.drawable.ic_info,"Gửi đăng ký để gia sư duyệt trước. Khi được chấp nhận, bạn thanh toán toàn bộ khóa cho hệ thống qua VNPay.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,24); ui.addAction(body,ui.action("Tiếp tục đăng ký →",0,Ui.PRIMARY,this::submit),52);
         }
         return root;
@@ -76,10 +76,10 @@ public final class JoinClassFragment extends ScreenFragment {
         // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
         String blocked = classroom.store.registrationError(item,classroom.me());
         if (blocked != null) { classroom.dialog("Chưa gửi được đăng ký",blocked); return; }
-        classroom.ui.dialog().setTitle("Ký quỹ học phí")
-                .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
+        classroom.ui.dialog().setTitle("Gửi đăng ký khóa học")
+                .setMessage("Gia sư sẽ xét duyệt trước. Sau khi được chấp nhận, bạn thanh toán toàn bộ khóa qua VNPay: "+com.example.tmdt.PaymentState.money((long)item.price*(item.perSession?item.sessions:1))+". Tiền được chuyển về tài khoản hệ thống.")
                 .setNegativeButton("Hủy",null)
-                .setPositiveButton("Xác nhận ký quỹ",(dialog,which)->{
+                .setPositiveButton("Gửi đăng ký",(dialog,which)->{
                     // Seats may have run out while the dialog was open.
                     if (item.full()) { classroom.show("full"); return; }
                     String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective);

@@ -1,7 +1,23 @@
+import java.util.Properties
+
 plugins {
     id("com.google.gms.google-services")
     alias(libs.plugins.android.application)
 }
+
+val paymentLocalProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+}
+val paymentApiBaseUrl = providers.gradleProperty("PAYMENT_API_BASE_URL")
+    .orElse(providers.environmentVariable("PAYMENT_API_BASE_URL"))
+    .orElse(paymentLocalProperties.getProperty("PAYMENT_API_BASE_URL", ""))
+val paymentOfflineDemo = providers.gradleProperty("PAYMENT_DEMO").map { it.toBoolean() }.orElse(false).get()
+// Sandbox merchant settings stay in ignored local files and are never included in release APKs.
+val vnpayLocal = Properties().apply {
+    rootProject.file("payment-server/.env").takeIf { it.isFile }?.reader()?.use { load(it) }
+}
+fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+val clientSandbox = providers.gradleProperty("VNPAY_CLIENT_SANDBOX").map { it.toBoolean() }.orElse(true).get() && !paymentOfflineDemo
 
 android {
     namespace = "com.example.tmdt"
@@ -15,14 +31,27 @@ android {
         applicationId = "com.example.tmdt"
         minSdk = 29
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 10
+        versionName = "1.2.0"
+        buildConfigField("String", "PAYMENT_API_BASE_URL", "\"" + paymentApiBaseUrl.get().replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "VNPAY_CLIENT_SANDBOX", clientSandbox.toString())
+            buildConfigField("String", "VNPAY_TMN_CODE", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_TMN_CODE", "") else ""))
+            buildConfigField("String", "VNPAY_HASH_SECRET", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_HASH_SECRET", "") else ""))
+            if (paymentOfflineDemo) {
+                applicationIdSuffix = ".paymentdemo"
+                versionNameSuffix = "-demo"
+            }
+        }
         release {
+            buildConfigField("boolean", "VNPAY_CLIENT_SANDBOX", "false")
+            buildConfigField("String", "VNPAY_TMN_CODE", "\"\"")
+            buildConfigField("String", "VNPAY_HASH_SECRET", "\"\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -36,7 +65,22 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
+    if (paymentOfflineDemo) {
+        sourceSets.getByName("debug") {
+            manifest.srcFile("src/paymentDemo/AndroidManifest.xml")
+            java.srcDir("src/paymentDemo/java")
+            res.srcDir("src/paymentDemo/res")
+        }
+        sourceSets.maybeCreate("testDebug").java.srcDir("src/paymentDemoUnitTest/java")
+        sourceSets.getByName("androidTest").java.srcDir("src/paymentDemoAndroidTest/java")
+    }
+}
+
+// The offline APK has a separate package and does not initialize or configure Firebase.
+if (paymentOfflineDemo) {
+    tasks.matching { it.name == "processDebugGoogleServices" }.configureEach { enabled = false }
 }
 
 dependencies {
