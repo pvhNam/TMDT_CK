@@ -67,6 +67,10 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->classroom.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
+        View searchRequests=ui.action(getString(R.string.request_search_title),R.drawable.ic_field_note,Ui.PRIMARY,
+                ()->((com.example.tmdt.MainActivity)requireActivity()).openRequestSearch("tutorHome"));
+        searchRequests.setId(R.id.search_tutor_requests);
+        ui.addAction(body,searchRequests,50);ui.space(body,18);
         replies(body);
 
         requestsToggle=sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;animateRequests(pending);});

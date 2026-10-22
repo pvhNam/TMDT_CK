@@ -248,6 +248,37 @@ public final class TutorRequestManager extends ViewModel {
     public String editSavedId() { return savedText("edit_saved_id"); }
     public void consumeEditSaved() { saved.remove(PREFIX + "edit_saved_id"); }
 
+    /** UC15 chooses exactly one application and closes the request in the same transaction. */
+    public void selectApplicant(String id,String tutorId){
+        bindOwner();if(busy)return;
+        final String actor=owner();
+        if(actor.isEmpty()||!validId(id)||!validId(tutorId)){actionError="Hồ sơ ứng tuyển không hợp lệ.";changed();return;}
+        final int token=generation;busy=true;actionError="";notice="";changed();
+        DocumentReference parent=db.collection("tutor_requests").document(id);
+        DocumentReference child=parent.collection("applications").document(tutorId);
+        db.runTransaction(tx->{
+            DocumentSnapshot request=tx.get(parent);
+            DocumentSnapshot application=tx.get(child);
+            DocumentSnapshot user=tx.get(db.collection("users").document(actor));
+            requireOwner(request,user,actor);
+            if(tutorId.equals(request.get("selected_tutor_id"))&&"ACCEPTED".equals(application.get("trang_thai")))return null;
+            if(request.contains("selected_tutor_id"))throw new RequestFailure("Tin đã chọn một gia sư khác. Vui lòng tải lại danh sách.");
+            if(!"OPEN".equals(request.get("trang_thai"))&&!"CLOSED".equals(request.get("trang_thai")))throw new RequestFailure("Tin đăng không còn khả dụng.");
+            if(!application.exists()||!tutorId.equals(application.get("tutor_id"))||!"PENDING".equals(application.get("trang_thai")))
+                throw new RequestFailure("Hồ sơ không còn ở trạng thái chờ chọn.");
+            Map<String,Object> selected=new HashMap<>();selected.put("trang_thai","CLOSED");selected.put("selected_tutor_id",tutorId);
+            selected.put("selected_at",FieldValue.serverTimestamp());selected.put("updated_at",FieldValue.serverTimestamp());
+            tx.update(parent,selected);
+            tx.update(child,"trang_thai","ACCEPTED","updated_at",FieldValue.serverTimestamp());return null;
+        }).addOnCompleteListener(task->{
+            if(token!=generation||!actor.equals(owner()))return;busy=false;
+            if(task.isSuccessful())notice="Đã chọn gia sư. Tin đã đóng và ngừng nhận ứng tuyển mới.";
+            else actionError=message(task.getException(),"Chưa chọn được hồ sơ. Kiểm tra kết nối và trạng thái gia sư rồi thử lại.");
+            changed();
+        });
+    }
+    public TutorApplication applicant(String tutorId){for(TutorApplication item:applications)if(item.tutorId.equals(tutorId))return item;return null;}
+
     public void close(String id) { mutate(id, "close", null, null); }
     public void delete(String id) { mutate(id, "delete", null, null); }
 

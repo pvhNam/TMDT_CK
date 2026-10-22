@@ -6,7 +6,7 @@ import java.util.Map;
 
 /** A persisted UC11/UC12 post. Invalid optional server fields use safe display defaults. */
 public final class TutorRequestRecord {
-    public final String id, title, subjectId, subjectName, level, schedule, description, status;
+    public final String id, title, subjectId, subjectName, level, schedule, description, status, selectedTutorId, studentId;
     public final long budget, createdAtMillis;
     public final Timestamp updatedAt;
 
@@ -19,6 +19,8 @@ public final class TutorRequestRecord {
         schedule = text(data.get("lich_hoc"));
         description = text(data.get("mo_ta"));
         status = text(data.get("trang_thai"));
+        selectedTutorId = text(data.get("selected_tutor_id"));
+        studentId = text(data.get("student_id"));
         Object amount = data.get("ngan_sach");
         budget = amount instanceof Number ? Math.max(0, ((Number) amount).longValue()) : 0;
         Object updated = data.get("updated_at");
