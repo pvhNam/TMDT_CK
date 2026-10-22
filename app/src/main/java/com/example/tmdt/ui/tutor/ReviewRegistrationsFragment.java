@@ -34,6 +34,14 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         if (item.cancelled()) {
             ui.add(body,ui.note(R.drawable.ic_info,"Lớp đã hủy · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
         }
+        if (item.active() && item.online()) {
+            ui.section(body,"Phòng học trực tuyến",18); ui.space(body,8);
+            ui.add(body,TeachingScheduleFragment.linkRow(ui,item.roomLink,item.roomHost(),
+                    ()->TeachingScheduleFragment.editClassLink(classroom,item,()->classroom.show("review")))); ui.space(body,10);
+            ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                    :ui.action("Phòng mở trước giờ học 10 phút",0,Ui.DISABLED,null),44);
+            ui.space(body,16);
+        }
 
         LinearLayout titleRow = ui.row(); heading = ui.text("",20,Ui.INK,true); ui.weight(titleRow,heading);
         sort = ui.link("",14,()->{newestFirst=!newestFirst;render();com.example.tmdt.ui.common.Motion.reveal(list);}); sort.setTextColor(Ui.MUTED); titleRow.addView(sort);

@@ -60,7 +60,8 @@ public final class JoinClassFragment extends ScreenFragment {
             ui.addAction(body,ui.action("Lớp đã hủy",0,Ui.DISABLED,null),52);
         } else if (member) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã là thành viên của lớp này.",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(body,16);
-            ui.addAction(body,ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
+            ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                    :ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
         } else if (sent != null) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã gửi đăng ký ngày "+LocalDate.parse(sent.date).format(Lesson.DATE)+". Đăng ký đang chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,16); ui.addAction(body,ui.action("Đã gửi đăng ký",0,Ui.DISABLED,null),52);

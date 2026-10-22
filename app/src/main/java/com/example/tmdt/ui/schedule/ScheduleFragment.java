@@ -45,20 +45,20 @@ public final class ScheduleFragment extends ScreenFragment {
                     // Registrations still waiting when the class stopped recruiting are closed without the tutor's answer.
                     String note=waiting?"Đăng ký gửi ngày "+sent+".":item.cancelled()?"Lớp đã bị gia sư hủy nên đăng ký gửi ngày "+sent+" không được duyệt.":GroupClass.OPEN.equals(item.status)?"Gia sư đã từ chối đăng ký gửi ngày "+sent+"."
                             :"Lớp đã đóng tuyển sinh nên đăng ký gửi ngày "+sent+" không được duyệt.";
-                    visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
+                    visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
                             waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),note)));
                 }
             } else if(item.members.contains(classroom.me())) {
                 if(item.cancelled()) {
-                    if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,item.scheduleLabel(),
+                    if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,item.scheduleLabel(),
                             ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+". Học phí ký quỹ đang chờ hoàn tiền.")));
                     continue;
                 }
                 for(GroupClass.Session session:item.sessionList()) {
                     if(tab==2?!session.ended():session.ended()||!item.active())continue;
-                    visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),
+                    visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minute,item.minutes),
                             ui.pill("Buổi "+session.number+"/"+item.sessions,14,tab==2?Ui.MUTED:Ui.GREEN,tab==2?0xFFEEF2F7:Ui.GREEN_BG),
-                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.")));
+                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",item.online()&&session.roomOpen())));
                 }
             }
         }
@@ -109,7 +109,8 @@ public final class ScheduleFragment extends ScreenFragment {
     }
 
     /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
-    private View classCard(GroupClass item, String when, TextView status, String note) {
+    private View classCard(GroupClass item, String when, TextView status, String note) { return classCard(item,when,status,note,false); }
+    private View classCard(GroupClass item, String when, TextView status, String note, boolean live) {
         LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
         row.addView(ui.photo(item.art(),null,73,77,12));ui.gap(row,14);
@@ -122,10 +123,11 @@ public final class ScheduleFragment extends ScreenFragment {
         ui.add(details,ui.fact(R.drawable.ic_users,item.mode+" · Lớp nhóm",18,15,Ui.MUTED,false));
         ui.weight(row,details);ui.add(card,row);ui.space(card,9);
         String summary=note+"\n\n"+item.subject+" · "+item.level+"\nLịch học: "+item.scheduleLabel()+"\nKhai giảng: "+item.startLabel()+" · "+item.sessions+" buổi\n"
-                +item.mode+(item.address.isEmpty()?"":" · "+item.address)+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
+                +item.mode+(item.address.isEmpty()?"":" · "+item.address)+(item.online()?"\nPhòng học: "+(item.roomLink.isEmpty()?"phòng Jitsi của app":item.roomHost()):"")+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
         LinearLayout actions=ui.row();
         ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(item.tutorName)),38);ui.gap(actions,9);
-        ui.weightAction(actions,ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
+        ui.weightAction(actions,live?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                :ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
         ui.add(card,actions);return card;
     }
 

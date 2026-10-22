@@ -61,6 +61,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         ui.tableRow(details,R.drawable.ic_file,"Số buổi",item.sessions+" buổi");
         ui.tableRow(details,item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,"Hình thức",item.mode);
         if (!item.address.isEmpty()) ui.tableRow(details,R.drawable.ic_pin,"Địa điểm",item.address);
+        if (item.online()) ui.tableRow(details,R.drawable.ic_video,"Phòng học",item.roomLink.isEmpty()?"Phòng của app":item.roomHost());
         ui.tableRow(details,R.drawable.ic_coin,"Học phí",item.priceLabel());
         ui.tableRow(details,R.drawable.ic_users,"Sĩ số",item.members.size()+"/"+item.capacity+" học viên");
         ui.tableRow(details,R.drawable.ic_info,"Trạng thái lớp",classStatus());
@@ -113,6 +114,8 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         ui.weightAction(row,ui.action("Nhắn tin",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(item.tutorName)),48); ui.gap(row,10);
         if (item.cancelled())
             ui.weightAction(row,ui.action("Tìm lớp tương tự",0,Ui.PRIMARY,()->{classroom.similarSubject=item.subject;classroom.show("groups");}),48);
+        else if (group == RegistrationHistoryFragment.ACCEPTED && item.roomOpen())
+            ui.weightAction(row,ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item)),48);
         else if (group == RegistrationHistoryFragment.ACCEPTED)
             ui.weightAction(row,ui.action("Xem lịch học",0,Ui.PRIMARY,()->{classroom.scheduleTab=0;classroom.show("schedule");}),48);
         else if (group == RegistrationHistoryFragment.WAITING)

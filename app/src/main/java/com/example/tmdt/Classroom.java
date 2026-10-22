@@ -287,8 +287,17 @@ public final class Classroom {
     }
     public void openRoom(Lesson lesson){
         if(!lesson.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
-        try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(lesson.roomUrl())));}
-        catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+lesson.roomUrl());}
+        openUrl(lesson.roomUrl());
+    }
+    /** A group class has one room for its tutor and members, open around each session. */
+    public void openClassRoom(GroupClass item){
+        if(!item.tutorId.equals(me())&&!item.members.contains(me())){dialog("Phòng học trực tuyến","Chỉ gia sư và học viên của lớp mới vào được phòng học.");return;}
+        if(!item.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
+        openUrl(item.roomUrl());
+    }
+    private void openUrl(String url){
+        try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}
+        catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+url);}
     }
     /**
      * "Nhắn tin" (UC21, member 4): mở màn 06 với người có tên này, kèm buổi học còn hiệu lực gần nhất giữa hai người.

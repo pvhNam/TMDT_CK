@@ -47,13 +47,17 @@ public final class Lesson {
     /** The online room opens ten minutes before the start, as noted on screen 12. */
     public boolean roomOpen() { LocalDateTime now = LocalDateTime.now(); return confirmed() && !now.isBefore(start().minusMinutes(10)) && now.isBefore(end()); }
     public boolean online() { return !"Tại nhà".equals(mode); }
-    public String roomHost() {
-        try { String host = new java.net.URI(roomLink).getHost(); return host == null ? roomLink : host.replaceFirst("^www\\.",""); }
-        catch (java.net.URISyntaxException invalid) { return roomLink; }
+    public String roomHost() { return hostOf(roomLink); }
+    public String roomUrl() { return urlOf(roomLink,"https://meet.jit.si/TMDT-"+id); }
+    /** Domain of a pasted room link without "www.", used to show where the room opens. */
+    static String hostOf(String link) {
+        try { String host = new java.net.URI(link).getHost(); return host == null ? link : host.replaceFirst("^www\\.",""); }
+        catch (java.net.URISyntaxException invalid) { return link; }
     }
-    public String roomUrl() {
-        if (roomLink.isEmpty()) return "https://meet.jit.si/TMDT-" + id;
-        return roomLink.matches("(?i)https?://.*") ? roomLink : "https://" + roomLink;
+    /** The pasted link, or the app's own room when none was pasted. */
+    static String urlOf(String link, String fallback) {
+        if (link.isEmpty()) return fallback;
+        return link.matches("(?i)https?://.*") ? link : "https://" + link;
     }
     /** An answer the tutor should still see: the lesson has not started and no newer proposal is waiting. */
     public boolean replied() { return !reply.isEmpty() && !proposal() && !started(); }
