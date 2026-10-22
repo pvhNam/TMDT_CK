@@ -31,6 +31,9 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         summary = ui.text("",18,Ui.INK,false); ui.add(info,summary); ui.space(info,8);
         ui.add(info,ui.text("▣ "+item.sessions+" buổi · "+item.mode,16,Ui.INK,false)); ui.space(info,6);
         ui.add(info,ui.text("▦ "+item.scheduleLabel(),15,Ui.INK,false)); ui.weight(card,info); ui.add(body,card); ui.space(body,16);
+        if (item.cancelled()) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Lớp đã hủy · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
+        }
 
         LinearLayout titleRow = ui.row(); heading = ui.text("",20,Ui.INK,true); ui.weight(titleRow,heading);
         sort = ui.link("",14,()->{newestFirst=!newestFirst;render();com.example.tmdt.ui.common.Motion.reveal(list);}); sort.setTextColor(Ui.MUTED); titleRow.addView(sort);
@@ -45,6 +48,10 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
             ui.weightAction(actions,ui.action("Chỉnh sửa lớp",R.drawable.ic_edit,Ui.OUTLINE,()->classroom.openClass(item,"openClass")),42); ui.gap(actions,10);
             ui.weightAction(actions,ui.action("⊘  Đóng tuyển",0,Ui.DANGER,()->OpenedClassesFragment.close(classroom,item)),42);
             ui.add(body,actions);
+        }
+        if (item.cancellable()) {
+            TextView cancel = ui.link("Hủy lớp học",16,()->classroom.openClass(item,"cancelClass")); cancel.setTextColor(Ui.RED);
+            cancel.setGravity(Gravity.CENTER); ui.space(body,10); ui.add(body,cancel);
         }
         render();
         return root;

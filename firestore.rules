@@ -383,7 +383,7 @@ service cloud.firestore {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','ten_lop','mon_hoc','cap_hoc','hinh_thuc','dia_chi','mo_ta','ngay_bat_dau','thu','gio','thoi_luong',
           'so_buoi','hoc_phi','tinh_theo_buoi','suc_chua','thanh_vien','trang_thai','hinh_minh_hoa','created_at','updated_at'];
-        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+        return d.keys().hasOnly(keys.concat(['ly_do_huy'])) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100
           && d.ten_lop is string && d.ten_lop.size() > 0 && d.ten_lop.size() <= 60
           && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 50 && d.cap_hoc is string && d.cap_hoc.size() <= 40
@@ -397,18 +397,30 @@ service cloud.firestore {
           && d.so_buoi is int && d.so_buoi >= 1 && d.so_buoi <= 12
           && d.hoc_phi is int && d.hoc_phi >= 50000 && d.hoc_phi <= 10000000 && d.tinh_theo_buoi is bool
           && d.suc_chua is int && d.suc_chua >= 2 && d.suc_chua <= 10 && d.thanh_vien is list && d.thanh_vien.size() <= d.suc_chua
-          && d.trang_thai in ['OPEN', 'RUNNING', 'ENDED'] && d.hinh_minh_hoa is int
+          && d.trang_thai in ['OPEN', 'RUNNING', 'ENDED', 'CANCELLED'] && d.hinh_minh_hoa is int
+          && d.get('ly_do_huy', '') is string && d.get('ly_do_huy', '').size() <= 150
           && stamped();
+      }
+      // The tutor cancels a class still recruiting or running; only the status and the reason change.
+      function cancelledClass() {
+        return resource.data.trang_thai in ['OPEN', 'RUNNING'] && request.resource.data.trang_thai == 'CANCELLED'
+          && request.resource.data.get('ly_do_huy', '').size() > 0
+          && changed(['trang_thai', 'ly_do_huy', 'updated_at']);
       }
       allow read: if true;
       allow create: if signedIn() && validClass() && verifiedTutor(request.auth.uid)
         && request.resource.data.trang_thai == 'OPEN' && request.resource.data.thanh_vien.size() == 0
+        && request.resource.data.get('ly_do_huy', '') == ''
         && request.resource.data.created_at == request.time;
-      allow update: if signedIn() && validClass() && resource.data.tutor_id == request.auth.uid && resource.data.trang_thai != 'ENDED'
-        && !('created_at' in request.resource.data.diff(resource.data).affectedKeys())
-        && (request.resource.data.trang_thai == resource.data.trang_thai || resource.data.trang_thai == 'OPEN'
-          || request.resource.data.trang_thai == 'ENDED')
-        && request.resource.data.thanh_vien.hasAll(resource.data.thanh_vien);
+      allow update: if signedIn() && validClass() && resource.data.tutor_id == request.auth.uid
+        && !(resource.data.trang_thai in ['ENDED', 'CANCELLED'])
+        && (cancelledClass()
+          || (request.resource.data.trang_thai != 'CANCELLED'
+            && request.resource.data.get('ly_do_huy', '') == resource.data.get('ly_do_huy', '')
+            && !('created_at' in request.resource.data.diff(resource.data).affectedKeys())
+            && (request.resource.data.trang_thai == resource.data.trang_thai || resource.data.trang_thai == 'OPEN'
+              || request.resource.data.trang_thai == 'ENDED')
+            && request.resource.data.thanh_vien.hasAll(resource.data.thanh_vien)));
     }
     match /class_registrations/{registrationId} {
       function validRegistration() {

@@ -43,8 +43,8 @@ import java.util.Set;
  */
 public final class Classroom {
     private static final Set<String> PRIVATE = new HashSet<>(Arrays.asList("schedule","booking","trial","lesson","confirm","cancel",
-            "reschedule","join","registrations","registration","tutorHome","teaching","classes","openClass","review"));
-    private static final Set<String> TUTOR = new HashSet<>(Arrays.asList("tutorHome","teaching","classes","openClass","review"));
+            "reschedule","join","registrations","registration","tutorHome","teaching","classes","openClass","review","cancelClass"));
+    private static final Set<String> TUTOR = new HashSet<>(Arrays.asList("tutorHome","teaching","classes","openClass","review","cancelClass"));
     /** Screens without text fields, rebuilt as soon as Firestore sends new data. */
     private static final Set<String> LIVE = new HashSet<>(Arrays.asList("schedule","lesson","reschedule","groups","full","registrations","registration",
             "tutorHome","teaching","classes","review"));
@@ -132,6 +132,17 @@ public final class Classroom {
             if(before!=null&&!before.equals(lesson.reply)&&lesson.replied())notice(lesson.replyText());
         }
     }
+    /** Last known status of the classes the user joined or applied to, to announce a cancellation while the app is open. */
+    private final Map<String,String> classStates=new HashMap<>();
+    private void announceClasses(){
+        for(GroupClass item:store.classes){
+            boolean mine=item.members.contains(me());
+            for(GroupClass.Registration registration:item.registrations)mine|=registration.studentId.equals(me());
+            if(!mine)continue;
+            String before=classStates.put(item.id,item.status);
+            if(before!=null&&!before.equals(item.status)&&item.cancelled())notice("Lớp \""+item.title+"\" đã bị gia sư hủy.");
+        }
+    }
     public boolean replySeen(Lesson lesson){
         return preferences.getStringSet("reply_seen_"+me(),new HashSet<>()).contains(lesson.id+":"+lesson.reply);
     }
@@ -141,7 +152,7 @@ public final class Classroom {
     }
 
     private void changed(){
-        announceReplies();
+        announceReplies();announceClasses();
         String error=cloud.takeError();
         if(!error.isEmpty())dialog("Lịch học và lớp nhóm",error);
         if(LIVE.contains(host.screen))show(host.screen);
@@ -163,7 +174,7 @@ public final class Classroom {
     private boolean missingSelection(String destination){
         switch(destination){
             case "lesson":case "confirm":case "cancel":case "reschedule":return store.lesson(lessonId)==null;
-            case "join":case "full":case "review":case "registration":return store.groupClass(classId)==null;
+            case "join":case "full":case "review":case "registration":case "cancelClass":return store.groupClass(classId)==null;
             case "booking":case "trial":return Tutor.get(tutorKey)==null;
             default:return false;
         }
@@ -188,13 +199,14 @@ public final class Classroom {
             case "classes":return new OpenedClassesFragment();
             case "openClass":return new OpenClassFragment();
             case "review":return new ReviewRegistrationsFragment();
+            case "cancelClass":return new com.example.tmdt.ui.tutor.CancelClassFragment();
             default:return null;
         }
     }
     boolean mainScreen(String screen){
         switch(screen){
             case "tutorHome":case "teaching":case "classes":case "groups":
-            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":case "registrations":case "registration":return true;
+            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":case "registrations":case "registration":case "cancelClass":return true;
             default:return false;
         }
     }
@@ -203,7 +215,7 @@ public final class Classroom {
         menu.findItem(R.id.nav_home).setTitle(tutorMode()?R.string.page_tutor_home:R.string.page_home);
         menu.findItem(R.id.nav_schedule).setTitle(tutorMode()?R.string.page_teaching:R.string.page_schedule);
         switch(screen){
-            case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":return R.id.nav_home;
+            case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":case "cancelClass":return R.id.nav_home;
             case "teaching":case "lesson":case "confirm":case "cancel":case "reschedule":return R.id.nav_schedule;
             case "registrations":case "registration":return "schedule".equals(registrationsOrigin)?R.id.nav_schedule:R.id.nav_home;
             default:return fallback;
@@ -219,6 +231,7 @@ public final class Classroom {
             case "confirm":case "cancel":case "reschedule":return "lesson";
             case "join":case "full":return "groups";
             case "openClass":case "review":return "classes";
+            case "cancelClass":return "review";
             case "registrations":return registrationsOrigin;
             case "registration":return "registrations";
             default:return null;

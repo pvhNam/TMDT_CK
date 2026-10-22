@@ -179,6 +179,7 @@ public final class Store {
     /** Why the student cannot register for the class, or null; checked before the deposit and again when saving. */
     public String registrationError(GroupClass item, String student) {
         if (item.tutorId.equals(student)) return "Bạn là gia sư của lớp này.";
+        if (item.cancelled()) return "Lớp đã bị gia sư hủy.";
         if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh.";
         if (item.full()) return "Lớp đã đủ chỗ.";
         if (item.members.contains(student)) return "Bạn đã là thành viên của lớp này.";
@@ -211,6 +212,16 @@ public final class Store {
         registration.status = Lesson.REJECTED; remote.save(registration); return null;
     }
     public void closeRecruiting(GroupClass item) { item.status = GroupClass.RUNNING; remote.save(item, closeWaiting(item)); }
+    /** The tutor cancels a class that has not ended; registrations still waiting close and members see the reason. */
+    public String cancelClass(GroupClass item, String reason) {
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới hủy được lớp.";
+        if (!item.cancellable()) return "Lớp đã kết thúc hoặc đã bị hủy.";
+        String text = reason.trim();
+        if (text.isEmpty()) return "Vui lòng nhập lý do hủy lớp.";
+        if (text.length() > 150) return "Lý do hủy tối đa 150 ký tự.";
+        item.status = GroupClass.CANCELLED; item.cancelReason = text;
+        remote.save(item, closeWaiting(item)); return null;
+    }
 
     /**
      * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer

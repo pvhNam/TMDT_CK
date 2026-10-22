@@ -9,7 +9,7 @@ import java.util.Map;
 
 /** A group class with a member limit (UC16–UC20), Firestore "group_classes"; members are student uids. */
 public final class GroupClass {
-    public static final String OPEN = "OPEN", RUNNING = "RUNNING", ENDED = "ENDED";
+    public static final String OPEN = "OPEN", RUNNING = "RUNNING", ENDED = "ENDED", CANCELLED = "CANCELLED";
     public static final String[] DAYS = {"Thứ Hai","Thứ Ba","Thứ Tư","Thứ Năm","Thứ Sáu","Thứ Bảy","Chủ nhật"};
 
     /** A student's request to join (Firestore "class_registrations"); seats are only taken once the tutor accepts it. */
@@ -40,6 +40,8 @@ public final class GroupClass {
 
     public final String id, tutorId, tutorName;
     public String title, subject, level, mode, address, description, startDate, status;
+    /** Why the tutor cancelled the class; empty unless it is cancelled. */
+    public String cancelReason = "";
     public int sessions, price, capacity, hour, minutes, art;
     public boolean perSession;
     public int[] days;
@@ -59,7 +61,10 @@ public final class GroupClass {
     }
 
     /** An ended class no longer holds sessions, so it takes no time slot. */
-    public boolean active() { return !ENDED.equals(status); }
+    public boolean active() { return !ENDED.equals(status) && !CANCELLED.equals(status); }
+    public boolean cancelled() { return CANCELLED.equals(status); }
+    /** Only a class that is still recruiting or running can be cancelled, and never after its last session. */
+    public boolean cancellable() { return (OPEN.equals(status) || RUNNING.equals(status)) && !over(); }
     /** Members and students whose registration is still waiting both keep the class's time slot. */
     public boolean attends(String student) { return members.contains(student) || registrationOf(student) != null; }
 
@@ -137,14 +142,14 @@ public final class GroupClass {
         data.put("hinh_thuc",mode); data.put("dia_chi",address); data.put("mo_ta",description); data.put("ngay_bat_dau",startDate);
         List<Integer> dayList = new ArrayList<>(); for (int day : days) dayList.add(day); data.put("thu",dayList);
         data.put("gio",hour); data.put("thoi_luong",minutes); data.put("so_buoi",sessions); data.put("hoc_phi",price); data.put("tinh_theo_buoi",perSession);
-        data.put("suc_chua",capacity); data.put("thanh_vien",new ArrayList<>(members)); data.put("trang_thai",status); data.put("hinh_minh_hoa",art);
+        data.put("suc_chua",capacity); data.put("thanh_vien",new ArrayList<>(members)); data.put("trang_thai",status); data.put("hinh_minh_hoa",art); data.put("ly_do_huy",cancelReason);
         return data;
     }
     public static GroupClass from(String id, Map<String,Object> data) {
         GroupClass item = new GroupClass(id,Lesson.text(data,"tutor_id"),Lesson.text(data,"ten_gia_su"));
         item.title=Lesson.text(data,"ten_lop"); item.subject=Lesson.text(data,"mon_hoc"); item.level=Lesson.text(data,"cap_hoc");
         item.mode=Lesson.text(data,"hinh_thuc"); item.address=Lesson.text(data,"dia_chi"); item.description=Lesson.text(data,"mo_ta");
-        item.startDate=Lesson.text(data,"ngay_bat_dau"); item.status=Lesson.text(data,"trang_thai");
+        item.startDate=Lesson.text(data,"ngay_bat_dau"); item.status=Lesson.text(data,"trang_thai"); item.cancelReason=Lesson.text(data,"ly_do_huy");
         item.hour=Lesson.number(data,"gio"); item.minutes=Lesson.number(data,"thoi_luong"); item.sessions=Lesson.number(data,"so_buoi");
         item.price=Lesson.number(data,"hoc_phi"); item.perSession=Boolean.TRUE.equals(data.get("tinh_theo_buoi"));
         item.capacity=Lesson.number(data,"suc_chua"); item.art=Lesson.number(data,"hinh_minh_hoa");

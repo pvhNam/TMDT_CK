@@ -43,12 +43,17 @@ public final class ScheduleFragment extends ScreenFragment {
                     boolean waiting=registration.pending();
                     String sent=LocalDate.parse(registration.date).format(Lesson.DATE);
                     // Registrations still waiting when the class stopped recruiting are closed without the tutor's answer.
-                    String note=waiting?"Đăng ký gửi ngày "+sent+".":GroupClass.OPEN.equals(item.status)?"Gia sư đã từ chối đăng ký gửi ngày "+sent+"."
+                    String note=waiting?"Đăng ký gửi ngày "+sent+".":item.cancelled()?"Lớp đã bị gia sư hủy nên đăng ký gửi ngày "+sent+" không được duyệt.":GroupClass.OPEN.equals(item.status)?"Gia sư đã từ chối đăng ký gửi ngày "+sent+"."
                             :"Lớp đã đóng tuyển sinh nên đăng ký gửi ngày "+sent+" không được duyệt.";
                     visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
                             waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),note)));
                 }
             } else if(item.members.contains(classroom.me())) {
+                if(item.cancelled()) {
+                    if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,0),classCard(item,item.scheduleLabel(),
+                            ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+". Học phí ký quỹ đang chờ hoàn tiền.")));
+                    continue;
+                }
                 for(GroupClass.Session session:item.sessionList()) {
                     if(tab==2?!session.ended():session.ended()||!item.active())continue;
                     visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),
