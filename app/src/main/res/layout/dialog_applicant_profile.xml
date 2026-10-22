@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@android:color/white" android:padding="20dp">
+    <TextView style="@style/ScreenTitle" android:text="@string/applicant_profile_title" android:textSize="22sp" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <ProgressBar android:id="@+id/applicant_profile_progress" android:layout_width="32dp" android:layout_height="32dp" android:visibility="gone" />
+            <TextView android:id="@+id/applicant_profile_status" style="@style/FieldLabel" android:accessibilityLiveRegion="polite" />
+            <TextView android:id="@+id/applicant_profile_error" style="@style/BodyText" android:textColor="#B3261E" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+            <TextView android:id="@+id/applicant_profile_name" style="@style/ScreenTitle" android:textSize="20sp" />
+            <TextView android:id="@+id/applicant_profile_information" style="@style/BodyText" android:textIsSelectable="true" />
+            <TextView style="@style/FieldLabel" android:text="@string/applicant_message_label" />
+            <TextView android:id="@+id/applicant_profile_message" style="@style/BodyText" android:textIsSelectable="true" />
+            <TextView style="@style/FieldLabel" android:text="@string/applicant_offerings_label" />
+            <TextView android:id="@+id/applicant_profile_offerings" style="@style/BodyText" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/retry_applicant_profile" style="@style/SecondaryButton" android:text="@string/requests_retry" android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+    <com.google.android.material.button.MaterialButton android:id="@+id/choose_applicant" style="@style/PrimaryButton" android:text="@string/applicant_choose" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/close_applicant_profile" style="@style/SecondaryButton" android:text="@string/close" />
+</LinearLayout>

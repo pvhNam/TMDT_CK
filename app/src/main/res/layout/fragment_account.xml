@@ -176,6 +176,18 @@
                 <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline" android:text="@string/page_otp" android:contentDescription="@string/page_otp" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/reset" style="@style/ReferenceOutline" android:text="@string/reset_password" android:contentDescription="@string/reset_password" />
                     </LinearLayout>
+            <LinearLayout android:id="@+id/row_search_requests" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_field_note" />
+                <TextView style="@style/ProfileRowLabel" android:text="@string/request_search_title" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/search_requests_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <LinearLayout android:id="@+id/row_requests" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_field_note" />
+                <TextView style="@style/ProfileRowLabel" android:text="@string/manage_requests_title" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_contracts" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_doc" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_contracts" />

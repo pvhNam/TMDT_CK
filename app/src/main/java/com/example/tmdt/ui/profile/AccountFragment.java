@@ -25,6 +25,8 @@ public final class AccountFragment extends AccountFragmentBase {
         });
         View.OnClickListener soon=v->Toast.makeText(requireContext(),"Tính năng sắp ra mắt",Toast.LENGTH_SHORT).show();
         binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
+        binding.rowRequests.setOnClickListener(v->host().openMyRequests("account"));
+        binding.rowSearchRequests.setOnClickListener(v->host().openRequestSearch("account"));
         binding.rowContracts.setOnClickListener(v->host().exchange.openContracts()); // UC23: Hợp đồng của tôi
         binding.rowPayments.setOnClickListener(v->go("payments"));
         binding.rowIncome.setOnClickListener(v->go("tutor_income"));
@@ -72,6 +74,9 @@ public final class AccountFragment extends AccountFragmentBase {
         com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
         if("ADMIN".equals(profile.role)){binding.tutorAction.setText("Duyệt hồ sơ gia sư");binding.tutorTitle.setText("Quản trị gia sư");binding.tutorCaption.setText("Kiểm tra minh chứng và cập nhật kết quả xét duyệt.");}
         else if(profile.tutor&&!"VERIFIED".equals(review.status())){binding.tutorAction.setText("Theo dõi hồ sơ gia sư");binding.tutorCaption.setText("Xem trạng thái xét duyệt và yêu cầu bổ sung.");}
+        boolean canSearch=profile.tutor&&"ACTIVE".equals(profile.status)&&"VERIFIED".equals(review.status());
+        binding.rowSearchRequests.setVisibility(canSearch?View.VISIBLE:View.GONE);
+        binding.searchRequestsDivider.setVisibility(canSearch?View.VISIBLE:View.GONE);
         binding.role.setText("ADMIN".equals(profile.role)?R.string.role_admin:host().classroom.tutorMode()?R.string.role_tutor:R.string.role_student);
         value(binding.email,profile.email);value(binding.phone,profile.phone);value(binding.address,profile.address);
         value(binding.level,profile.level);value(binding.region,profile.region);value(binding.goal,profile.goal);

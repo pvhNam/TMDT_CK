@@ -39,6 +39,7 @@ public final class HomeFragment extends Fragment {
         binding.account.setOnClickListener(v->host().show("account"));
         binding.groupClasses.setOnClickListener(v->host().show("groups"));
         binding.postTutorRequest.setOnClickListener(v->host().show("post_request"));
+        binding.manageTutorRequests.setOnClickListener(v->host().openMyRequests("home"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
         binding.clearSearch.setOnClickListener(v -> {
             catalog.subject("");

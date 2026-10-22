@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    app:cardCornerRadius="20dp" app:cardBackgroundColor="@android:color/white" app:cardElevation="0dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="vertical" android:padding="20dp">
+        <TextView style="@style/ScreenTitle" android:text="@string/request_search_details_title" android:textSize="22sp" />
+        <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ProgressBar android:id="@+id/request_details_progress" android:layout_width="32dp"
+                    android:layout_height="32dp" android:layout_gravity="center_horizontal"
+                    android:contentDescription="@string/request_search_loading" android:visibility="gone" />
+                <TextView android:id="@+id/request_details_offline" style="@style/BodyText"
+                    android:text="@string/request_search_offline" android:accessibilityLiveRegion="polite"
+                    android:visibility="gone" />
+                <TextView android:id="@+id/request_details_unavailable" style="@style/BodyText"
+                    android:background="@drawable/bg_pale" android:padding="16dp"
+                    android:accessibilityLiveRegion="polite" android:visibility="gone" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/retry_request_details"
+                    style="@style/SecondaryButton" android:text="@string/request_search_retry"
+                    android:visibility="gone" />
+                <LinearLayout android:id="@+id/request_details_content" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_status_open"
+                        android:textColor="#236B42" android:layout_marginBottom="16dp" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_title_label" />
+                    <TextView android:id="@+id/request_detail_title" style="@style/BodyText"
+                        android:textIsSelectable="true" android:textColor="#081F50" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_subject" />
+                    <TextView android:id="@+id/request_detail_subject" style="@style/BodyText" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_level_label" />
+                    <TextView android:id="@+id/request_detail_level" style="@style/BodyText" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_budget_label" />
+                    <TextView android:id="@+id/request_detail_budget" style="@style/BodyText" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_schedule_label" />
+                    <TextView android:id="@+id/request_detail_schedule" style="@style/BodyText" android:textIsSelectable="true" />
+                    <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_description_label" />
+                    <TextView android:id="@+id/request_detail_description" style="@style/BodyText" android:textIsSelectable="true" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/application_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <TextView style="@style/FieldLabel" android:text="@string/application_title" />
+                    <ProgressBar android:id="@+id/application_progress" android:layout_width="32dp" android:layout_height="32dp" android:visibility="gone" />
+                    <TextView android:id="@+id/application_status" style="@style/BodyText" android:accessibilityLiveRegion="polite" />
+                    <TextView android:id="@+id/application_error" style="@style/BodyText" android:textColor="#B3261E" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+                    <EditText android:id="@+id/application_message" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="120dp" android:gravity="top|start" android:inputType="textCapSentences|textMultiLine" android:maxLength="2000" android:hint="@string/application_message_hint" android:padding="12dp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/apply_request" style="@style/PrimaryButton" android:text="@string/application_submit" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/retry_application" style="@style/SecondaryButton" android:text="@string/requests_retry" android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+        <com.google.android.material.button.MaterialButton android:id="@+id/close_request_details"
+            style="@style/SecondaryButton" android:text="@string/close" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

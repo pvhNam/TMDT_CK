@@ -159,6 +159,10 @@
             android:id="@+id/post_tutor_request"
             style="@style/PrimaryButton"
             android:text="@string/request_heading" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/manage_tutor_requests"
+            style="@style/SecondaryButton"
+            android:text="@string/manage_requests_title" />
         <TextView
             style="@style/BodyText"
             android:layout_marginTop="6dp"

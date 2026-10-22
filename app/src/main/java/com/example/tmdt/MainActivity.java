@@ -43,6 +43,10 @@ public class MainActivity extends AppCompatActivity {
     String screen="home";
     private String pendingDestination;
     private String authenticatedDestination;
+    private String selectedRequestId="";
+    private String requestManagementOrigin="home";
+    private String postRequestOrigin="home";
+    private String requestSearchOrigin="home";
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean keyboardVisible;
@@ -98,7 +102,13 @@ public class MainActivity extends AppCompatActivity {
         String initial=!intro.introduced()?"welcome":intro.pending()&&!account.signedIn()?"register":"home";
         screen=savedInstanceState==null?initial:savedInstanceState.getString("screen",initial);
         authenticatedDestination=savedInstanceState==null?null:savedInstanceState.getString("authenticated_destination");
-        if(getIntent()!=null&&getIntent().hasExtra("screen")){
+        if(savedInstanceState!=null){
+            selectedRequestId=savedInstanceState.getString("request_id","");
+            requestManagementOrigin=savedInstanceState.getString("request_origin","home");
+            postRequestOrigin=savedInstanceState.getString("post_request_origin","home");
+            requestSearchOrigin=savedInstanceState.getString("request_search_origin","home");
+        }
+        if(savedInstanceState==null&&getIntent()!=null&&getIntent().hasExtra("screen")){
             screen=getIntent().getStringExtra("screen");
             if(getIntent().hasExtra("tutor_id")) classroom.tutorProfileId=getIntent().getStringExtra("tutor_id");
         }
@@ -153,8 +163,13 @@ public class MainActivity extends AppCompatActivity {
         if(java.util.Arrays.asList("payments","payment_detail","tutor_income","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
         if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
         if("post_request".equals(destination)&&!account.signedIn()){
+        if("post_request".equals(destination)&&!"post_request".equals(screen))
+            postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
+        if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
             authenticatedDestination=destination;destination="login";
         }
+        if(("edit_request".equals(destination)||"request_applicants".equals(destination))&&selectedRequestId.isEmpty())
+            destination="my_requests";
         // Màn 06 cần đăng nhập và một hội thoại đang mở (UC21).
         if("chat".equals(destination)&&(!account.signedIn()||chat.openId()==null))destination=account.signedIn()?"messages":"login";
         if(!account.signedIn()&&(destination.equals("account")
@@ -204,6 +219,10 @@ public class MainActivity extends AppCompatActivity {
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
             case "post_request":fragment=new com.example.tmdt.ui.requests.PostTutorRequestFragment();break;
+            case "my_requests":fragment=new com.example.tmdt.ui.requests.ManageTutorRequestsFragment();break;
+            case "search_requests":fragment=new com.example.tmdt.ui.requests.SearchTutorRequestsFragment();break;
+            case "edit_request":fragment=com.example.tmdt.ui.requests.EditTutorRequestFragment.newInstance(selectedRequestId);break;
+            case "request_applicants":fragment=com.example.tmdt.ui.requests.RequestApplicantsFragment.newInstance(selectedRequestId);break;
             case "chat":fragment=new ChatFragment();break;
             case "tutor_profile":fragment=com.example.tmdt.ui.home.TutorProfileFragment.newInstance(classroom.tutorProfileId);break;
             default:destination="home";fragment=new HomeFragment();
@@ -227,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
         if(account.isBusy()||account.isSendingCode()||payments.busy)return false;
+        if(account.isBusy()||account.isSendingCode()||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
         else if(itemId==R.id.nav_messages)destination="messages";
@@ -250,6 +270,8 @@ public class MainActivity extends AppCompatActivity {
         if("schedule".equals(screen))selected=R.id.nav_schedule;
         else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
         else if(!"home".equals(screen))selected=R.id.nav_account;
+        if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
+        if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
         selected=classroom.navigationItem(menu,screen,selected);
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
@@ -283,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
     public void back(){
+        if(account.isBusy()||(isRequestScreen(screen)&&requestManager().busy()))return;hideKeyboard();
         if(account.isBusy()||payments.busy)return;hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
@@ -309,11 +332,43 @@ public class MainActivity extends AppCompatActivity {
             case "tutor_evidence":show("register_tutor");break;
             case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
             case "tutor_pending":case "admin_tutors":show("account");break;
-            case "post_request":show("home");break;
+            case "post_request":show(postRequestOrigin);break;
+            case "edit_request":requestManager().resetEdit();show("my_requests");break;
+            case "request_applicants":show("my_requests");break;
+            case "my_requests":show(requestManagementOrigin);break;
+            case "search_requests":show(requestSearchOrigin);break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
             default:account.removeDraft("login.password");show("home");
         }
+    }
+    /** UC13 keeps the entry screen separate from the owner's UC12 navigation. */
+    public void openRequestSearch(String origin){
+        requestSearchOrigin="account".equals(origin)?"account":"tutorHome".equals(origin)?"tutorHome":"home";
+        hideKeyboard();show("search_requests");
+    }
+    // UC12: owner request management and navigation back to the entry screen.
+    private static boolean isRequestScreen(String destination){
+        return "post_request".equals(destination)||"my_requests".equals(destination)
+                ||"edit_request".equals(destination)||"request_applicants".equals(destination);
+    }
+    private TutorRequestManager requestManager(){return new ViewModelProvider(this).get(TutorRequestManager.class);}
+    public String selectedRequestId(){return selectedRequestId;}
+    public void openMyRequests(String origin){
+        if("account".equals(origin)||"home".equals(origin))requestManagementOrigin=origin;
+        else if("post_request".equals(origin)&&!"my_requests".equals(postRequestOrigin))requestManagementOrigin="home";
+        hideKeyboard();show("my_requests");
+    }
+    public void openRequestEditor(String id){
+        selectedRequestId=id==null?"":id;hideKeyboard();show("edit_request");
+    }
+    public void openRequestApplicants(String id){
+        selectedRequestId=id==null?"":id;hideKeyboard();show("request_applicants");
+    }
+    public void reloadRequestEditor(String id){
+        if(requestManager().busy())return;
+        requestManager().resetEdit();selectedRequestId=id==null?"":id;
+        navigatingTo="reload_edit_request";hideKeyboard();show("edit_request");
     }
     // Tin nhắn (UC21, member 4) --------------------------------------------------------------------
 
@@ -365,4 +420,5 @@ public class MainActivity extends AppCompatActivity {
     }
     public void openPayment(String type,String sourceId,String studentId){hideKeyboard();payments.open(type,sourceId,screen,studentId);}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);exchange.save(out);out.putString("payment_id",payments.selected);out.putString("payout_id",payments.selectedPayout);out.putString("payment_origin",payments.origin);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);classroom.save(out);exchange.save(out);}
 }
