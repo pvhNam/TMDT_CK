@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="application_title">Ứng tuyển tin đăng</string>
+    <string name="application_message_hint">Giới thiệu kinh nghiệm và lý do bạn phù hợp (tối đa 2.000 ký tự)</string>
+    <string name="application_submit">Gửi ứng tuyển</string>
+    <string name="application_pending">Đã ứng tuyển · Đang chờ học viên chọn</string>
+    <string name="application_selected">Hồ sơ đã được chọn</string>
+    <string name="application_other_selected">Tin đã chọn gia sư khác</string>
+    <string name="application_own_request">Bạn không thể ứng tuyển vào tin do mình đăng.</string>
+    <string name="application_caption">Học viên sẽ xem hồ sơ gia sư công khai và lời giới thiệu của bạn.</string>
+    <string name="applicant_view_profile">Xem hồ sơ</string>
+    <string name="applicant_profile_title">Hồ sơ ứng tuyển</string>
+    <string name="applicant_choose">Chọn gia sư</string>
+    <string name="applicant_choose_title">Chọn gia sư này?</string>
+    <string name="applicant_choose_caption">Tin sẽ được đóng và ngừng nhận ứng tuyển mới. Bạn chỉ có thể chọn một gia sư cho tin này.</string>
+    <string name="applicant_cancel">Hủy</string>
+    <string name="applicant_selected_banner">Tin đã chọn gia sư và ngừng nhận ứng tuyển mới.</string>
+    <string name="applicant_profile_unavailable">Không còn quyền xem hồ sơ ứng tuyển của tin này.</string>
+    <string name="applicant_no_offerings">Chưa có môn dạy công khai.</string>
+    <string name="applicant_message_label">Lời giới thiệu ứng tuyển</string>
+    <string name="applicant_offerings_label">Môn dạy và học phí</string>
+</resources>

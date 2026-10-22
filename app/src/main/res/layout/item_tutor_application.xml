@@ -11,5 +11,6 @@
         <TextView android:id="@+id/applicant_date" style="@style/BodyText" android:layout_marginBottom="8dp" />
         <TextView android:id="@+id/applicant_message" style="@style/BodyText" android:textIsSelectable="true"
             android:layout_marginBottom="0dp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/view_applicant_profile" style="@style/SecondaryButton" android:text="@string/applicant_view_profile" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
