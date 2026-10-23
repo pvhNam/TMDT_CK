@@ -42,6 +42,7 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
 
     /** A registration still waiting when the class stopped recruiting is closed without an answer from the tutor. */
     static String label(GroupClass item, GroupClass.Registration registration) {
+        if (item.cancelled()) return "Lớp đã hủy";
         switch (group(registration)) {
             case WAITING: return "Chờ duyệt";
             case ACCEPTED: return "Đã duyệt";
@@ -51,6 +52,7 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
 
     static TextView pill(Ui ui, GroupClass item, GroupClass.Registration registration, int size) {
         String text = label(item,registration);
+        if (item.cancelled()) return ui.pill(text,size,Ui.RED,0xFFFFE9EC);
         switch (group(registration)) {
             case WAITING: return ui.pill(text,size,Ui.ORANGE,Ui.ORANGE_BG);
             case ACCEPTED: return ui.pill(text,size,Ui.GREEN,Ui.GREEN_BG);

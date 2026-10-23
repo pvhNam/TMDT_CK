@@ -45,7 +45,7 @@ public final class JoinClassFragment extends ScreenFragment {
 
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());
-        if (!member && sent == null) {
+        if (!member && sent == null && !item.cancelled()) {
             ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true);
             goal.setMinimumHeight(ui.dp(54)); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
             ui.add(body,goal); ui.space(body,16);
@@ -55,9 +55,13 @@ public final class JoinClassFragment extends ScreenFragment {
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,17); price.addView(ui.text(item.priceLabel(),22,Ui.INK,true));
         ui.add(body,price); ui.space(body,20);
 
-        if (member) {
+        if (item.cancelled()) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Gia sư đã hủy lớp · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
+            ui.addAction(body,ui.action("Lớp đã hủy",0,Ui.DISABLED,null),52);
+        } else if (member) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã là thành viên của lớp này.",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(body,16);
-            ui.addAction(body,ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
+            ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                    :ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
         } else if (sent != null) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã gửi đăng ký ngày "+LocalDate.parse(sent.date).format(Lesson.DATE)+". Đăng ký đang chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,16); ui.addAction(body,ui.action("Đã gửi đăng ký",0,Ui.DISABLED,null),52);

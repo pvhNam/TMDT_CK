@@ -48,6 +48,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         if (!registration.pending() && registration.updated != null)
             ui.tableRow(sent,R.drawable.ic_clock,"Cập nhật",registration.updated.format(Lesson.TIME)+" · "+registration.updated.format(Lesson.DATE));
         ui.tableRow(sent,R.drawable.ic_file,"Trạng thái",RegistrationHistoryFragment.label(item,registration));
+        if (item.cancelled() && item.members.contains(classroom.me())) ui.tableRow(sent,R.drawable.ic_coin,"Hoàn tiền","Chờ hoàn tiền");
         ui.add(body,sent); ui.space(body,12);
         ui.label(body,"Mục tiêu đã gửi");
         TextView goal = ui.text(registration.goal.isEmpty()?"Không có":registration.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
@@ -60,6 +61,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         ui.tableRow(details,R.drawable.ic_file,"Số buổi",item.sessions+" buổi");
         ui.tableRow(details,item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,"Hình thức",item.mode);
         if (!item.address.isEmpty()) ui.tableRow(details,R.drawable.ic_pin,"Địa điểm",item.address);
+        if (item.online()) ui.tableRow(details,R.drawable.ic_video,"Phòng học",item.roomLink.isEmpty()?"Phòng của app":item.roomHost());
         ui.tableRow(details,R.drawable.ic_coin,"Học phí",item.priceLabel());
         ui.tableRow(details,R.drawable.ic_users,"Sĩ số",item.members.size()+"/"+item.capacity+" học viên");
         ui.tableRow(details,R.drawable.ic_info,"Trạng thái lớp",classStatus());
@@ -70,17 +72,21 @@ public final class RegistrationDetailFragment extends ScreenFragment {
     }
 
     private String headline(int group) {
+        if (item.cancelled()) return "Lớp đã bị hủy";
         if (group == RegistrationHistoryFragment.WAITING) return "Đang chờ gia sư duyệt";
         if (group == RegistrationHistoryFragment.ACCEPTED) return "Bạn đã là thành viên của lớp";
         return GroupClass.OPEN.equals(item.status) ? "Gia sư chưa nhận đăng ký này" : "Đăng ký không được duyệt";
     }
     private String explanation(int group) {
+        if (item.cancelled()) return "Gia sư đã hủy lớp. Lý do: "+item.cancelReason+"."
+                +(item.members.contains(classroom.me())?" Học phí ký quỹ của bạn đang chờ hoàn tiền.":"");
         if (group == RegistrationHistoryFragment.WAITING) return "Học phí ký quỹ được giữ cho đến khi gia sư duyệt. Bạn sẽ được thêm vào lớp ngay khi gia sư chấp nhận.";
         if (group == RegistrationHistoryFragment.ACCEPTED) return "Các buổi học của lớp đã có trong Lịch học của bạn.";
         return GroupClass.OPEN.equals(item.status) ? "Lớp vẫn đang tuyển sinh, bạn có thể gửi lại đăng ký với mục tiêu khác."
                 : "Lớp đã đóng tuyển sinh trước khi đăng ký được duyệt. Hãy tìm lớp tương tự.";
     }
     private String classStatus() {
+        if (item.cancelled()) return "Đã hủy";
         if (GroupClass.OPEN.equals(item.status)) return item.full() ? "Đang tuyển sinh · đã đủ chỗ" : "Đang tuyển sinh";
         return GroupClass.RUNNING.equals(item.status) ? "Đang học" : "Đã kết thúc";
     }
@@ -91,7 +97,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         boolean accepted = group == RegistrationHistoryFragment.ACCEPTED, declined = group == RegistrationHistoryFragment.DECLINED;
         row.addView(step("1","Gửi đăng ký",true,false),new LinearLayout.LayoutParams(0,-2,1));
         row.addView(step("2","Gia sư duyệt",accepted,declined),new LinearLayout.LayoutParams(0,-2,1));
-        row.addView(step("3","Vào lớp",accepted,false),new LinearLayout.LayoutParams(0,-2,1));
+        row.addView(step("3","Vào lớp",accepted&&!item.cancelled(),accepted&&item.cancelled()),new LinearLayout.LayoutParams(0,-2,1));
         return row;
     }
     private View step(String number, String title, boolean done, boolean refused) {
@@ -106,7 +112,11 @@ public final class RegistrationDetailFragment extends ScreenFragment {
     private void actions(LinearLayout body, int group) {
         LinearLayout row = ui.row();
         ui.weightAction(row,ui.action("Nhắn tin",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(item.tutorName)),48); ui.gap(row,10);
-        if (group == RegistrationHistoryFragment.ACCEPTED)
+        if (item.cancelled())
+            ui.weightAction(row,ui.action("Tìm lớp tương tự",0,Ui.PRIMARY,()->{classroom.similarSubject=item.subject;classroom.show("groups");}),48);
+        else if (group == RegistrationHistoryFragment.ACCEPTED && item.roomOpen())
+            ui.weightAction(row,ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item)),48);
+        else if (group == RegistrationHistoryFragment.ACCEPTED)
             ui.weightAction(row,ui.action("Xem lịch học",0,Ui.PRIMARY,()->{classroom.scheduleTab=0;classroom.show("schedule");}),48);
         else if (group == RegistrationHistoryFragment.WAITING)
             ui.weightAction(row,ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"join")),48);

@@ -9,7 +9,7 @@ import java.util.Map;
 
 /** A group class with a member limit (UC16–UC20), Firestore "group_classes"; members are student uids. */
 public final class GroupClass {
-    public static final String OPEN = "OPEN", RUNNING = "RUNNING", ENDED = "ENDED";
+    public static final String OPEN = "OPEN", RUNNING = "RUNNING", ENDED = "ENDED", CANCELLED = "CANCELLED";
     public static final String[] DAYS = {"Thứ Hai","Thứ Ba","Thứ Tư","Thứ Năm","Thứ Sáu","Thứ Bảy","Chủ nhật"};
 
     /** A student's request to join (Firestore "class_registrations"); seats are only taken once the tutor accepts it. */
@@ -40,7 +40,13 @@ public final class GroupClass {
 
     public final String id, tutorId, tutorName;
     public String title, subject, level, mode, address, description, startDate, status;
-    public int sessions, price, capacity, hour, minutes, art;
+    /** Why the tutor cancelled the class; empty unless it is cancelled. */
+    public String cancelReason = "";
+    /** Meet, Classroom or Zoom link shared by every session; empty means the app's own room. */
+    public String roomLink = "";
+    public int sessions, price, capacity, hour, minute, minutes, art;
+    /** Start of every session in minutes after midnight, so a class can begin on the half hour. */
+    public int begin() { return hour*60+minute; }
     public boolean perSession;
     public int[] days;
     public final List<String> members = new ArrayList<>();
@@ -54,12 +60,26 @@ public final class GroupClass {
         public final int number;
         Session(LocalDate date, int number) { this.date=date; this.number=number; }
         public GroupClass groupClass() { return GroupClass.this; }
-        public LocalDateTime start() { return date.atTime(hour,0); }
+        public LocalDateTime start() { return date.atTime(hour,minute); }
         public boolean ended() { return !LocalDateTime.now().isBefore(start().plusMinutes(minutes)); }
+        /** The room opens ten minutes before the session and closes when it ends. */
+        public boolean roomOpen() { LocalDateTime now = LocalDateTime.now(); return !now.isBefore(start().minusMinutes(10)) && !ended(); }
     }
 
     /** An ended class no longer holds sessions, so it takes no time slot. */
-    public boolean active() { return !ENDED.equals(status); }
+    public boolean active() { return !ENDED.equals(status) && !CANCELLED.equals(status); }
+    public boolean cancelled() { return CANCELLED.equals(status); }
+    public boolean online() { return !"Tại nhà".equals(mode); }
+    public String roomHost() { return Lesson.hostOf(roomLink); }
+    public String roomUrl() { return Lesson.urlOf(roomLink,"https://meet.jit.si/TMDT-lop-"+id); }
+    /** True while one of the sessions of an online class is in its room window. */
+    public boolean roomOpen() {
+        if (!active() || !online()) return false;
+        for (Session session : sessionList()) if (session.roomOpen()) return true;
+        return false;
+    }
+    /** Only a class that is still recruiting or running can be cancelled, and never after its last session. */
+    public boolean cancellable() { return (OPEN.equals(status) || RUNNING.equals(status)) && !over(); }
     /** Members and students whose registration is still waiting both keep the class's time slot. */
     public boolean attends(String student) { return members.contains(student) || registrationOf(student) != null; }
 
@@ -79,11 +99,12 @@ public final class GroupClass {
         return list;
     }
     /** True when one of the class's sessions falls on the date and overlaps the given time. */
-    public boolean meetsAt(String date, int otherHour, int otherMinutes) {
-        return overlap(hour,minutes,otherHour,otherMinutes) && dates(LocalDate.parse(startDate),days,sessions).contains(LocalDate.parse(date));
+    public boolean meetsAt(String date, int otherBegin, int otherMinutes) {
+        return overlap(begin(),minutes,otherBegin,otherMinutes) && dates(LocalDate.parse(startDate),days,sessions).contains(LocalDate.parse(date));
     }
-    public static boolean overlap(int hour, int minutes, int otherHour, int otherMinutes) {
-        return hour*60 < otherHour*60+otherMinutes && otherHour*60 < hour*60+minutes;
+    /** Both starts are minutes after midnight. */
+    public static boolean overlap(int begin, int minutes, int otherBegin, int otherMinutes) {
+        return begin < otherBegin+otherMinutes && otherBegin < begin+minutes;
     }
 
     public int seatsLeft() { return Math.max(0, capacity - members.size()); }
@@ -110,7 +131,7 @@ public final class GroupClass {
         for (int day : days) label.append(label.length()==0?"":", ").append(day==7?"Chủ nhật":"Thứ "+(day+1));
         return label.toString();
     }
-    public String scheduleLabel() { return daysLabel()+" · "+Lesson.range(hour,minutes); }
+    public String scheduleLabel() { return daysLabel()+" · "+Lesson.range(hour,minute,minutes); }
     public String priceLabel() { return Tutor.money(price)+(perSession?" / buổi":" / khóa"); }
     public String startLabel() { return LocalDate.parse(startDate).format(Lesson.DATE); }
     /** art: 0 = maths (board/course artwork), 1 = maths (stacked books), 2 = English. */
@@ -125,9 +146,9 @@ public final class GroupClass {
     }
 
     /** True when both classes meet on a shared weekday at overlapping times. */
-    public boolean clashes(int[] otherDays, int otherHour, int otherMinutes) {
+    public boolean clashes(int[] otherDays, int otherBegin, int otherMinutes) {
         for (int day : days) for (int other : otherDays)
-            if (day == other && overlap(hour,minutes,otherHour,otherMinutes)) return true;
+            if (day == other && overlap(begin(),minutes,otherBegin,otherMinutes)) return true;
         return false;
     }
 
@@ -136,16 +157,16 @@ public final class GroupClass {
         data.put("tutor_id",tutorId); data.put("ten_gia_su",tutorName); data.put("ten_lop",title); data.put("mon_hoc",subject); data.put("cap_hoc",level);
         data.put("hinh_thuc",mode); data.put("dia_chi",address); data.put("mo_ta",description); data.put("ngay_bat_dau",startDate);
         List<Integer> dayList = new ArrayList<>(); for (int day : days) dayList.add(day); data.put("thu",dayList);
-        data.put("gio",hour); data.put("thoi_luong",minutes); data.put("so_buoi",sessions); data.put("hoc_phi",price); data.put("tinh_theo_buoi",perSession);
-        data.put("suc_chua",capacity); data.put("thanh_vien",new ArrayList<>(members)); data.put("trang_thai",status); data.put("hinh_minh_hoa",art);
+        data.put("gio",hour); data.put("phut",minute); data.put("thoi_luong",minutes); data.put("so_buoi",sessions); data.put("hoc_phi",price); data.put("tinh_theo_buoi",perSession);
+        data.put("suc_chua",capacity); data.put("thanh_vien",new ArrayList<>(members)); data.put("trang_thai",status); data.put("hinh_minh_hoa",art); data.put("ly_do_huy",cancelReason); data.put("link_phong_hoc",roomLink);
         return data;
     }
     public static GroupClass from(String id, Map<String,Object> data) {
         GroupClass item = new GroupClass(id,Lesson.text(data,"tutor_id"),Lesson.text(data,"ten_gia_su"));
         item.title=Lesson.text(data,"ten_lop"); item.subject=Lesson.text(data,"mon_hoc"); item.level=Lesson.text(data,"cap_hoc");
         item.mode=Lesson.text(data,"hinh_thuc"); item.address=Lesson.text(data,"dia_chi"); item.description=Lesson.text(data,"mo_ta");
-        item.startDate=Lesson.text(data,"ngay_bat_dau"); item.status=Lesson.text(data,"trang_thai");
-        item.hour=Lesson.number(data,"gio"); item.minutes=Lesson.number(data,"thoi_luong"); item.sessions=Lesson.number(data,"so_buoi");
+        item.startDate=Lesson.text(data,"ngay_bat_dau"); item.status=Lesson.text(data,"trang_thai"); item.cancelReason=Lesson.text(data,"ly_do_huy"); item.roomLink=Lesson.text(data,"link_phong_hoc");
+        item.hour=Lesson.number(data,"gio"); item.minute=Lesson.number(data,"phut"); item.minutes=Lesson.number(data,"thoi_luong"); item.sessions=Lesson.number(data,"so_buoi");
         item.price=Lesson.number(data,"hoc_phi"); item.perSession=Boolean.TRUE.equals(data.get("tinh_theo_buoi"));
         item.capacity=Lesson.number(data,"suc_chua"); item.art=Lesson.number(data,"hinh_minh_hoa");
         List<Integer> dayList = new ArrayList<>();

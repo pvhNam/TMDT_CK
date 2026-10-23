@@ -43,7 +43,7 @@ public final class Store {
             if (other.tutorId.equals(tutorId) && other.confirmed()) return "Gia sư đã có lịch dạy trong khung giờ này. Hãy chọn giờ khác.";
         }
         for (GroupClass item : classes) {
-            if (!item.active() || !item.meetsAt(date,hour,minutes)) continue;
+            if (!item.active() || !item.meetsAt(date,hour*60,minutes)) continue;
             if (item.attends(student)) return "Khung giờ này trùng với lớp nhóm \""+item.title+"\" của bạn. Hãy chọn giờ khác.";
             if (item.tutorId.equals(tutorId)) return "Gia sư đã có lịch dạy lớp nhóm trong khung giờ này. Hãy chọn giờ khác.";
         }
@@ -69,7 +69,7 @@ public final class Store {
             if (other != lesson && other.tutorId.equals(lesson.tutorId) && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minutes))
                 return "Khung giờ này trùng với một buổi dạy đã xác nhận.";
         for (GroupClass item : classes)
-            if (item.tutorId.equals(lesson.tutorId) && item.active() && item.meetsAt(lesson.date,lesson.hour,lesson.minutes))
+            if (item.tutorId.equals(lesson.tutorId) && item.active() && item.meetsAt(lesson.date,lesson.hour*60+lesson.minute,lesson.minutes))
                 return "Khung giờ này trùng với lớp nhóm \""+item.title+"\".";
         lesson.status = Lesson.CONFIRMED; remote.save(lesson); return null;
     }
@@ -151,17 +151,17 @@ public final class Store {
      * Checks a new or edited class against the tutor's other classes and confirmed lessons and,
      * when an existing class is edited (ignoreId), against the lessons and classes of its students.
      */
-    public String classClash(String tutorId, int[] days, int hour, int minutes, LocalDate start, int sessions, String ignoreId) {
+    public String classClash(String tutorId, int[] days, int begin, int minutes, LocalDate start, int sessions, String ignoreId) {
         GroupClass editing = groupClass(ignoreId);
         for (GroupClass other : classes) {
-            if (other.id.equals(ignoreId) || !other.active() || !other.clashes(days,hour,minutes)) continue;
+            if (other.id.equals(ignoreId) || !other.active() || !other.clashes(days,begin,minutes)) continue;
             if (other.tutorId.equals(tutorId)) return "Lịch học trùng với lớp \""+other.title+"\" ("+other.scheduleLabel()+").";
             if (editing != null) for (String student : other.members)
                 if (editing.attends(student)) return "Lịch mới trùng với lớp \""+other.title+"\" của học viên "+editing.nameOf(student)+".";
         }
         List<LocalDate> dates = GroupClass.dates(start,days,sessions);
         for (Lesson lesson : lessons) {
-            if (!lesson.active() || lesson.ended() || !GroupClass.overlap(hour,minutes,lesson.hour,lesson.minutes)
+            if (!lesson.active() || lesson.ended() || !GroupClass.overlap(begin,minutes,lesson.hour*60+lesson.minute,lesson.minutes)
                     || !dates.contains(LocalDate.parse(lesson.date))) continue;
             if (lesson.tutorId.equals(tutorId) && lesson.confirmed())
                 return "Lịch học trùng với buổi dạy \""+lesson.title+"\" của "+lesson.studentName+" ("+lesson.dateLabel()+" · "+lesson.timeLabel()+").";
@@ -179,15 +179,16 @@ public final class Store {
     /** Why the student cannot register for the class, or null; checked before the deposit and again when saving. */
     public String registrationError(GroupClass item, String student) {
         if (item.tutorId.equals(student)) return "Bạn là gia sư của lớp này.";
+        if (item.cancelled()) return "Lớp đã bị gia sư hủy.";
         if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh.";
         if (item.full()) return "Lớp đã đủ chỗ.";
         if (item.members.contains(student)) return "Bạn đã là thành viên của lớp này.";
         if (item.registrationOf(student) != null) return "Bạn đã gửi đăng ký lớp này và đang chờ gia sư duyệt.";
         for (Lesson lesson : lessons)
-            if (lesson.studentId.equals(student) && lesson.active() && !lesson.ended() && item.meetsAt(lesson.date,lesson.hour,lesson.minutes))
+            if (lesson.studentId.equals(student) && lesson.active() && !lesson.ended() && item.meetsAt(lesson.date,lesson.hour*60+lesson.minute,lesson.minutes))
                 return "Lớp có buổi trùng với buổi học \""+lesson.title+"\" của bạn ("+lesson.dateLabel()+" · "+lesson.timeLabel()+").";
         for (GroupClass other : classes)
-            if (other != item && other.active() && other.attends(student) && other.clashes(item.days,item.hour,item.minutes))
+            if (other != item && other.active() && other.attends(student) && other.clashes(item.days,item.begin(),item.minutes))
                 return "Lớp trùng lịch với lớp \""+other.title+"\" bạn đã đăng ký ("+other.scheduleLabel()+").";
         return null;
     }
@@ -211,6 +212,26 @@ public final class Store {
         registration.status = Lesson.REJECTED; remote.save(registration); return null;
     }
     public void closeRecruiting(GroupClass item) { item.status = GroupClass.RUNNING; remote.save(item, closeWaiting(item)); }
+    /** One room link for every session of an online class, set by its tutor. */
+    public String setClassLink(GroupClass item, String link) {
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới gắn được link phòng học.";
+        if (!item.active()) return "Lớp đã kết thúc hoặc đã bị hủy.";
+        if (!item.online()) return "Lớp học tại nhà không cần link phòng học.";
+        String value = roomLink(link);
+        if (value == null) return "Link phòng học chưa hợp lệ. Ví dụ: meet.google.com/abc-defg-hij";
+        if (value.length() > 300) return "Link phòng học quá dài.";
+        item.roomLink = value; remote.save(item, Collections.emptyList()); return null;
+    }
+    /** The tutor cancels a class that has not ended; registrations still waiting close and members see the reason. */
+    public String cancelClass(GroupClass item, String reason) {
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới hủy được lớp.";
+        if (!item.cancellable()) return "Lớp đã kết thúc hoặc đã bị hủy.";
+        String text = reason.trim();
+        if (text.isEmpty()) return "Vui lòng nhập lý do hủy lớp.";
+        if (text.length() > 150) return "Lý do hủy tối đa 150 ký tự.";
+        item.status = GroupClass.CANCELLED; item.cancelReason = text;
+        remote.save(item, closeWaiting(item)); return null;
+    }
 
     /**
      * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer
