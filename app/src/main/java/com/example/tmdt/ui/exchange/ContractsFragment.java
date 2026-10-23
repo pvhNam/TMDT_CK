@@ -17,7 +17,7 @@ import com.example.tmdt.databinding.ItemContractBinding;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Hợp đồng của tôi: các hợp đồng đang chờ, đã chốt hoặc đã đóng (mở từ trang Cá nhân). */
+/** Hợp đồng của tôi: các hợp đồng đang chờ, đã chốt hoặc đã đóng (mở từ trang Cá nhân và chi tiết buổi học). */
 public final class ContractsFragment extends Fragment {
     private FragmentListScreenBinding binding;
     private ContractState contracts;
@@ -38,7 +38,7 @@ public final class ContractsFragment extends Fragment {
             String me = contracts.myId();
             b.subject.setText(c.subject);
             b.code.setText(c.code + " · " + ExUi.date(c.createdAt));
-            ExUi.pill(b.status, c.statusLabel(), ExUi.kind(c));
+            ExUi.pill(b.status, c.awaits(me) ? "Chờ bạn xác nhận" : c.statusLabel(), ExUi.kind(c));
             b.party.setText((me.equals(c.studentId) ? "Gia sư: " : "Học viên: ") + c.otherName(me));
             b.schedule.setText(c.sessionsLabel() + " · " + c.schedule);
             b.total.setText(ExUi.money(c.total()));
@@ -58,8 +58,11 @@ public final class ContractsFragment extends Fragment {
         List<Contract> items = new ArrayList<>();
         for (Contract c : contracts.contracts()) if (c.closed() == (tab == 1)) items.add(c);
         if (items.isEmpty()) {
-            ListScreen.state(binding, tab == 0 ? "Chưa có hợp đồng nào. Hãy trao đổi với gia sư qua tin nhắn rồi chọn \"Hợp đồng dạy\" để lập đề nghị." : "Không có hợp đồng đã đóng.",
-                    tab == 0 ? getString(R.string.chat_title) : null, () -> ((MainActivity) requireActivity()).show("messages"));
+            boolean tutor = ((MainActivity) requireActivity()).exchange.isTutor();
+            ListScreen.state(binding, tab == 1 ? "Không có hợp đồng đã đóng."
+                            : tutor ? "Chưa có hợp đồng nào. Sau khi bạn chấp nhận một yêu cầu đặt lịch, hãy gửi hợp đồng dạy cho học viên từ thông báo hoặc chi tiết buổi dạy."
+                            : "Chưa có hợp đồng nào. Đặt lịch học với gia sư; sau khi gia sư chấp nhận, hợp đồng dạy sẽ được gửi tới đây để bạn xác nhận.",
+                    tab == 0 && !tutor ? "Tìm gia sư" : null, () -> ((MainActivity) requireActivity()).show("home"));
             return;
         }
         ListScreen.state(binding, null, null, null);
