@@ -27,7 +27,11 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
         binding.rowRequests.setOnClickListener(v->host().openMyRequests("account"));
         binding.rowSearchRequests.setOnClickListener(v->host().openRequestSearch("account"));
-        binding.rowContracts.setOnClickListener(v->host().exchange.openContracts()); // UC23: Hợp đồng của tôi
+        // UC23: Hợp đồng của tôi (kèm số hợp đồng chờ xác nhận), hợp đồng cộng tác (gia sư), mẫu hợp đồng (quản trị viên).
+        binding.rowContracts.setOnClickListener(v->host().exchange.openContracts());
+        binding.rowAgreement.setOnClickListener(v->host().exchange.openAgreement());
+        binding.rowTemplates.setOnClickListener(v->host().exchange.openTemplates());
+        host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
@@ -80,6 +84,16 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.studyDetails.setVisibility(profile.grade.isEmpty()&&profile.age==0?View.GONE:View.VISIBLE);
         binding.verification.setText(state.verified()?getString(R.string.verified_phone,state.verifiedPhone()):getString(R.string.unverified));
         binding.verify.setVisibility(state.verified()?View.GONE:View.VISIBLE);
+        int agreement=profile.tutor&&"VERIFIED".equals(review.status())?View.VISIBLE:View.GONE;
+        binding.rowAgreement.setVisibility(agreement);binding.agreementDivider.setVisibility(agreement);
+        int templates="ADMIN".equals(profile.role)?View.VISIBLE:View.GONE;
+        binding.rowTemplates.setVisibility(templates);binding.templatesDivider.setVisibility(templates);
+        renderContracts();
+    }
+    private void renderContracts(){
+        if(binding==null)return;
+        int waiting=host().exchange.contracts.awaitingMe();
+        binding.contractsLabel.setText(waiting>0?getString(R.string.ex_menu_contracts)+" ("+waiting+" chờ xác nhận)":getString(R.string.ex_menu_contracts));
     }
     private void value(TextView view,String value){view.setText(value.isEmpty()?getString(R.string.not_updated):value);}
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
