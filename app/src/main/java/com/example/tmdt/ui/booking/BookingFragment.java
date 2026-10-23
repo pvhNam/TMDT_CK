@@ -124,8 +124,18 @@ public final class BookingFragment extends ScreenFragment {
         String objective=goal.getText().toString().trim(), location=address.getText().toString().trim();
         if(objective.isEmpty()){goal.setError("Vui lòng nhập mục tiêu buổi học");goal.requestFocus();return;}
         if(mode.equals("Tại nhà") && location.isEmpty()){address.setError("Vui lòng nhập địa chỉ học");address.requestFocus();return;}
-        classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minutes,mode,objective,
-                mode.equals("Tại nhà")?location:"",false,tutor.price(minutes)));
+        confirmRequest(objective,mode.equals("Tại nhà")?location:"");
+    }
+    /** UC23: bảng xác nhận đăng ký trước khi gửi yêu cầu; sau khi gia sư chấp nhận, gia sư gửi hợp đồng dạy để học viên xác nhận. */
+    private void confirmRequest(String objective, String location) {
+        String summary="Gia sư: "+tutor.name+"\nMôn học: "+tutor.course+"\nNgày học: "+selectedDate.format(com.example.tmdt.Lesson.DATE)
+                +"\nThời gian: "+com.example.tmdt.Lesson.range(hour,minutes)+" ("+minutes+" phút)\nHình thức: "+mode
+                +(location.isEmpty()?"":"\nĐịa chỉ: "+location)+"\nHọc phí buổi này: "+Tutor.money(tutor.price(minutes))
+                +"\n\nSau khi gia sư chấp nhận, gia sư sẽ gửi hợp đồng dạy (số buổi, học phí, điều khoản). Bạn xem và xác nhận ở Lịch học → Chi tiết buổi học hoặc Cá nhân → Hợp đồng của tôi.";
+        classroom.ui.dialog().setTitle("Xác nhận đăng ký học").setMessage(summary)
+                .setNegativeButton("Xem lại",null)
+                .setPositiveButton("Xác nhận đăng ký",(d,w)->classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minutes,mode,objective,
+                        location,false,tutor.price(minutes)))).show();
     }
     /** Keeps the draft when the trial screen replaces this one or the classroom is recreated. */
     @Override public void onPause() {

@@ -208,7 +208,9 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         String error = accept ? classroom.store.acceptRequest(lesson) : classroom.store.rejectRequest(lesson);
         if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
         render(); classroom.notice(accept?"Đã chấp nhận buổi học với "+lesson.studentName+".":"Đã từ chối yêu cầu của "+lesson.studentName+".");
+        if (accept) exchange(classroom).afterAccepted(lesson); // UC23: gợi ý gửi hợp đồng dạy
     }
+    private static com.example.tmdt.Exchange exchange(Classroom classroom) { return ((com.example.tmdt.MainActivity) classroom.context()).exchange; }
 
     /** Tutor-side lesson summary with the room link, a shortcut to message the student and the room button. */
     public static void details(Classroom classroom, Lesson lesson) { details(classroom,lesson,()->{}); }
@@ -231,6 +233,16 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.add(view,table); ui.space(view,12);
 
         AlertDialog dialog = ui.dialog().create();
+        if (com.example.tmdt.Exchange.needsContract(lesson)) { // UC23: hợp đồng dạy của buổi học
+            com.example.tmdt.Contract contract = exchange(classroom).contractFor(lesson);
+            boolean waiting = contract == null || contract.closed();
+            LinearLayout note = ui.note(R.drawable.ic_file, contract == null ? "Chưa gửi hợp đồng dạy cho học viên. Chạm để soạn và gửi."
+                    : contract.closed() ? "Hợp đồng "+contract.code+" "+contract.statusLabel().toLowerCase()+". Chạm để gửi hợp đồng mới."
+                    : "Hợp đồng "+contract.code+": "+contract.statusLabel()+". Chạm để xem.",
+                    waiting ? Ui.ORANGE_BG : Ui.PALE, waiting ? Ui.ORANGE : Ui.BLUE, Ui.INK);
+            ui.clickable(note,()->{dialog.dismiss();exchange(classroom).openLessonContract(lesson);});
+            ui.add(view,note); ui.space(view,12);
+        }
         if (lesson.confirmed() && lesson.online() && !lesson.ended()) {
             LinearLayout link = ui.note(R.drawable.ic_video,lesson.roomLink.isEmpty()?"Chưa gắn link phòng học. Chạm để dán link Google Meet, Classroom...":"Phòng học: "+lesson.roomHost()+". Chạm để sửa link.",Ui.PALE,Ui.BLUE,Ui.INK);
             ui.clickable(link,()->{dialog.dismiss();editRoomLink(classroom,lesson,()->{changed.run();details(classroom,lesson,changed);});});

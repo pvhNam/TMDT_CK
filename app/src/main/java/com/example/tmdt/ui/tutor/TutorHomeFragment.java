@@ -27,6 +27,11 @@ public final class TutorHomeFragment extends ScreenFragment {
         super.onCreate(state);allRequests=state!=null&&state.getBoolean("all_requests",false);
     }
     @Override public void onSaveInstanceState(android.os.Bundle out){super.onSaveInstanceState(out);out.putBoolean("all_requests",allRequests);}
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, android.os.Bundle state){
+        super.onViewCreated(view,state);
+        // UC23: thẻ nhắc ký hợp đồng cộng tác cập nhật khi dữ liệu hợp đồng tải xong.
+        ((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements.changes().observe(getViewLifecycleOwner(),ignored->refresh());
+    }
 
     @Override protected View build() {
         LinearLayout root = ui.column(); LinearLayout body = ui.page(root);
@@ -42,6 +47,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.weight(top,hello);
         top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         ui.add(body,top); ui.space(body,10);
+        agreementCard(body);
 
         List<Lesson> pending = new ArrayList<>(), today = new ArrayList<>();
         Set<String> students = new HashSet<>();
@@ -181,6 +187,16 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
+    /** UC23: gia sư chưa ký (hoặc cần ký lại) hợp đồng cộng tác với hệ thống thì thấy thẻ nhắc ở đầu trang. */
+    private void agreementCard(LinearLayout body) {
+        com.example.tmdt.AgreementState agreements=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
+        if(!agreements.agreementLoaded()||(agreements.signed()&&!agreements.outdated()))return;
+        LinearLayout note=ui.note(R.drawable.ic_file,agreements.signed()?"Hợp đồng cộng tác có phiên bản mới. Chạm để đọc và ký lại."
+                :"Ký hợp đồng cộng tác với hệ thống để gửi hợp đồng dạy cho học viên. Chạm để ký.",Ui.ORANGE_BG,Ui.ORANGE,Ui.INK);
+        ui.clickable(note,()->((com.example.tmdt.MainActivity)requireActivity()).exchange.openAgreement());
+        ui.add(body,note);ui.space(body,12);
+    }
+
     /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
     private void respond(Lesson lesson) {
         LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
@@ -212,7 +228,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         LinearLayout actions = ui.row();
         ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->{dialog.dismiss();finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu.");}),46);
         ui.gap(actions,10);
-        ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->{dialog.dismiss();finish(classroom.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy.");}),46);
+        ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->{dialog.dismiss();accepted(lesson);}),46);
         ui.add(view,actions); ui.space(view,6);
         TextView later = ui.link("Để sau",15,dialog::dismiss); later.setTextColor(Ui.MUTED); later.setGravity(Gravity.CENTER); ui.add(view,later);
         dialog.show();
@@ -220,5 +236,11 @@ public final class TutorHomeFragment extends ScreenFragment {
     private void finish(String error, String done) {
         if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
         classroom.show("tutorHome"); classroom.notice(done);
+    }
+    /** UC23: chấp nhận xong thì gợi ý gửi hợp đồng dạy cho học viên. */
+    private void accepted(Lesson lesson) {
+        String error = classroom.store.acceptRequest(lesson);
+        finish(error,"Đã chấp nhận. Buổi học được thêm vào lịch dạy.");
+        if (error == null) ((com.example.tmdt.MainActivity) requireActivity()).exchange.afterAccepted(lesson);
     }
 }

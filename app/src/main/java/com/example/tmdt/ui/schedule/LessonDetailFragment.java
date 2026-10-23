@@ -14,6 +14,12 @@ import com.example.tmdt.Tutor;
 public final class LessonDetailFragment extends ScreenFragment {
     private Lesson lesson;
 
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, android.os.Bundle state) {
+        super.onViewCreated(view, state);
+        // UC23: thẻ hợp đồng cập nhật ngay khi gia sư gửi hoặc khi học viên xác nhận.
+        ((com.example.tmdt.MainActivity) requireActivity()).exchange.contracts.changes().observe(getViewLifecycleOwner(), ignored -> refresh());
+    }
+
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",classroom::back,null);
@@ -55,6 +61,7 @@ public final class LessonDetailFragment extends ScreenFragment {
             LinearLayout proposal = ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch sang "+lesson.proposalLabel()+". Chạm để phản hồi.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE);
             ui.clickable(proposal,()->classroom.show("reschedule")); ui.add(body,proposal); ui.space(body,8);
         }
+        contractNote(body);
         ui.add(body,ui.note(R.drawable.ic_info,hint(),Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,8);
         ui.addAction(body,mainAction(),49); ui.space(body,12);
         ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(lesson.tutorName)),48);
@@ -63,6 +70,20 @@ public final class LessonDetailFragment extends ScreenFragment {
             cancel.setGravity(Gravity.CENTER); ui.space(body,6); ui.add(body,cancel);
         }
         return root;
+    }
+
+    /** UC23: hợp đồng dạy gia sư gửi sau khi chấp nhận lịch học; chờ học viên xác nhận thì nổi bật màu cam. */
+    private void contractNote(LinearLayout body) {
+        if (!com.example.tmdt.Exchange.needsContract(lesson)) return;
+        com.example.tmdt.Exchange exchange = ((com.example.tmdt.MainActivity) requireActivity()).exchange;
+        com.example.tmdt.Contract contract = exchange.contractFor(lesson);
+        boolean mine = contract != null && contract.awaits(classroom.me());
+        String text = contract == null ? "Gia sư sẽ gửi hợp đồng dạy (số buổi, học phí, điều khoản) để bạn xác nhận."
+                : mine ? "Gia sư đã gửi hợp đồng "+contract.code+". Chạm để xem và xác nhận."
+                : "Hợp đồng "+contract.code+": "+contract.statusLabel()+". Chạm để xem.";
+        LinearLayout note = ui.note(R.drawable.ic_file,text,mine?Ui.ORANGE_BG:Ui.PALE,mine?Ui.ORANGE:Ui.BLUE,Ui.INK);
+        if (contract != null) ui.clickable(note,()->exchange.openContract(contract));
+        ui.add(body,note); ui.space(body,8);
     }
 
     private String hint() {
