@@ -190,10 +190,24 @@
             <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_contracts" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_doc" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_contracts" />
+                <TextView android:id="@+id/contracts_label" style="@style/ProfileRowLabel" android:text="@string/ex_menu_contracts" />
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
+            <!-- UC23: gia sư đã duyệt ký hợp đồng cộng tác với hệ thống -->
+            <LinearLayout android:id="@+id/row_agreement" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_agreement" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/agreement_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <!-- UC23: quản trị viên soạn mẫu hợp đồng -->
+            <LinearLayout android:id="@+id/row_templates" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_list" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_templates" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/templates_divider" style="@style/ProfileDivider" android:visibility="gone" />
             <LinearLayout android:id="@+id/row_favorites" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_heart" />
                 <TextView style="@style/ProfileRowLabel" android:text="Gia sư yêu thích" />
