@@ -12,26 +12,34 @@ import com.example.tmdt.Lesson;
 import com.example.tmdt.R;
 import com.google.android.material.slider.RangeSlider;
 
-/** Start hour and length of a lesson on one two-thumb slider; the arrows change the length in exact steps. A fixed length only moves the lesson. */
+/**
+ * Start time and length of a lesson on one two-thumb slider; the arrows change the length in exact steps.
+ * The start snaps to whole hours or, for group classes, to half hours. A fixed length only moves the lesson.
+ */
 public final class TimeRange {
-    public interface Listener { void changed(int hour, int minutes); }
+    public interface Listener { void changed(int hour, int minute, int minutes); }
 
     private final Ui ui;
-    private final int firstHour, lastEnd, shortest, longest, step;
+    private final int firstHour, lastEnd, shortest, longest, step, startStep;
     private final Listener listener;
     private RangeSlider slider;
     private TextView range, length;
-    private int hour, minutes;
+    /** Start as minutes after midnight, and length in minutes. */
+    private int start, minutes;
 
     public TimeRange(Ui ui, int firstHour, int lastEnd, int shortest, int longest, int hour, int minutes, Listener listener) {
-        this(ui,firstHour,lastEnd,shortest,longest,30,hour,minutes,listener);
+        this(ui,firstHour,lastEnd,shortest,longest,30,60,hour,0,minutes,listener);
     }
     public TimeRange(Ui ui, int firstHour, int lastEnd, int shortest, int longest, int step, int hour, int minutes, Listener listener) {
-        this.ui=ui; this.firstHour=firstHour; this.lastEnd=lastEnd; this.shortest=shortest; this.longest=longest; this.step=step;
-        this.hour=hour; this.minutes=minutes; this.listener=listener; fit();
+        this(ui,firstHour,lastEnd,shortest,longest,step,60,hour,0,minutes,listener);
+    }
+    public TimeRange(Ui ui, int firstHour, int lastEnd, int shortest, int longest, int step, int startStep, int hour, int minute, int minutes, Listener listener) {
+        this.ui=ui; this.firstHour=firstHour; this.lastEnd=lastEnd; this.shortest=shortest; this.longest=longest; this.step=step; this.startStep=startStep;
+        this.start=hour*60+minute; this.minutes=minutes; this.listener=listener; fit();
     }
 
-    public int hour() { return hour; }
+    public int hour() { return start/60; }
+    public int minute() { return start%60; }
     public int minutes() { return minutes; }
 
     public LinearLayout view(String title) {
@@ -54,8 +62,8 @@ public final class TimeRange {
 
     private RangeSlider slider() {
         slider = new RangeSlider(ui.context);
-        slider.setValueFrom(firstHour); slider.setValueTo(lastEnd); slider.setStepSize(step/60f); slider.setMinSeparationValue(shortest/60f);
-        slider.setValues(hour*1f,hour+minutes/60f);
+        slider.setValueFrom(firstHour); slider.setValueTo(lastEnd); slider.setStepSize(gcd(step,startStep)/60f); slider.setMinSeparationValue(shortest/60f);
+        slider.setValues(start/60f,(start+minutes)/60f);
         slider.setTickVisible(false); slider.setLabelFormatter(value->String.format("%02d:%02d",(int)value,Math.round((value%1)*60)));
         slider.setThumbWidth(ui.dp(22)); slider.setThumbHeight(ui.dp(22)); slider.setThumbTrackGapSize(0); slider.setTrackHeight(ui.dp(14));
         slider.setMinimumHeight(ui.dp(64));
@@ -66,13 +74,14 @@ public final class TimeRange {
         slider.addOnChangeListener((view,value,user)->{
             if (!user) return;
             List<Float> values = slider.getValues(); float begin = values.get(0), end = values.get(1);
-            if (begin != hour) hour = Math.round(begin);
-            else if (shortest == longest) hour = Math.round(end - minutes/60f);
-            else minutes = Math.round((end-begin)*60/step)*step;
+            int from = Math.round(begin*60), to = Math.round(end*60);
+            if (from != start) start = snap(from);
+            else if (shortest == longest) start = snap(to-minutes);
+            else minutes = Math.round((to-from)/(float)step)*step;
             fit();
-            float wantBegin = hour, wantEnd = hour + minutes/60f;
+            float wantBegin = start/60f, wantEnd = (start+minutes)/60f;
             if (wantBegin != begin || wantEnd != end) slider.post(()->slider.setValues(wantBegin,wantEnd));
-            show(); listener.changed(hour,minutes);
+            show(); listener.changed(hour(),minute(),minutes);
         });
         return slider;
     }
@@ -86,19 +95,22 @@ public final class TimeRange {
     }
 
     private void change(int delta) {
-        int next = Math.max(shortest,Math.min(Math.min(longest,lastEnd*60-hour*60),minutes+delta));
+        int next = Math.max(shortest,Math.min(Math.min(longest,lastEnd*60-start),minutes+delta));
         if (next == minutes) return;
-        minutes = next; slider.setValues(hour*1f,hour+minutes/60f); show(); listener.changed(hour,minutes);
+        minutes = next; slider.setValues(start/60f,(start+minutes)/60f); show(); listener.changed(hour(),minute(),minutes);
     }
+
+    private int snap(int value) { return Math.round(value/(float)startStep)*startStep; }
+    private static int gcd(int a, int b) { return b == 0 ? a : gcd(b,a%b); }
 
     /** Keeps the length within its bounds and the whole lesson inside the day, moving the start earlier when needed. */
     private void fit() {
         minutes = Math.min(Math.max(shortest,Math.min(longest,minutes)),(lastEnd-firstHour)*60);
-        if (hour*60+minutes > lastEnd*60) hour = (lastEnd*60-minutes)/60;
-        hour = Math.max(firstHour,hour);
+        if (start+minutes > lastEnd*60) start = (lastEnd*60-minutes)/startStep*startStep;
+        start = Math.max(firstHour*60,start);
     }
 
     private void show() {
-        range.setText(Lesson.range(hour,minutes).replace("–"," – ")); length.setText("⏱ "+minutes+" phút");
+        range.setText(Lesson.range(hour(),minute(),minutes).replace("–"," – ")); length.setText("⏱ "+minutes+" phút");
     }
 }

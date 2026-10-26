@@ -47,7 +47,7 @@ public final class TrialFragment extends ScreenFragment {
 
         ui.label(body,"Chọn ngày học"); dateValue = ui.value("");
         ui.add(body,ui.picker(R.drawable.ic_calendar,dateValue,this::pickDate)); ui.space(body,14);
-        TimeRange time = new TimeRange(ui,7,23,30,45,15,hour,minutes,(h,m)->{hour=h;minutes=m;});
+        TimeRange time = new TimeRange(ui,7,23,30,45,15,hour,minutes,(h,mi,m)->{hour=h;minutes=m;});
         hour = time.hour(); minutes = time.minutes();
         ui.add(body,time.view("Chọn giờ học thử")); ui.space(body,14);
         ui.label(body,"Mục tiêu buổi học thử"); goal = ui.entry("Bạn muốn trao đổi điều gì?",false);

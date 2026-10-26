@@ -174,9 +174,10 @@ public final class TutorHomeFragment extends ScreenFragment {
         card.addView(ui.photo(item.art(),null,69,73,12)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
-        ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
+        ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minute,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        row.addView(ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));
+        row.addView(item.roomOpen()?ui.action("Vào phòng",0,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                :ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
