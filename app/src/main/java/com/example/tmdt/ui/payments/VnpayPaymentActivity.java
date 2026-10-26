@@ -20,6 +20,9 @@ public final class VnpayPaymentActivity extends AppCompatActivity {
     private WebView web;
     private boolean finished;
     private String payment;
+    @Override protected void attachBaseContext(android.content.Context base){
+        super.attachBaseContext(com.example.tmdt.ui.common.UiScale.compact(base));
+    }
     @SuppressLint("SetJavaScriptEnabled") @Override protected void onCreate(Bundle saved){
         super.onCreate(saved);setResult(RESULT_CANCELED);payment=getIntent().getStringExtra(PAYMENT);
         String url=getIntent().getStringExtra(URL);

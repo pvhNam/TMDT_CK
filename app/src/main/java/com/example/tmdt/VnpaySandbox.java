@@ -12,11 +12,11 @@ import java.util.*;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-/** Native sandbox integration, matching LTMobile. Never use client merchant keys for real money. */
+/** Native VNPay TEST integration, matching LTMobile. */
 public final class VnpaySandbox {
     public static final String GATEWAY="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     // Intercepted by our WebView before any request; no website or hosting is needed here.
-    public static final String RETURN_URL="https://tmdt.example/vnpay/return";
+    public static final String RETURN_URL=BuildConfig.VNPAY_RETURN_URL;
     private final String merchant,secret;
     public VnpaySandbox(String merchant,String secret){this.merchant=merchant;this.secret=secret;}
     public static boolean enabled(){return BuildConfig.DEBUG&&BuildConfig.VNPAY_CLIENT_SANDBOX;}
