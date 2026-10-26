@@ -19,7 +19,7 @@
         name="SectionTitle"
         parent="ScreenTitle">
         <item
-            name="android:textSize">19sp</item>
+            name="android:textSize">18sp</item>
         <item
             name="android:layout_marginTop">16dp</item>
         <item
@@ -60,7 +60,7 @@
         <item
             name="android:layout_height">wrap_content</item>
         <item
-            name="android:minHeight">50dp</item>
+            name="android:minHeight">@dimen/control_height</item>
         <item
             name="android:padding">13dp</item>
         <item
@@ -88,7 +88,12 @@
         <item
             name="android:layout_height">wrap_content</item>
         <item
-            name="android:minHeight">54dp</item>
+            name="android:minHeight">@dimen/control_height</item>
+        <item name="android:textSize">@dimen/control_text_size</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingTop">@dimen/control_vertical_padding</item>
+        <item name="android:paddingBottom">@dimen/control_vertical_padding</item>
         <item
             name="android:layout_marginTop">8dp</item>
         <item
@@ -104,7 +109,12 @@
         <item
             name="android:layout_height">wrap_content</item>
         <item
-            name="android:minHeight">50dp</item>
+            name="android:minHeight">@dimen/control_height</item>
+        <item name="android:textSize">@dimen/control_text_size</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingTop">@dimen/control_vertical_padding</item>
+        <item name="android:paddingBottom">@dimen/control_vertical_padding</item>
         <item
             name="android:layout_marginTop">6dp</item>
         <item

@@ -32,8 +32,8 @@ android {
         applicationId = "com.example.tmdt"
         minSdk = 29
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.2.1"
+        versionCode = 14
+        versionName = "1.2.4"
         buildConfigField("String", "PAYMENT_API_BASE_URL", "\"" + paymentApiBaseUrl.get().replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

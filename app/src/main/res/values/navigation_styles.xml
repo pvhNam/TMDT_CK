@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="FigmaNavigationInactive" parent="TextAppearance.Material3.LabelMedium">
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:includeFontPadding">false</item>
