@@ -26,6 +26,11 @@ public final class RegistrationDetailFragment extends ScreenFragment {
             return root;
         }
         int group = RegistrationHistoryFragment.group(registration);
+        if(Lesson.CONFIRMED.equals(registration.status)){
+            com.example.tmdt.MainActivity host=(com.example.tmdt.MainActivity)requireActivity();
+            boolean paid=host.payments.paid("GROUP",registration.id());
+            ui.addAction(body,ui.action(paid?"Thanh toán và xác nhận các buổi học":"Thanh toán toàn bộ khóa qua VNPay",R.drawable.ic_wallet,Ui.PRIMARY,()->host.openPayment("GROUP",registration.id())),48);ui.space(body,12);
+        }
 
         LinearLayout status = ui.column(); ui.pad(status,16,16); ui.cardSurface(status,Ui.PALE,0);
         status.addView(RegistrationHistoryFragment.pill(ui,item,registration,14),ui.lp(-2,-2)); ui.space(status,10);
@@ -74,14 +79,14 @@ public final class RegistrationDetailFragment extends ScreenFragment {
     private String headline(int group) {
         if (item.cancelled()) return "Lớp đã bị hủy";
         if (group == RegistrationHistoryFragment.WAITING) return "Đang chờ gia sư duyệt";
-        if (group == RegistrationHistoryFragment.ACCEPTED) return "Bạn đã là thành viên của lớp";
+        if (group == RegistrationHistoryFragment.ACCEPTED) return ((com.example.tmdt.MainActivity)requireActivity()).payments.paid("GROUP",registration.id())?"Đã thanh toán khóa học":"Đã được duyệt · Chờ thanh toán";
         return GroupClass.OPEN.equals(item.status) ? "Gia sư chưa nhận đăng ký này" : "Đăng ký không được duyệt";
     }
     private String explanation(int group) {
         if (item.cancelled()) return "Gia sư đã hủy lớp. Lý do: "+item.cancelReason+"."
                 +(item.members.contains(classroom.me())?" Học phí ký quỹ của bạn đang chờ hoàn tiền.":"");
-        if (group == RegistrationHistoryFragment.WAITING) return "Học phí ký quỹ được giữ cho đến khi gia sư duyệt. Bạn sẽ được thêm vào lớp ngay khi gia sư chấp nhận.";
-        if (group == RegistrationHistoryFragment.ACCEPTED) return "Các buổi học của lớp đã có trong Lịch học của bạn.";
+        if (group == RegistrationHistoryFragment.WAITING) return "Chưa thu học phí. Gia sư sẽ xem xét đăng ký của bạn trước.";
+        if (group == RegistrationHistoryFragment.ACCEPTED) return "Thanh toán đầy đủ học phí khóa qua VNPay. Xác nhận từng buổi trong mục Thanh toán để ghi nhận tiền dạy.";
         return GroupClass.OPEN.equals(item.status) ? "Lớp vẫn đang tuyển sinh, bạn có thể gửi lại đăng ký với mục tiêu khác."
                 : "Lớp đã đóng tuyển sinh trước khi đăng ký được duyệt. Hãy tìm lớp tương tự.";
     }
@@ -91,13 +96,14 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         return GroupClass.RUNNING.equals(item.status) ? "Đang học" : "Đã kết thúc";
     }
 
-    /** Gửi đăng ký → Gia sư duyệt → Vào lớp, marked done, current or refused. */
+    /** Gửi đăng ký → Gia sư duyệt → Thanh toán học phí. */
     private View steps(int group) {
         LinearLayout row = ui.row(); row.setGravity(Gravity.TOP);
         boolean accepted = group == RegistrationHistoryFragment.ACCEPTED, declined = group == RegistrationHistoryFragment.DECLINED;
         row.addView(step("1","Gửi đăng ký",true,false),new LinearLayout.LayoutParams(0,-2,1));
         row.addView(step("2","Gia sư duyệt",accepted,declined),new LinearLayout.LayoutParams(0,-2,1));
-        row.addView(step("3","Vào lớp",accepted&&!item.cancelled(),accepted&&item.cancelled()),new LinearLayout.LayoutParams(0,-2,1));
+        boolean paid=((com.example.tmdt.MainActivity)requireActivity()).payments.paid("GROUP",registration.id());
+        row.addView(step("3","Thanh toán",paid,false),new LinearLayout.LayoutParams(0,-2,1));
         return row;
     }
     private View step(String number, String title, boolean done, boolean refused) {

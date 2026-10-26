@@ -30,7 +30,7 @@ public final class Contract {
     public String statusLabel() {
         switch (status) {
             case PENDING: return "Chờ xác nhận";
-            case AWAITING_ESCROW: return "Chờ ký quỹ";
+            case AWAITING_ESCROW: return "Chờ thanh toán học phí";
             case ACTIVE: return "Đang hiệu lực";
             case COMPLETED: return "Đã hoàn thành";
             case REJECTED: return "Đã từ chối";

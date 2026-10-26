@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     public Classroom classroom;
     /** Hợp đồng dạy (member 4, UC23). */
     public Exchange exchange;
+    public PaymentState payments;
     String screen="home";
     private String pendingDestination;
     private String authenticatedDestination;
@@ -64,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
         tutorReviews=new ViewModelProvider(this).get(TutorReviewState.class);
         classroom=new Classroom(this,savedInstanceState);
         exchange=new Exchange(this,savedInstanceState);
+        payments=new ViewModelProvider(this).get(PaymentState.class);
+        if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             bottomInset=safe.bottom;
@@ -129,6 +132,8 @@ public class MainActivity extends AppCompatActivity {
             // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
             if(account.signedIn())chat.start();
             else chat.reset();
+            exchange.accountChanged(account.signedIn());
+            payments.account(account);
             renderNavigation();
         });
         tutorReviews.changes.observe(this,ignored->{
@@ -138,6 +143,9 @@ public class MainActivity extends AppCompatActivity {
             renderNavigation();
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
+        payments.changes.observe(this,ignored->{
+            if(payments.destination!=null){String next=payments.destination;payments.destination=null;show(next);}
+        });
     }
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);
@@ -152,6 +160,9 @@ public class MainActivity extends AppCompatActivity {
         if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
         destination=exchange.redirect(destination);
+        if(java.util.Arrays.asList("payments","payment_detail","tutor_income","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
+        if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
+        if("post_request".equals(destination)&&!account.signedIn()){
         if("post_request".equals(destination)&&!"post_request".equals(screen))
             postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
         if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
@@ -181,6 +192,12 @@ public class MainActivity extends AppCompatActivity {
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
+            case "payments":fragment=new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
+            case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
+            case "tutor_income":fragment=new com.example.tmdt.ui.payments.TutorIncomeFragment();break;
+            case "payout_bank":fragment=new com.example.tmdt.ui.payments.PayoutBankFragment();break;
+            case "admin_payroll":fragment=new com.example.tmdt.ui.payments.AdminPayrollFragment();break;
+            case "payout_detail":fragment=new com.example.tmdt.ui.payments.PayoutDetailFragment();break;
             case "tutor_evidence":fragment=new com.example.tmdt.ui.profile.TutorEvidenceFragment();break;
             case "tutor_supplement":fragment=com.example.tmdt.ui.profile.TutorEvidenceFragment.supplementScreen();break;
             case "tutor_pending":fragment=new com.example.tmdt.ui.profile.PendingTutorFragment();break;
@@ -228,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
+        if(account.isBusy()||account.isSendingCode()||payments.busy)return false;
         if(account.isBusy()||account.isSendingCode()||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
@@ -288,11 +306,15 @@ public class MainActivity extends AppCompatActivity {
     }
     public void back(){
         if(account.isBusy()||(isRequestScreen(screen)&&requestManager().busy()))return;hideKeyboard();
+        if(account.isBusy()||payments.busy)return;hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
         if(target==null)target=exchange.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
+            case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
+            case "payments":case "tutor_income":case "admin_payroll":show("account");break;
+            case "payout_bank":show("tutor_income");break;
             case "welcome":finish();break;
             case "student_intro":show("welcome");break;
             case "register":
@@ -392,5 +414,11 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
+    public void openPayment(String type,String sourceId){
+        Lesson lesson="LESSON".equals(type)?classroom.store.lesson(sourceId):null;
+        openPayment(type,sourceId,lesson==null?payments.owner:lesson.studentId);
+    }
+    public void openPayment(String type,String sourceId,String studentId){hideKeyboard();payments.open(type,sourceId,screen,studentId);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);exchange.save(out);out.putString("payment_id",payments.selected);out.putString("payout_id",payments.selectedPayout);out.putString("payment_origin",payments.origin);}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);classroom.save(out);exchange.save(out);}
 }

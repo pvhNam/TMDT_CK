@@ -24,8 +24,8 @@ import java.time.ZoneId;
 
 /**
  * Màn 40 – Chốt hợp đồng dạy (UC23).
- * Soạn đề nghị (bên đề nghị) → bên kia kiểm tra các bên, lịch, số buổi, học phí, thỏa thuận rồi "Xác nhận và ký quỹ"
- * hoặc từ chối. Hợp đồng đã chốt chuyển sang chờ ký quỹ (màn 41, ngoài phạm vi UC23).
+ * Soạn đề nghị → hai bên xác nhận → học sinh thanh toán toàn khóa bằng VNPay.
+ * Backend xác nhận nhận đủ tiền rồi kích hoạt hợp đồng.
  */
 public final class ContractFragment extends Fragment {
     private FragmentContractBinding binding;
@@ -193,7 +193,7 @@ public final class ContractFragment extends Fragment {
                     .setMessage("Bạn có thể tạo đề nghị mới sau khi hủy.").setNegativeButton(R.string.cancel, null)
                     .setPositiveButton("Hủy đề nghị", (d, w) -> contracts.cancel(c)).show());
         } else if (c.pending()) {
-            binding.primary.setText("Xác nhận và ký quỹ");
+            binding.primary.setText("Xác nhận đề nghị");
             binding.primary.setEnabled(agreed && !busy);
             binding.primary.setOnClickListener(v -> contracts.confirm(c));
             binding.tertiary.setVisibility(View.VISIBLE); binding.tertiary.setText("Từ chối");
@@ -201,11 +201,9 @@ public final class ContractFragment extends Fragment {
             binding.tertiary.setOnClickListener(v -> reject(c));
         } else if (c.agreed()) {
             boolean student = me.equals(c.studentId);
-            binding.primary.setText(Contract.AWAITING_ESCROW.equals(c.status) ? (student ? "Ký quỹ học phí" : "Chờ học viên ký quỹ") : "Hợp đồng đang hiệu lực");
-            binding.primary.setEnabled(student && Contract.AWAITING_ESCROW.equals(c.status));
-            binding.primary.setOnClickListener(v -> exchange.dialog("Ký quỹ học phí",
-                    "Hợp đồng " + c.code + " đã được hai bên chốt. Bước ký quỹ " + ExUi.money(c.total())
-                            + " được thực hiện ở màn Ví và nạp tiền (41) của luồng ký quỹ."));
+            binding.primary.setText(Contract.AWAITING_ESCROW.equals(c.status) ? (student ? "Thanh toán toàn bộ khóa qua VNPay" : "Xem thanh toán khóa học") : "Thanh toán và các buổi trong khóa");
+            binding.primary.setEnabled(!busy);
+            binding.primary.setOnClickListener(v -> ((MainActivity)requireActivity()).openPayment("CONTRACT",c.id,c.studentId));
             // Nút Đánh giá (UC26) và Báo cáo (UC27) sẽ thêm khi push các UC đó.
         } else {
             binding.primary.setText("Tạo đề nghị mới");

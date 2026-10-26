@@ -286,6 +286,7 @@ public final class Classroom {
         tutorView=value;preferences.edit().putBoolean("tutor_mode_"+host.account.uid(),value).apply();show(root());
     }
     public void openRoom(Lesson lesson){
+        if(!host.payments.paid("LESSON",lesson.id)){host.openPayment("LESSON",lesson.id);return;}
         if(!lesson.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
         openUrl(lesson.roomUrl());
     }
