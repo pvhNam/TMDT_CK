@@ -94,7 +94,7 @@ public final class GroupSearchFragment extends ScreenFragment {
     private void renderResults() {
         results.removeAllViews(); String query = normalized(search.getText().toString()); int count = 0;
         for (GroupClass item : classroom.store.classes) {
-            if (GroupClass.ENDED.equals(item.status)) continue;
+            if (!item.active()) continue;
             if (!subject.isEmpty() && !item.subject.equals(subject)) continue;
             if (!mode.isEmpty() && !item.mode.equals(mode)) continue;
             if (seats && !item.recruiting()) continue;

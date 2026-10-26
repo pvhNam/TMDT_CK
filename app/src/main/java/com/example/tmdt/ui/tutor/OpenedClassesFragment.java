@@ -45,7 +45,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();
-        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && item.status.equals(status)) list.add(item);
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && (item.status.equals(status) || (GroupClass.ENDED.equals(status) && item.cancelled()))) list.add(item);
         return list;
     }
 
@@ -58,6 +58,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
         titleRow.addView(status(item)); ui.add(info,titleRow); ui.space(info,4);
         ui.add(info,ui.fact(R.drawable.ic_users,item.members.size()+"/"+item.capacity+" học viên",18,16,Ui.INK,false));
         if (item.pendingCount() > 0) ui.add(info,ui.fact(R.drawable.ic_clock,item.pendingCount()+" đăng ký chờ duyệt",18,16,Ui.ORANGE,false));
+        if (item.cancelled()) ui.add(info,ui.fact(R.drawable.ic_info,"Lý do: "+item.cancelReason,18,14,Ui.RED,false));
         ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,Tutor.money(item.price)+(item.perSession?" / buổi":" / học viên"),18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),18,16,Ui.INK,false));
@@ -79,6 +80,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
     private TextView status(GroupClass item) {
         if (GroupClass.OPEN.equals(item.status)) return ui.pill("Đang tuyển",12,Ui.ORANGE,Ui.ORANGE_BG);
         if (GroupClass.RUNNING.equals(item.status)) return ui.pill("Đang học",12,Ui.GREEN,Ui.GREEN_BG);
+        if (item.cancelled()) return ui.pill("Đã hủy",12,Ui.RED,0xFFFFE9EC);
         return ui.pill("Đã kết thúc",12,Ui.MUTED,0xFFEEF2F7);
     }
 
