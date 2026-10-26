@@ -21,7 +21,7 @@ service cloud.firestore {
       }
       allow get: if owner();
       allow list, delete: if false;
-      allow create: if owner() && validProfile()
+      allow create: if owner() && request.auth.token.email_verified == true && validProfile()
         && request.resource.data.vai_tro == 'STUDENT'
         && request.resource.data.la_gia_su == false
         && request.resource.data.trang_thai == 'ACTIVE'
@@ -186,7 +186,7 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.created_at == request.time;
       allow update, delete: if false;
     }
-    // UC11 / UC12: only the active owner manages a request; deleted records retain applications.
+    // UC11–15: active owners manage posts and select one applicant; deleted posts retain hidden applications.
     match /tutor_requests/{requestId} {
       function activeAccount() {
         return signedIn() && account().trang_thai == 'ACTIVE';
@@ -210,7 +210,7 @@ service cloud.firestore {
         let d = request.resource.data;
         let keys = ['student_id','ten_hoc_vien','tieu_de','subject_id','mon_hoc','cap_hoc',
           'ngan_sach','lich_hoc','mo_ta','trang_thai','created_at','updated_at'];
-        return d.keys().hasAll(keys) && d.keys().hasOnly(keys.concat(['deleted_at']))
+        return d.keys().hasAll(keys) && d.keys().hasOnly(keys.concat(['deleted_at','selected_tutor_id','selected_at']))
           && d.student_id is string && nonblank(d.ten_hoc_vien, 100)
           && nonblank(d.tieu_de, 120) && nonblank(d.subject_id, 150) && nonblank(d.mon_hoc, 100)
           && d.cap_hoc in ['TIEU_HOC','THCS','THPT','LUYEN_THI','KHAC']
@@ -218,6 +218,9 @@ service cloud.firestore {
           && nonblank(d.lich_hoc, 300) && nonblank(d.mo_ta, 2000)
           && d.created_at is timestamp && d.updated_at == request.time
           && d.trang_thai in ['OPEN','CLOSED','DELETED']
+          && ((!('selected_tutor_id' in d) && !('selected_at' in d))
+            || (nonblank(d.selected_tutor_id, 150) && d.selected_tutor_id != d.student_id
+              && d.selected_at is timestamp && d.trang_thai in ['CLOSED','DELETED']))
           && ((d.trang_thai == 'DELETED' && d.deleted_at == request.time)
             || (d.trang_thai != 'DELETED' && !('deleted_at' in d)));
       }
@@ -237,6 +240,19 @@ service cloud.firestore {
         return resource.data.trang_thai in ['OPEN','CLOSED'] && request.resource.data.trang_thai == 'DELETED'
           && changed(['trang_thai','deleted_at','updated_at']);
       }
+      function selected() {
+        let d = request.resource.data;
+        let application = /databases/$(database)/documents/tutor_requests/$(requestId)/applications/$(d.selected_tutor_id);
+        return resource.data.trang_thai in ['OPEN','CLOSED'] && !('selected_tutor_id' in resource.data)
+          && d.trang_thai == 'CLOSED' && d.selected_at == request.time
+          && changed(['trang_thai','selected_tutor_id','selected_at','updated_at'])
+          && get(/databases/$(database)/documents/users/$(d.selected_tutor_id)).data.trang_thai == 'ACTIVE'
+          && verifiedTutor(d.selected_tutor_id)
+          && get(application).data.tutor_id == d.selected_tutor_id
+          && get(application).data.trang_thai == 'PENDING'
+          && getAfter(application).data.trang_thai == 'ACCEPTED'
+          && getAfter(application).data.updated_at == request.time;
+      }
       // An owner's missing deterministic ID is readable for the UC11 idempotent transaction.
       allow get: if activeAccount() && ((resource == null && ownRequestId())
         || (resource != null && (owner() || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid)))));
@@ -247,7 +263,7 @@ service cloud.firestore {
         && request.resource.data.ten_hoc_vien == account().ho_ten
         && request.resource.data.trang_thai == 'OPEN'
         && request.resource.data.created_at == request.time && validSubject(request.resource.data);
-      allow update: if activeAccount() && owner() && validRequest() && (edited() || closed() || removed());
+      allow update: if activeAccount() && owner() && validRequest() && (edited() || closed() || removed() || selected());
       allow delete: if false;
 
       match /applications/{tutorId} {
@@ -267,14 +283,24 @@ service cloud.firestore {
             && nonblank(d.ten_gia_su, 100) && nonblank(d.gioi_thieu, 2000)
             && d.trang_thai == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
         }
-        allow read: if activeAccount() && visibleParent()
+        // An applicant may read their absent UID document to recover an idempotent UC14 submission.
+        allow get: if activeAccount() && visibleParent()
           && (parentRequest().student_id == request.auth.uid
-            || (tutorId == request.auth.uid && resource.data.tutor_id == request.auth.uid));
+            || (tutorId == request.auth.uid && (resource == null || resource.data.tutor_id == request.auth.uid)));
+        allow list: if activeAccount() && visibleParent() && parentRequest().student_id == request.auth.uid;
         allow create: if activeAccount() && visibleParent() && verifiedTutor(request.auth.uid)
           && parentRequest().trang_thai == 'OPEN' && parentRequest().student_id != request.auth.uid
           && validApplication();
-        // UC12 opens the applicant list. Application decisions belong to a separate use case.
-        allow update, delete: if false;
+        // UC15 accepts one child only when the parent selects that tutor in the same commit.
+        allow update: if activeAccount() && visibleParent() && parentRequest().student_id == request.auth.uid
+          && !('selected_tutor_id' in parentRequest())
+          && resource.data.tutor_id == tutorId && resource.data.trang_thai == 'PENDING'
+          && changed(['trang_thai','updated_at'])
+          && request.resource.data.trang_thai == 'ACCEPTED' && stamped()
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.trang_thai == 'CLOSED'
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.selected_tutor_id == tutorId
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.selected_at == request.time;
+        allow delete: if false;
       }
     }
     // Lessons, group classes and class registrations (member 3).
@@ -299,7 +325,7 @@ service cloud.firestore {
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
         let link = d.get('link_phong_hoc', '');
-        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi'])) && d.keys().hasAll(keys)
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi', 'payment_id'])) && d.keys().hasAll(keys)
           && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
           && d.get('doi_lich_phan_hoi', '') in ['', 'DONG_Y', 'GIU_LICH']
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
@@ -323,6 +349,7 @@ service cloud.firestore {
       function requested() {
         let d = request.resource.data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
+          && d.get('payment_id', '') == ''
           && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
           && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == '' && d.get('doi_lich_phan_hoi', '') == ''
@@ -363,10 +390,8 @@ service cloud.firestore {
           && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function finished() {
-        return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
-          && resource.data.da_hoan_thanh == false && request.resource.data.da_hoan_thanh == true
-          && request.time >= resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
-          && lessonChanged(['da_hoan_thanh', 'updated_at']);
+        // Only the payment backend completes a lesson atomically with its earning record.
+        return false;
       }
       function linked() {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
@@ -383,7 +408,9 @@ service cloud.firestore {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','ten_lop','mon_hoc','cap_hoc','hinh_thuc','dia_chi','mo_ta','ngay_bat_dau','thu','gio','thoi_luong',
           'so_buoi','hoc_phi','tinh_theo_buoi','suc_chua','thanh_vien','trang_thai','hinh_minh_hoa','created_at','updated_at'];
-        return d.keys().hasOnly(keys.concat(['ly_do_huy'])) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+        let link = d.get('link_phong_hoc', '');
+        return d.keys().hasOnly(keys.concat(['ly_do_huy', 'link_phong_hoc'])) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+          && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100
           && d.ten_lop is string && d.ten_lop.size() > 0 && d.ten_lop.size() <= 60
           && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 50 && d.cap_hoc is string && d.cap_hoc.size() <= 40
@@ -613,6 +640,146 @@ service cloud.firestore {
             || (request.auth.uid == resource.data.proposed_by && cancelling()));
       allow delete: if false;
     }
-    // All other collections, including the removed flows, are denied by default.
+    // Payment records can only be changed by the trusted payment backend.
+    function financialMember(data) {
+      return signedIn() && account().trang_thai == 'ACTIVE'
+        && (admin() || request.auth.uid == data.student_id || request.auth.uid == data.tutor_id);
+    }
+    match /payments/{paymentId} {
+      allow read: if financialMember(resource.data);
+      allow write: if false;
+      match /sessions/{number} {
+        allow read: if financialMember(get(/databases/$(database)/documents/payments/$(paymentId)).data);
+        allow write: if false;
+      }
+    }
+    match /tutor_earnings/{earningId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
+    match /tutor_payouts/{payoutId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
+    match /payout_accounts/{tutorId} {
+      allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == tutorId);
+      allow list, write: if false;
+    }
+    match /refund_requests/{refundId} {
+      allow read: if financialMember(resource.data);
+      allow write: if false;
+    }
+    // Native VNPay TEST (LTMobile-style). Client results are NEVER trusted for real money.
+    // These rules only authorize the isolated sandbox_* ledger. Production collections above stay read-only.
+    function sandboxActive() { return signedIn() && account().trang_thai == 'ACTIVE'; }
+    function sandboxPayment(id) { return get(/databases/$(database)/documents/sandbox_payments/$(id)).data; }
+    function sandboxSource(d) {
+      let name = d.type == 'LESSON' ? 'lessons' : (d.type == 'CONTRACT' ? 'contracts' : 'class_registrations');
+      let s = get(/databases/$(database)/documents/$(name)/$(d.source_id)).data;
+      return d.student_id == s.student_id && d.tutor_id == s.tutor_id
+        && ((d.type == 'LESSON' && s.trang_thai == 'CONFIRMED' && s.da_hoan_thanh == false
+              && d.amount == s.hoc_phi && d.session_count == 1)
+          || (d.type == 'CONTRACT' && s.status in ['CHO_KY_QUY','HIEU_LUC']
+              && s.student_confirmed == true && s.tutor_confirmed == true
+              && d.amount == s.fee * s.sessions && d.session_count == s.sessions)
+          || (d.type == 'GROUP' && s.trang_thai == 'CONFIRMED' && sandboxGroup(d,s)));
+    }
+    function sandboxGroup(d,s) {
+      let c = get(/databases/$(database)/documents/group_classes/$(s.class_id)).data;
+      return c.tutor_id == d.tutor_id && d.student_id in c.thanh_vien && d.session_count == c.so_buoi
+        && d.amount == c.hoc_phi * (c.tinh_theo_buoi ? c.so_buoi : 1);
+    }
+    function sandboxShare(p,n) { return int(p.amount / p.session_count) + (n <= p.amount % p.session_count ? 1 : 0); }
+    match /sandbox_payments/{paymentId} {
+      allow get: if sandboxActive() && (resource == null || financialMember(resource.data));
+      allow list: if financialMember(resource.data);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && request.resource.data.student_id == request.auth.uid && request.resource.data.student_id != request.resource.data.tutor_id
+        && request.resource.data.provider == 'VNPAY' && request.resource.data.status == 'WAITING'
+        && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 120000000
+        && request.resource.data.session_count is int && request.resource.data.session_count >= 1 && request.resource.data.session_count <= 60
+        && request.resource.data.received_amount == 0 && request.resource.data.earned_amount == 0 && request.resource.data.refund_total == 0
+        && request.resource.data.created_at == request.time && stamped() && sandboxSource(request.resource.data);
+      allow update: if sandboxActive() && resource.data.is_sandbox == true && request.resource.data.is_sandbox == true
+        && (admin() || request.auth.uid == resource.data.student_id) && stamped()
+        && changed(['status','order_code','checkout_url','expires_at','updated_at','received_amount','earned_amount','refund_total',
+                    'paid_at','provider_transaction_no','return_url','response_code','refund_request_id'])
+        && request.resource.data.status in ['WAITING','PAID','FAILED','CANCELLED','GATEWAY_REVIEW','REFUND_REQUESTED','CLOSED_REFUNDED']
+        && request.resource.data.earned_amount >= 0 && request.resource.data.earned_amount <= resource.data.amount
+        && request.resource.data.received_amount in [0,resource.data.amount]
+        && request.resource.data.refund_total >= 0 && request.resource.data.refund_total <= resource.data.amount;
+      allow delete: if false;
+      match /sessions/{number} {
+        function p() { return sandboxPayment(paymentId); }
+        allow read: if financialMember(p());
+        allow create: if sandboxActive() && request.auth.uid == p().tutor_id && p().status == 'PAID'
+          && request.resource.data.is_sandbox == true && request.resource.data.status == 'PROPOSED'
+          && request.resource.data.number is int && number == string(request.resource.data.number)
+          && request.resource.data.number >= 1 && request.resource.data.number <= p().session_count
+          && request.resource.data.amount == sandboxShare(p(),request.resource.data.number)
+          && request.resource.data.created_at == request.time && stamped();
+        allow update: if sandboxActive() && p().status == 'PAID' && stamped()
+          && changed(['status','reason','confirmed_at','admin_note','reviewer_id','updated_at'])
+          && ((request.auth.uid == p().student_id && resource.data.status == 'PROPOSED'
+                && request.resource.data.status in ['COMPLETED','DISPUTED']
+                && (request.resource.data.status != 'COMPLETED'
+                  || existsAfter(/databases/$(database)/documents/sandbox_tutor_earnings/$(paymentId + '_' + number))))
+              || (admin() && resource.data.status == 'DISPUTED' && request.resource.data.status == 'PROPOSED'));
+        allow delete: if false;
+      }
+    }
+    match /sandbox_tutor_earnings/{earningId} {
+      allow get: if sandboxActive() && (resource == null || financialMember(resource.data));
+      allow list: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && request.auth.uid == request.resource.data.student_id
+        && request.resource.data.student_id == sandboxPayment(request.resource.data.payment_id).student_id
+        && request.resource.data.tutor_id == sandboxPayment(request.resource.data.payment_id).tutor_id
+        && sandboxPayment(request.resource.data.payment_id).status == 'PAID'
+        && earningId == request.resource.data.payment_id + '_' + string(request.resource.data.session_number)
+        && request.resource.data.amount == sandboxShare(sandboxPayment(request.resource.data.payment_id),request.resource.data.session_number)
+        && getAfter(/databases/$(database)/documents/sandbox_payments/$(request.resource.data.payment_id)/sessions/$(string(request.resource.data.session_number))).data.status == 'COMPLETED'
+        && request.resource.data.period.matches('20[0-9]{2}-(0[1-9]|1[0-2])')
+        && request.resource.data.payout_id == null && request.resource.data.created_at == request.time;
+      allow update: if admin() && resource.data.is_sandbox == true && changed(['payout_id']);
+      allow delete: if false;
+    }
+    match /sandbox_payout_accounts/{tutorId} {
+      allow get: if sandboxActive() && (admin() || request.auth.uid == tutorId);
+      allow create, update: if sandboxActive() && request.auth.uid == tutorId && verifiedTutor(tutorId)
+        && request.resource.data.keys().hasOnly(['is_sandbox','bank_name','account_number','account_name','updated_at'])
+        && request.resource.data.is_sandbox == true && request.resource.data.bank_name is string
+        && request.resource.data.bank_name.size() >= 2 && request.resource.data.bank_name.size() <= 100
+        && request.resource.data.account_number.matches('[0-9]{6,30}')
+        && request.resource.data.account_name is string && request.resource.data.account_name.size() >= 2 && request.resource.data.account_name.size() <= 100
+        && stamped();
+      allow list, delete: if false;
+    }
+    match /sandbox_tutor_payouts/{payoutId} {
+      allow read: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if admin() && request.resource.data.is_sandbox == true && request.resource.data.created_by == request.auth.uid
+        && request.resource.data.status == 'READY' && request.resource.data.amount is int && request.resource.data.amount > 0
+        && request.resource.data.session_count >= 1 && request.resource.data.session_count <= 100
+        && request.resource.data.earning_ids is list && request.resource.data.earning_ids.size() == request.resource.data.session_count
+        && request.resource.data.created_at == request.time && stamped();
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'READY'
+        && request.resource.data.status in ['PAID','CANCELLED'] && stamped()
+        && changed(['status','bank_reference','paid_by','paid_at','cancel_reason','cancelled_by','updated_at']);
+      allow delete: if false;
+    }
+    match /sandbox_refund_requests/{refundId} {
+      allow read: if financialMember(resource.data);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && (admin() || request.auth.uid == request.resource.data.student_id)
+        && request.resource.data.student_id == sandboxPayment(request.resource.data.payment_id).student_id
+        && request.resource.data.tutor_id == sandboxPayment(request.resource.data.payment_id).tutor_id
+        && request.resource.data.amount > 0 && request.resource.data.amount <= sandboxPayment(request.resource.data.payment_id).amount
+        && request.resource.data.status == 'PENDING' && request.resource.data.created_at == request.time && stamped();
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'PENDING'
+        && request.resource.data.status in ['REFUNDED','REJECTED'] && stamped()
+        && changed(['status','bank_reference','refunded_by','refunded_at','review_note','reviewed_by','updated_at']);
+      allow delete: if false;
+    }
+    // Payment attempts and all other undeclared collections are denied to clients.
   }
 }

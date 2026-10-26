@@ -1,7 +1,10 @@
 // Local Emulator Suite only. Never seeds production.
 import assert from 'node:assert/strict';
-const root='http://127.0.0.1:8080/v1/projects/tmdt-3e274/databases/(default)/documents';
-const auth='http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
+const firestoreHost=process.env.FIRESTORE_EMULATOR_HOST||'127.0.0.1:8080';
+const authHost=process.env.FIREBASE_AUTH_EMULATOR_HOST||'127.0.0.1:9099';
+for(const host of [firestoreHost,authHost])assert.match(host,/^(127\.0\.0\.1|localhost):[0-9]+$/,'Tests require loopback emulators');
+const root=`http://${firestoreHost}/v1/projects/tmdt-3e274/databases/(default)/documents`;
+const auth=`http://${authHost}/identitytoolkit.googleapis.com/v1`;
 const prefix='projects/tmdt-3e274/databases/(default)/documents/';
 const fields=data=>Object.fromEntries(Object.entries(data).map(([k,v])=>[k,typeof v==='boolean'?{booleanValue:v}:{stringValue:v}]));
 async function request(url,method,body,token){const r=await fetch(url,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};}
@@ -9,7 +12,12 @@ function write(path,data,create=false){return {update:{name:prefix+path,fields:f
 const commit=(writes,token)=>request(root+':commit','POST',{writes},token);
 let passed=0;
 function check(ok,label){assert.ok(ok,label);console.log('PASS '+label);passed++;}
-async function signup(suffix){const r=await request(auth+'/accounts:signUp?key=emulator','POST',{email:`avatar-${Date.now()}-${suffix}@example.com`,password:'HocTap123!',returnSecureToken:true});assert.equal(r.status,200);return r.data;}
+async function signup(suffix){
+ const email=`avatar-${Date.now()}-${suffix}@example.com`,password='HocTap123!';
+ const r=await request(auth+'/accounts:signUp?key=emulator','POST',{email,password,returnSecureToken:true});assert.equal(r.status,200);
+ const verified=await request(auth+'/accounts:update?key=emulator','POST',{localId:r.data.localId,emailVerified:true},'owner');assert.equal(verified.status,200);
+ const login=await request(auth+'/accounts:signInWithPassword?key=emulator','POST',{email,password,returnSecureToken:true});assert.equal(login.status,200);return login.data;
+}
 const owner=await signup('owner'),other=await signup('other'),uid=owner.localId;
 const profile={ho_ten:'Avatar kiểm thử',email:owner.email,so_dien_thoai:'0912345678',dia_chi:'',anh_dai_dien:'',vai_tro:'STUDENT',la_gia_su:false,trang_thai:'ACTIVE'};
 check((await commit([write('users/'+uid,profile,true)],owner.idToken)).status===200,'Create account');

@@ -1,0 +1,5 @@
+# Copy to vnpay.properties in the project root. Never commit the filled file.
+VNPAY_TMN_CODE=
+VNPAY_HASH_SECRET=
+# The WebView intercepts this URL locally; it does not need hosting.
+VNPAY_RETURN_URL=https://tmdt.example/vnpay/return
