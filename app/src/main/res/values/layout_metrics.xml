@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="control_height">52dp</dimen>
+    <dimen name="control_text_size">15sp</dimen>
+    <dimen name="control_vertical_padding">12dp</dimen>
+    <dimen name="navigation_height">72dp</dimen>
+    <dimen name="navigation_bottom_gap">10dp</dimen>
+    <dimen name="navigation_content_gap">12dp</dimen>
+    <dimen name="navigation_corner_radius">36dp</dimen>
+</resources>

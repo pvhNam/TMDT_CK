@@ -75,7 +75,7 @@ public final class ExUi {
         if (root != null && text != null && !text.isEmpty()) Snackbar.make(root, text, Snackbar.LENGTH_LONG).show();
     }
 
-    /** Ảnh đại diện: ảnh base64 nếu có, nếu không dùng ảnh mẫu hoặc chữ cái đầu (giống màn tin nhắn). */
+    /** Ảnh đại diện đã lưu; thiếu ảnh thì hiển thị chữ cái đầu. */
     public static void avatar(ImageView photo, TextView initials, @Nullable String base64, String name) {
         Bitmap bitmap = base64 == null || base64.isEmpty() ? null : decode(base64);
         if (bitmap == null) { ChatFormat.avatar(photo, initials, name); return; }

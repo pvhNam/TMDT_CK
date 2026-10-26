@@ -61,7 +61,7 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private final ItemConversationBinding b;
         RowHolder(ItemConversationBinding binding) { super(binding.getRoot()); b = binding; }
         void bind(Conversation item) {
-            ChatFormat.avatar(b.avatarPhoto, b.avatarInitials, item.peerName);
+            ChatFormat.avatar(b.avatarPhoto, b.avatarInitials, item.peerId, item.peerName);
             b.name.setText(item.peerName);
             b.time.setText(ChatFormat.listTime(item.sortTime()));
             String preview = item.lastMessage.isEmpty()

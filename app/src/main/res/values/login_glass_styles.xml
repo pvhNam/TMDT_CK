@@ -11,22 +11,22 @@
         <item name="android:layout_marginBottom">14dp</item>
     </style>
     <style name="LoginInput" parent="ReferenceInput">
-        <item name="android:minHeight">54dp</item>
+        <item name="android:minHeight">@dimen/control_height</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textColorHint">#7B8CA6</item>
     </style>
     <style name="LoginPrimary" parent="ReferencePrimary">
-        <item name="android:layout_height">54dp</item>
-        <item name="android:minHeight">54dp</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:layout_height">@dimen/control_height</item>
+        <item name="android:minHeight">@dimen/control_height</item>
+        <item name="android:textSize">@dimen/control_text_size</item>
         <item name="cornerRadius">18dp</item>
         <item name="backgroundTint">#087BFF</item>
     </style>
     <style name="LoginGlassSocialButton" parent="SocialSignInButton">
-        <item name="android:layout_width">56dp</item>
-        <item name="android:layout_height">56dp</item>
-        <item name="android:padding">16dp</item>
-        <item name="cornerRadius">28dp</item>
+        <item name="android:layout_width">@dimen/control_height</item>
+        <item name="android:layout_height">@dimen/control_height</item>
+        <item name="android:padding">14dp</item>
+        <item name="cornerRadius">26dp</item>
         <item name="backgroundTint">#FFFFFF</item>
         <item name="strokeColor">#E2EAF4</item>
     </style>

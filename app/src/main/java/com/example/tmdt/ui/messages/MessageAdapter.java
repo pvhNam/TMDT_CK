@@ -23,11 +23,12 @@ final class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private final OnRetry onRetry;
     /** Mỗi phần tử là String (nhãn ngày) hoặc ChatMessage. */
     private final List<Object> rows = new ArrayList<>();
-    private String peerName = "";
+    private String peerName = "",peerId="";
 
     MessageAdapter(OnRetry onRetry) { this.onRetry = onRetry; }
 
-    void submit(List<ChatMessage> messages, String peer) {
+    void submit(List<ChatMessage> messages, String peer, String uid) {
+        peerId=uid==null?"":uid;
         rows.clear(); peerName = peer == null ? "" : peer;
         LocalDate previous = null;
         for (ChatMessage message : messages) {
@@ -68,7 +69,7 @@ final class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         private final ItemChatInBinding b;
         InHolder(ItemChatInBinding binding) { super(binding.getRoot()); b = binding; }
         void bind(ChatMessage message) {
-            ChatFormat.avatar(b.avatarPhoto, b.avatarInitials, peerName);
+            ChatFormat.avatar(b.avatarPhoto, b.avatarInitials, peerId, peerName);
             b.bubble.setText(message.content);
             b.time.setText(ChatFormat.clock(message.sentAt));
         }

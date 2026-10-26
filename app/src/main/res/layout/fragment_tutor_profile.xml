@@ -211,7 +211,7 @@
                             android:id="@+id/tv_stat_rating"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="4.9"
+                            android:text="—"
                             android:textSize="17sp"
                             android:textColor="#06164D"
                             android:fontFamily="sans-serif-medium"
@@ -250,7 +250,7 @@
                             android:id="@+id/tv_stat_experience"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="3 năm"
+                            android:text=""
                             android:textSize="17sp"
                             android:textColor="#06164D"
                             android:fontFamily="sans-serif-medium"
@@ -289,7 +289,7 @@
                             android:id="@+id/tv_stat_students"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="128"
+                            android:text="—"
                             android:textSize="17sp"
                             android:textColor="#06164D"
                             android:fontFamily="sans-serif-medium"
@@ -493,79 +493,16 @@
                     android:layout_marginTop="20dp"
                     android:layout_marginBottom="8dp" />
 
-                <!-- Rating summary banner -->
-                <com.google.android.material.card.MaterialCardView
+                <TextView
+                    android:id="@+id/tv_reviews_summary_count"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="@dimen/soft_field_radius"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#EFF6FF"
-                    app:strokeColor="#DFE8F5"
-                    app:strokeWidth="1dp"
-                    android:layout_marginBottom="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:layout_marginEnd="16dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="4.9"
-                                android:textSize="26sp"
-                                android:textColor="#06164D"
-                                android:fontFamily="sans-serif-medium" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="★★★★★"
-                                android:textColor="#FFB617"
-                                android:textSize="16sp" />
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="48dp"
-                            android:background="@color/soft_border"
-                            android:layout_marginEnd="16dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_reviews_summary_count"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="128 đánh giá từ học viên"
-                                android:textSize="14sp"
-                                android:textColor="#06164D"
-                                android:fontFamily="sans-serif-medium" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="100% học viên hài lòng với chất lượng giảng dạy"
-                                android:textSize="12sp"
-                                android:textColor="#46638C"
-                                android:layout_marginTop="3dp" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
+                    android:text="@string/tutor_profile_no_reviews"
+                    android:textColor="#46638C"
+                    android:textSize="14sp"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_account_note"
+                    android:layout_marginBottom="12dp" />
                 <!-- Reviews list container -->
                 <LinearLayout
                     android:id="@+id/ll_reviews"
