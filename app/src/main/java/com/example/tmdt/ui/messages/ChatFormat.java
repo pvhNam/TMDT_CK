@@ -3,8 +3,8 @@ package com.example.tmdt.ui.messages;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import com.example.tmdt.CatalogState;
-import com.example.tmdt.R;
+import com.example.tmdt.ui.common.AvatarView;
+import android.view.ViewGroup;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -67,23 +67,19 @@ public final class ChatFormat {
         return parts[parts.length - 1].substring(0, 1).toUpperCase(Locale.ROOT);
     }
 
-    /**
-     * Ảnh mẫu đi kèm dự án cho các tài khoản minh họa; người dùng khác hiển thị chữ cái đầu.
-     * Hồ sơ người dùng là dữ liệu riêng tư nên hội thoại không sao chép ảnh đại diện thật.
-     */
-    public static int samplePhoto(String name) {
-        String key = CatalogState.normalize(name == null ? "" : name);
-        if (key.contains("minh anh")) return R.drawable.photo_minhanh;
-        if (key.contains("hoang nam")) return R.drawable.photo_hoangnam;
-        if (key.contains("ngoc mai")) return R.drawable.photo_ngocmai;
-        return 0;
+    public static void avatar(ImageView photo, TextView initials, String name) {
+        initials.setText(initial(name));
+        photo.setImageDrawable(null);
+        photo.setVisibility(View.GONE);
+        initials.setVisibility(View.VISIBLE);
     }
 
-    public static void avatar(ImageView photo, TextView initials, String name) {
-        int image = samplePhoto(name);
-        initials.setText(initial(name));
-        if (image != 0) photo.setImageResource(image); else photo.setImageDrawable(null);
-        photo.setVisibility(image != 0 ? View.VISIBLE : View.GONE);
-        initials.setVisibility(image != 0 ? View.GONE : View.VISIBLE);
+    /** Displays the same saved profile photo as the home/profile screens, keyed by Firebase UID. */
+    public static void avatar(ImageView photo, TextView initials, String uid, String name) {
+        ViewGroup container=(ViewGroup)photo.getParent();
+        AvatarView avatar=container.findViewWithTag("chat_profile_avatar");
+        if(avatar==null){avatar=new AvatarView(container.getContext());avatar.setTag("chat_profile_avatar");container.addView(avatar,new ViewGroup.LayoutParams(-1,-1));}
+        photo.setVisibility(View.GONE);initials.setVisibility(View.GONE);
+        avatar.bind(uid,name);
     }
 }

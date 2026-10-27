@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     public Classroom classroom;
     /** Hợp đồng dạy (member 4, UC23). */
     public Exchange exchange;
+    public PaymentState payments;
     String screen="home";
     private String pendingDestination;
     private String authenticatedDestination;
@@ -54,16 +55,30 @@ public class MainActivity extends AppCompatActivity {
     private final com.example.tmdt.ui.common.FloatingNavigationInsets navigationInsets=new com.example.tmdt.ui.common.FloatingNavigationInsets();
     private final android.view.ViewTreeObserver.OnGlobalLayoutListener navigationLayout=this::updateNavigationPadding;
 
+    @Override protected void attachBaseContext(Context base){
+        super.attachBaseContext(com.example.tmdt.ui.common.UiScale.compact(base));
+    }
+
     @Override public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(),false);
         binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
+            @Override public void onFragmentViewCreated(androidx.fragment.app.FragmentManager manager,Fragment fragment,View view,Bundle state){
+                com.example.tmdt.ui.common.Motion.bindControls(view);
+            }
+        },true);
+        binding.appRoot.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
+            if(right-left!=oldRight-oldLeft)updateNavigationVisibility();
+        });
         account=new ViewModelProvider(this).get(AccountState.class);
         catalog=new ViewModelProvider(this).get(CatalogState.class);
         chat=new ViewModelProvider(this).get(ChatState.class);
         tutorReviews=new ViewModelProvider(this).get(TutorReviewState.class);
         classroom=new Classroom(this,savedInstanceState);
         exchange=new Exchange(this,savedInstanceState);
+        payments=new ViewModelProvider(this).get(PaymentState.class);
+        if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             bottomInset=safe.bottom;
@@ -132,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
             // Hợp đồng, mẫu hợp đồng, hợp đồng cộng tác theo tài khoản (UC23).
             exchange.accountChanged(account.signedIn());
             renderContractBadge();
+            payments.account(account);
             renderNavigation();
         });
         tutorReviews.changes.observe(this,ignored->{
@@ -142,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
         exchange.contracts.changes().observe(this,ignored->renderContractBadge());
+        payments.changes.observe(this,ignored->{
+            if(payments.destination!=null){String next=payments.destination;payments.destination=null;show(next);}
+        });
     }
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);
@@ -156,6 +175,8 @@ public class MainActivity extends AppCompatActivity {
         if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
         destination=exchange.redirect(destination);
+        if(java.util.Arrays.asList("payments","payment_detail","tutor_income","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
+        if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
         if("post_request".equals(destination)&&!"post_request".equals(screen))
             postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
         if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
@@ -185,6 +206,12 @@ public class MainActivity extends AppCompatActivity {
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
+            case "payments":fragment=new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
+            case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
+            case "tutor_income":fragment=new com.example.tmdt.ui.payments.TutorIncomeFragment();break;
+            case "payout_bank":fragment=new com.example.tmdt.ui.payments.PayoutBankFragment();break;
+            case "admin_payroll":fragment=new com.example.tmdt.ui.payments.AdminPayrollFragment();break;
+            case "payout_detail":fragment=new com.example.tmdt.ui.payments.PayoutDetailFragment();break;
             case "tutor_evidence":fragment=new com.example.tmdt.ui.profile.TutorEvidenceFragment();break;
             case "tutor_supplement":fragment=com.example.tmdt.ui.profile.TutorEvidenceFragment.supplementScreen();break;
             case "tutor_pending":fragment=new com.example.tmdt.ui.profile.PendingTutorFragment();break;
@@ -219,10 +246,8 @@ public class MainActivity extends AppCompatActivity {
         if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
         if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
             androidx.fragment.app.FragmentTransaction transaction=getSupportFragmentManager().beginTransaction().setReorderingAllowed(true);
-            if(current!=null && com.example.tmdt.ui.common.Motion.enabled()
-                    && (classroom.tutorMode() || current.getClass().getPackage().getName().endsWith(".tutor")
-                    || java.util.Arrays.asList("tutor_evidence","review_tutor","tutor_pending","tutor_supplement","tutor_submitted").contains(screen)))
-                transaction.setCustomAnimations(R.anim.teacher_enter,R.anim.teacher_exit);
+            if(current!=null && com.example.tmdt.ui.common.Motion.enabled())
+                transaction.setCustomAnimations(R.animator.page_enter,R.animator.page_exit);
             final String target=screen;navigatingTo=target;
             transaction.replace(R.id.screen_container,fragment,screen).runOnCommit(()->{
                 if(target.equals(navigatingTo))navigatingTo=null;
@@ -232,12 +257,13 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
-        if(account.isBusy()||account.isSendingCode()||(isRequestScreen(screen)&&requestManager().busy()))return false;
+        if(account.isBusy()||account.isSendingCode()||payments.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
         else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
+        destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
             account.clearFeedback();
             account.removeDraft("login.password");
@@ -271,8 +297,10 @@ public class MainActivity extends AppCompatActivity {
         if(binding.appRoot.getPaddingBottom()!=paddingBottom)
             binding.appRoot.setPadding(binding.appRoot.getPaddingLeft(),binding.appRoot.getPaddingTop(),binding.appRoot.getPaddingRight(),paddingBottom);
         android.widget.FrameLayout.LayoutParams glassParams=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
-        int margin=Math.round(8*getResources().getDisplayMetrics().density)+systemBottomInset;
-        if(glassParams.bottomMargin!=margin){glassParams.bottomMargin=margin;binding.navigationGlass.setLayoutParams(glassParams);}
+        int margin=getResources().getDimensionPixelSize(R.dimen.navigation_bottom_gap)+systemBottomInset;
+        int available=binding.appRoot.getWidth()-binding.appRoot.getPaddingLeft()-binding.appRoot.getPaddingRight();
+        int width=available>0?Math.max(1,Math.round(available*com.example.tmdt.ui.common.UiScale.NAVIGATION_WIDTH_FACTOR)-glassParams.leftMargin-glassParams.rightMargin):glassParams.width;
+        if(glassParams.bottomMargin!=margin||glassParams.width!=width){glassParams.bottomMargin=margin;glassParams.width=width;binding.navigationGlass.setLayoutParams(glassParams);}
         binding.bottomNavigation.setVisibility(visibility);
         binding.navigationGlass.setVisibility(visibility);
         binding.navigationGlass.setBlurAutoUpdate(visibility==View.VISIBLE);
@@ -280,8 +308,10 @@ public class MainActivity extends AppCompatActivity {
     }
     private void updateNavigationPadding() {
         if(binding==null)return;
+        android.widget.FrameLayout.LayoutParams params=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
+        int height=binding.navigationGlass.getHeight()>0?binding.navigationGlass.getHeight():getResources().getDimensionPixelSize(R.dimen.navigation_height);
         int inset=binding.navigationGlass.getVisibility()==View.VISIBLE
-                ?Math.round(96*getResources().getDisplayMetrics().density)+systemBottomInset:0;
+                ?height+params.bottomMargin+getResources().getDimensionPixelSize(R.dimen.navigation_content_gap):0;
         for(int i=0;i<binding.screenContainer.getChildCount();i++)
             navigationInsets.apply(binding.screenContainer.getChildAt(i),inset);
     }
@@ -291,12 +321,16 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
     public void back(){
-        if(account.isBusy()||(isRequestScreen(screen)&&requestManager().busy()))return;hideKeyboard();
+        if(account.isBusy()||payments.busy||(isRequestScreen(screen)&&requestManager().busy()))return;
+        hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
         if(target==null)target=exchange.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
+            case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
+            case "payments":case "tutor_income":case "admin_payroll":show("account");break;
+            case "payout_bank":show("tutor_income");break;
             case "welcome":finish();break;
             case "student_intro":show("welcome");break;
             case "register":
@@ -404,5 +438,23 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);out.putString("request_id",selectedRequestId);out.putString("request_origin",requestManagementOrigin);out.putString("post_request_origin",postRequestOrigin);out.putString("request_search_origin",requestSearchOrigin);classroom.save(out);exchange.save(out);}
+    public void openPayment(String type,String sourceId){
+        Lesson lesson="LESSON".equals(type)?classroom.store.lesson(sourceId):null;
+        openPayment(type,sourceId,lesson==null?payments.owner:lesson.studentId);
+    }
+    public void openPayment(String type,String sourceId,String studentId){hideKeyboard();payments.open(type,sourceId,screen,studentId);}
+    @Override protected void onSaveInstanceState(Bundle out){
+        super.onSaveInstanceState(out);
+        out.putString("screen",screen);
+        out.putString("authenticated_destination",authenticatedDestination);
+        out.putString("request_id",selectedRequestId);
+        out.putString("request_origin",requestManagementOrigin);
+        out.putString("post_request_origin",postRequestOrigin);
+        out.putString("request_search_origin",requestSearchOrigin);
+        classroom.save(out);
+        exchange.save(out);
+        out.putString("payment_id",payments.selected);
+        out.putString("payout_id",payments.selectedPayout);
+        out.putString("payment_origin",payments.origin);
+    }
 }

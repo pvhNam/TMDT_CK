@@ -56,6 +56,11 @@ public final class LessonDetailFragment extends ScreenFragment {
         price.addView(ui.icon(R.drawable.ic_wallet,22,Ui.INK)); ui.gap(price,12);
         ui.weight(price,ui.text("Học phí",17,Ui.INK,false)); price.addView(ui.text(Tutor.money(lesson.total()),20,Ui.INK,true));
         ui.add(body,price); ui.space(body,10);
+        if(lesson.confirmed()){
+            com.example.tmdt.MainActivity host=(com.example.tmdt.MainActivity)requireActivity();
+            com.example.tmdt.PaymentState.Row payment=host.payments.paymentFor("LESSON",lesson.id);
+            ui.addAction(body,ui.action(payment==null?"Thanh toán học phí":"Thanh toán · "+com.example.tmdt.PaymentState.status(payment.text("status")),R.drawable.ic_wallet,Ui.PRIMARY,()->host.openPayment("LESSON",lesson.id)),48);ui.space(body,12);
+        }
 
         if (lesson.proposal() && lesson.confirmed()) {
             LinearLayout proposal = ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch sang "+lesson.proposalLabel()+". Chạm để phản hồi.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE);
@@ -90,7 +95,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.CANCELLED.equals(lesson.status)) return "Buổi học đã hủy"+(lesson.cancelReason.isEmpty()?".":" · Lý do: "+lesson.cancelReason+".");
         if (Lesson.REJECTED.equals(lesson.status)) return "Gia sư đã từ chối yêu cầu này. Bạn có thể chọn thời gian khác.";
         if (lesson.pending()) return "Gia sư sẽ xác nhận yêu cầu của bạn.";
-        if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để giải ngân học phí.";
+        if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để ghi nhận tiền dạy vào kỳ chi trả tháng này.";
         if (lesson.finished) return "Bạn đã xác nhận buổi học này hoàn thành.";
         return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : (lesson.roomLink.isEmpty()?"Phòng học":"Phòng học "+lesson.roomHost())+" mở trước giờ bắt đầu 10 phút.";
     }
@@ -100,6 +105,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.CANCELLED.equals(lesson.status)) return ui.action("Buổi học đã hủy",0,Ui.DISABLED,null);
         if (Lesson.REJECTED.equals(lesson.status)) return ui.action("Yêu cầu bị từ chối",0,Ui.DISABLED,null);
         if (lesson.pending()) return ui.action("Đang chờ gia sư xác nhận",0,Ui.DISABLED,null);
+        if(!lesson.finished&&!((com.example.tmdt.MainActivity)requireActivity()).payments.paid("LESSON",lesson.id))return ui.action("Thanh toán để xác nhận lịch học",0,Ui.PRIMARY,()->((com.example.tmdt.MainActivity)requireActivity()).openPayment("LESSON",lesson.id));
         if (lesson.finished) return ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null);
         if (lesson.needsConfirmation()) return ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,()->classroom.show("confirm"));
         if (lesson.roomOpen()) return lesson.online() ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openRoom(lesson))

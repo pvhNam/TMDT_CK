@@ -32,6 +32,8 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.rowAgreement.setOnClickListener(v->host().exchange.openAgreement());
         binding.rowTemplates.setOnClickListener(v->host().exchange.openTemplates());
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
+        binding.rowPayments.setOnClickListener(v->go("payments"));
+        binding.rowIncome.setOnClickListener(v->go("tutor_income"));
         binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
@@ -64,6 +66,8 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.profileContent.setVisibility(profile==null?View.GONE:View.VISIBLE);
         binding.retry.setVisibility(profile==null&&!state.isBusy()?View.VISIBLE:View.GONE);
         if(profile==null)return;
+        binding.paymentsLabel.setText("ADMIN".equals(profile.role)?"Quản lý thanh toán & chi trả":"Thanh toán của tôi");
+        binding.rowIncome.setVisibility(profile.tutor?View.VISIBLE:View.GONE);
         AvatarRenderer.render(binding.avatar,profile.avatar,profile.name);
         binding.name.setText(profile.name);
         // TODO: replace with real counts (completed lessons / favourite tutors) once Classroom exposes them.

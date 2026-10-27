@@ -197,7 +197,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(body,note);ui.space(body,12);
     }
 
-    /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
+    /** Review an actual booking request received from Firestore. */
     private void respond(Lesson lesson) {
         LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
         LinearLayout top = ui.row();

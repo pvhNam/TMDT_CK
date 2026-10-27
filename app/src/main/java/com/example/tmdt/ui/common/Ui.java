@@ -136,7 +136,7 @@ public final class Ui {
     public EditText input(String hint) {
         EditText input = new EditText(context); input.setTextSize(14); input.setTextColor(INK);
         input.setHintTextColor(MUTED); input.setHint(hint); input.setSingleLine(true);
-        input.setMinimumHeight(dp(48)); pad(input,13,10); fieldSurface(input,0xFFF8FAFF,BORDER);
+        input.setMinimumHeight(context.getResources().getDimensionPixelSize(R.dimen.control_height)); pad(input,13,12); fieldSurface(input,0xFFF8FAFF,BORDER);
         return input;
     }
 
@@ -194,10 +194,10 @@ public final class Ui {
 
     /** Button/Primary, Button/Outline, Button/Danger and Button/Disabled; the icon sits at the start as in the design. */
     public FrameLayout action(String label, int icon, int style, Runnable click) {
-        FrameLayout button = new FrameLayout(context); button.setMinimumHeight(dp(46));
+        FrameLayout button = new FrameLayout(context); button.setMinimumHeight(context.getResources().getDimensionPixelSize(R.dimen.control_height));
         int foreground = style==OUTLINE ? BLUE : style==DANGER ? RED : WHITE;
         surface(button, style==PRIMARY ? BLUE : style==DISABLED ? GRAY : WHITE, radius(R.dimen.soft_button_radius), style==OUTLINE ? BLUE : style==DANGER ? RED : 0);
-        TextView text = text(label,14,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
+        TextView text = text(label,15,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
         text.setPadding(dp(icon!=0 ? 36 : 8),0,dp(8),0);
         button.addView(text,new FrameLayout.LayoutParams(-1,-1));
         if (icon != 0) {
@@ -208,8 +208,8 @@ public final class Ui {
         if (style == DISABLED || click == null) button.setEnabled(false); else clickable(button,click);
         return button;
     }
-    public void addAction(LinearLayout parent, View button, int height) { parent.addView(button,lp(-1,height)); }
-    public void weightAction(LinearLayout row, View button, int height) { row.addView(button,new LinearLayout.LayoutParams(0,dp(height),1)); }
+    public void addAction(LinearLayout parent, View button, int height) { parent.addView(button,new LinearLayout.LayoutParams(-1,Math.max(dp(height),context.getResources().getDimensionPixelSize(R.dimen.control_height)))); }
+    public void weightAction(LinearLayout row, View button, int height) { row.addView(button,new LinearLayout.LayoutParams(0,Math.max(dp(height),context.getResources().getDimensionPixelSize(R.dimen.control_height)),1)); }
 
     /** Nhãn (status pill), e.g. green "Đã xác nhận" or orange "Chờ duyệt". */
     public TextView pill(String label, int size, int color, int fill) {
@@ -222,7 +222,7 @@ public final class Ui {
     }
 
     /** Trường: a bold label above an input or picker. */
-    public void label(LinearLayout parent, String label) { add(parent,text(label,14,INK,true)); space(parent,7); }
+    public void label(LinearLayout parent, String label) { add(parent,text(label,14,INK,true)); space(parent,8); }
     public TextView section(LinearLayout parent, String title, int size) { TextView view = text(title,size,INK,true); add(parent,view); return view; }
 
     /** Ô nhập acting as a picker: optional icon, value and the down chevron. */
@@ -238,7 +238,7 @@ public final class Ui {
         EditText input = new EditText(context); input.setTextSize(15); input.setTextColor(INK); input.setHintTextColor(MUTED);
         input.setHint(hint); input.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));
         input.setSingleLine(!multiline); if (multiline) { input.setMinLines(2); input.setGravity(Gravity.TOP|Gravity.START); }
-        input.setMinimumHeight(dp(multiline ? 61 : 44)); input.setPadding(dp(12),dp(10),dp(12),dp(10)); fieldSurface(input,0xFFF8FAFF,BORDER);
+        input.setMinimumHeight(multiline?dp(72):context.getResources().getDimensionPixelSize(R.dimen.control_height)); input.setPadding(dp(12),dp(12),dp(12),dp(12)); fieldSurface(input,0xFFF8FAFF,BORDER);
         input.setContentDescription(hint); return input;
     }
 

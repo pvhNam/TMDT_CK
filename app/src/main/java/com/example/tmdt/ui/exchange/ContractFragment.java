@@ -21,7 +21,9 @@ import com.example.tmdt.databinding.FragmentContractBinding;
  * Màn 40 – Chốt hợp đồng dạy (UC23).
  * Gia sư soạn hợp đồng cho buổi học đã chấp nhận: lịch, thời lượng, hình thức lấy theo buổi học; gia sư điền môn,
  * số buổi, học phí và thỏa thuận thêm; điều khoản chung là mẫu của quản trị viên. Học viên xem rồi
- * "Xác nhận hợp đồng" (→ chờ ký quỹ) hoặc từ chối; gia sư được hủy khi học viên chưa xác nhận.
+ * "Xác nhận hợp đồng" (→ chờ thanh toán) hoặc từ chối; gia sư được hủy khi học viên chưa xác nhận.
+ * Hợp đồng đã chốt: học viên thanh toán toàn khóa bằng VNPay (luồng thanh toán của nhóm).
+
  */
 public final class ContractFragment extends Fragment {
     private FragmentContractBinding binding;
@@ -163,11 +165,10 @@ public final class ContractFragment extends Fragment {
             binding.tertiary.setOnClickListener(v -> reject(c));
         } else if (c.agreed()) {
             boolean student = me.equals(c.studentId);
-            binding.primary.setText(Contract.AWAITING_ESCROW.equals(c.status) ? (student ? "Ký quỹ học phí" : "Chờ học viên ký quỹ") : "Hợp đồng đang hiệu lực");
-            binding.primary.setEnabled(student && Contract.AWAITING_ESCROW.equals(c.status));
-            binding.primary.setOnClickListener(v -> exchange.dialog("Ký quỹ học phí",
-                    "Hợp đồng " + c.code + " đã được hai bên chốt. Bước ký quỹ " + ExUi.money(c.total())
-                            + " được thực hiện ở màn Ví và nạp tiền (41) của luồng ký quỹ."));
+            binding.primary.setText(Contract.AWAITING_ESCROW.equals(c.status) ? (student ? "Thanh toán toàn bộ khóa qua VNPay" : "Xem thanh toán khóa học") : "Thanh toán và các buổi trong khóa");
+            binding.primary.setEnabled(!busy);
+            binding.primary.setOnClickListener(v -> ((MainActivity)requireActivity()).openPayment("CONTRACT",c.id,c.studentId));
+            // Nút Đánh giá (UC26) và Báo cáo (UC27) sẽ thêm khi push các UC đó.
         } else if (tutor) {
             binding.primary.setText("Tạo hợp đồng mới");
             binding.primary.setIconResource(R.drawable.ic_ex_doc);

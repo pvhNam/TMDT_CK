@@ -118,7 +118,7 @@ public final class ChatFragment extends Fragment {
         if (chat.openId() == null || conversation == null) return;  // Đang rời màn hình.
 
         // Đầu trang
-        ChatFormat.avatar(binding.avatarPhoto, binding.avatarInitials, conversation.peerName);
+        ChatFormat.avatar(binding.avatarPhoto, binding.avatarInitials, conversation.peerId, conversation.peerName);
         binding.name.setText(conversation.peerName);
         boolean online = chat.peerOnline();
         binding.onlineDot.setVisibility(online ? View.VISIBLE : View.GONE);
@@ -132,7 +132,7 @@ public final class ChatFragment extends Fragment {
         // Buổi học liên quan
         binding.lessonCard.setVisibility(conversation.hasLesson() ? View.VISIBLE : View.GONE);
         if (conversation.hasLesson()) {
-            ChatFormat.avatar(binding.lessonPhoto, binding.lessonInitials, conversation.peerName);
+            ChatFormat.avatar(binding.lessonPhoto, binding.lessonInitials, conversation.peerId, conversation.peerName);
             binding.lessonTitle.setText(conversation.lessonTitle);
             binding.lessonTime.setText(conversation.lessonTime);
             binding.lessonStatus.setText(conversation.lessonStatus);
@@ -141,7 +141,7 @@ public final class ChatFragment extends Fragment {
 
         // Tin nhắn
         List<ChatMessage> messages = chat.messages();
-        adapter.submit(messages, conversation.peerName);
+        adapter.submit(messages, conversation.peerName, conversation.peerId);
         if (messages.size() != shownCount) { shownCount = messages.size(); scrollToEnd(); }
 
         boolean loading = chat.messagesLoading() && messages.isEmpty();
