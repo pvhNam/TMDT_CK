@@ -577,56 +577,102 @@ service cloud.firestore {
       allow delete: if false;
     }
     // ---------------------------------------------------------------------------------------------
+    // UC23 – Mẫu hợp đồng do quản trị viên soạn: HOC_VIEN_GIA_SU (hợp đồng dạy) và GIA_SU_HE_THONG (hợp đồng cộng tác).
+    // Mỗi lần lưu tăng phiên bản; người dùng đã đăng nhập đọc được để xem và ký.
+    // ---------------------------------------------------------------------------------------------
+    match /contract_templates/{kind} {
+      allow read: if signedIn();
+      allow create, update: if admin() && kind in ['HOC_VIEN_GIA_SU', 'GIA_SU_HE_THONG']
+        && request.resource.data.keys().hasAll(['tieu_de','noi_dung','phien_ban','updated_by','updated_at'])
+        && request.resource.data.keys().hasOnly(['tieu_de','noi_dung','phien_ban','updated_by','updated_at'])
+        && request.resource.data.tieu_de is string && request.resource.data.tieu_de.size() >= 2 && request.resource.data.tieu_de.size() <= 120
+        && request.resource.data.noi_dung is string && request.resource.data.noi_dung.size() >= 20 && request.resource.data.noi_dung.size() <= 8000
+        && request.resource.data.phien_ban == (resource == null ? 1 : resource.data.phien_ban + 1)
+        && request.resource.data.updated_by == request.auth.uid
+        && request.resource.data.updated_at == request.time;
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // UC23 – Hợp đồng cộng tác gia sư – hệ thống: gia sư đã được duyệt ký theo mẫu GIA_SU_HE_THONG hiện tại
+    // (lưu nguyên văn nội dung và phiên bản). Ký lại khi mẫu có phiên bản mới. Chỉ chủ tài khoản và quản trị viên đọc.
+    // ---------------------------------------------------------------------------------------------
+    match /tutor_agreements/{uid} {
+      function platformTemplate() { return get(/databases/$(database)/documents/contract_templates/GIA_SU_HE_THONG).data; }
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create, update: if signedIn() && request.auth.uid == uid && notBanned() && verifiedTutor(uid)
+        && request.resource.data.keys().hasAll(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
+        && request.resource.data.keys().hasOnly(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
+        && request.resource.data.user_id == uid
+        && request.resource.data.ho_ten is string && request.resource.data.ho_ten.size() > 0 && request.resource.data.ho_ten.size() <= 100
+        && request.resource.data.tieu_de == platformTemplate().tieu_de
+        && request.resource.data.noi_dung == platformTemplate().noi_dung
+        && request.resource.data.phien_ban == platformTemplate().phien_ban
+        && (resource == null || resource.data.phien_ban < request.resource.data.phien_ban)
+        && request.resource.data.trang_thai == 'DA_KY'
+        && request.resource.data.signed_at == request.time;
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // UC23 – Chốt hợp đồng dạy (màn 40, Hợp đồng của tôi). contracts/{id}: chỉ 2 bên (và quản trị viên) đọc.
-    // Bên đề nghị tạo ở trạng thái CHO_XAC_NHAN và tự xác nhận phần của mình; bên còn lại xác nhận (→ CHO_KY_QUY)
-    // hoặc từ chối (→ TU_CHOI); bên đề nghị được hủy (→ DA_HUY). Nội dung không sửa được sau khi gửi.
+    // Gia sư gửi hợp đồng cho buổi học đã CONFIRMED (không phải học thử), đã ký hợp đồng cộng tác, điều khoản đúng
+    // nguyên văn mẫu HOC_VIEN_GIA_SU. Học viên xác nhận (→ CHO_KY_QUY) hoặc từ chối (→ TU_CHOI); gia sư được hủy (→ DA_HUY).
+    // Nội dung không sửa được sau khi gửi.
     // ---------------------------------------------------------------------------------------------
     match /contracts/{contractId} {
       function isParty(data) { return request.auth != null && request.auth.uid in [data.student_id, data.tutor_id]; }
       function validContract(d) {
-        let conversation = get(/databases/$(database)/documents/conversations/$(d.conversation_id)).data;
+        let lesson = get(/databases/$(database)/documents/lessons/$(d.lesson_id)).data;
+        let template = get(/databases/$(database)/documents/contract_templates/HOC_VIEN_GIA_SU).data;
         let me = request.auth.uid;
-        return d.keys().hasOnly(['code','conversation_id','student_id','tutor_id','member_ids','student_name','tutor_name',
+        return d.keys().hasOnly(['code','lesson_id','student_id','tutor_id','member_ids','student_name','tutor_name',
                                  'subject','sessions','minutes','schedule','start_date','start_at','mode','fee','total','terms',
+                                 'base_terms','template_version',
                                  'proposed_by','student_confirmed','tutor_confirmed','status','reject_reason','confirmed_at',
                                  'created_at','updated_at'])
           && d.student_id is string && d.tutor_id is string && d.student_id != d.tutor_id
           && d.member_ids == [d.student_id, d.tutor_id]
-          && me in d.member_ids && d.proposed_by == me
-          && d.conversation_id is string && conversation.member_ids.hasAll([d.student_id, d.tutor_id])
+          && me == d.tutor_id && d.proposed_by == me
           && verifiedTutor(d.tutor_id)
+          && get(/databases/$(database)/documents/tutor_agreements/$(d.tutor_id)).data.trang_thai == 'DA_KY'
+          && d.lesson_id is string
+          && lesson.tutor_id == d.tutor_id && lesson.student_id == d.student_id
+          && lesson.trang_thai == 'CONFIRMED' && lesson.hoc_thu == false
+          && d.start_at == lesson.bat_dau && d.minutes == lesson.thoi_luong && d.mode == lesson.hinh_thuc
+          && d.base_terms == template.noi_dung && d.template_version == template.phien_ban
           && d.code is string && d.code.size() <= 12
           && d.student_name is string && d.student_name.size() <= 100
           && d.tutor_name is string && d.tutor_name.size() <= 100
           && d.subject is string && d.subject.size() >= 2 && d.subject.size() <= 120
           && d.sessions is int && d.sessions >= 1 && d.sessions <= 60
-          && d.minutes in [60, 90, 120]
-          && d.fee is int && d.fee >= 50000 && d.fee <= 2000000
+          && d.fee is int && d.fee >= 10000 && d.fee <= 50000000
           && d.total == d.fee * d.sessions
           && d.schedule is string && d.schedule.size() <= 80
           && d.start_date is string && d.start_date.size() <= 20
-          && d.start_at is timestamp && d.start_at > request.time
-          && d.mode in ['Trực tuyến', 'Tại nhà']
           && d.terms is string && d.terms.size() <= 1000
-          && d.student_confirmed == (me == d.student_id) && d.tutor_confirmed == (me == d.tutor_id)
+          && d.student_confirmed == false && d.tutor_confirmed == true
           && d.status == 'CHO_XAC_NHAN' && d.reject_reason == '' && d.confirmed_at == null
           && d.created_at == request.time && d.updated_at == request.time;
       }
       function contractChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
       function confirming() {
-        let flag = request.auth.uid == resource.data.student_id ? 'student_confirmed' : 'tutor_confirmed';
-        return contractChanged().hasOnly([flag, 'status', 'confirmed_at', 'updated_at'])
-          && request.resource.data[flag] == true
+        return request.auth.uid == resource.data.student_id
+          && contractChanged().hasOnly(['student_confirmed', 'status', 'confirmed_at', 'updated_at'])
+          && request.resource.data.student_confirmed == true
           && request.resource.data.status == 'CHO_KY_QUY'
           && request.resource.data.confirmed_at == request.time;
       }
       function rejecting() {
-        return contractChanged().hasOnly(['status', 'reject_reason', 'updated_at'])
+        return request.auth.uid == resource.data.student_id
+          && contractChanged().hasOnly(['status', 'reject_reason', 'updated_at'])
           && request.resource.data.status == 'TU_CHOI'
           && request.resource.data.reject_reason is string && request.resource.data.reject_reason.size() <= 300;
       }
       function cancelling() {
-        return contractChanged().hasOnly(['status', 'updated_at']) && request.resource.data.status == 'DA_HUY';
+        return request.auth.uid == resource.data.proposed_by
+          && contractChanged().hasOnly(['status', 'updated_at']) && request.resource.data.status == 'DA_HUY';
       }
 
       allow get: if isParty(resource.data) || admin();
@@ -636,8 +682,7 @@ service cloud.firestore {
       allow update: if isParty(resource.data) && notBanned()
         && resource.data.status == 'CHO_XAC_NHAN'
         && request.resource.data.updated_at == request.time
-        && ((request.auth.uid != resource.data.proposed_by && (confirming() || rejecting()))
-            || (request.auth.uid == resource.data.proposed_by && cancelling()));
+        && (confirming() || rejecting() || cancelling());
       allow delete: if false;
     }
     // Payment records can only be changed by the trusted payment backend.

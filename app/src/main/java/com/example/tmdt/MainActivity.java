@@ -144,7 +144,9 @@ public class MainActivity extends AppCompatActivity {
             // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
             if(account.signedIn())chat.start();
             else chat.reset();
+            // Hợp đồng, mẫu hợp đồng, hợp đồng cộng tác theo tài khoản (UC23).
             exchange.accountChanged(account.signedIn());
+            renderContractBadge();
             payments.account(account);
             renderNavigation();
         });
@@ -155,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
             renderNavigation();
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
+        exchange.contracts.changes().observe(this,ignored->renderContractBadge());
         payments.changes.observe(this,ignored->{
             if(payments.destination!=null){String next=payments.destination;payments.destination=null;show(next);}
         });
@@ -409,6 +412,14 @@ public class MainActivity extends AppCompatActivity {
         BadgeDrawable badge=binding.bottomNavigation.getOrCreateBadge(R.id.nav_messages);
         badge.setBackgroundColor(getColor(R.color.chat_blue));badge.setBadgeTextColor(getColor(R.color.white));
         badge.setNumber(unread);badge.setVisible(true);
+    }
+    /** UC23: số hợp đồng đang chờ người dùng xác nhận, hiện trên mục Cá nhân. */
+    private void renderContractBadge(){
+        int waiting=account.signedIn()?exchange.contracts.awaitingMe():0;
+        if(waiting<=0){binding.bottomNavigation.removeBadge(R.id.nav_account);return;}
+        BadgeDrawable badge=binding.bottomNavigation.getOrCreateBadge(R.id.nav_account);
+        badge.setBackgroundColor(getColor(R.color.chat_blue));badge.setBadgeTextColor(getColor(R.color.white));
+        badge.setNumber(waiting);badge.setVisible(true);
     }
     @Override protected void onStart(){super.onStart();if(chat!=null)chat.presence(true);}
     @Override protected void onStop(){if(chat!=null)chat.presence(false);super.onStop();}

@@ -192,7 +192,7 @@
                     android:drawableStart="@drawable/ic_laptop" />
             </LinearLayout>
 
-            <!-- Thông tin lớp học: chế độ soạn đề nghị -->
+            <!-- Gia sư soạn hợp đồng: chỉ sửa môn, số buổi, học phí; lịch, thời lượng, hình thức theo buổi học đã đặt -->
             <LinearLayout
                 android:id="@+id/info_edit"
                 android:layout_width="match_parent"
@@ -252,115 +252,6 @@
 
                 <TextView
                     style="@style/ExLabel"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/ex_minutes" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/minutes_group"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/minutes_60"
-                        style="@style/ExChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="60 phút" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/minutes_90"
-                        style="@style/ExChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="90 phút" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/minutes_120"
-                        style="@style/ExChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="120 phút" />
-                </com.google.android.material.chip.ChipGroup>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/ExLabel"
-                            android:text="@string/ex_start_date" />
-
-                        <TextView
-                            android:id="@+id/start_input"
-                            style="@style/ExField"
-                            android:layout_marginTop="6dp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="10dp"
-                        android:layout_height="1dp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/ExLabel"
-                            android:text="@string/ex_time" />
-
-                        <TextView
-                            android:id="@+id/time_input"
-                            style="@style/ExField"
-                            android:layout_marginTop="6dp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/schedule_hint"
-                    style="@style/ExLabel"
-                    android:layout_marginTop="6dp" />
-
-                <TextView
-                    style="@style/ExLabel"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/ex_mode" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/mode_group"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/mode_online"
-                        style="@style/ExChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/ex_online" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/mode_home"
-                        style="@style/ExChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/ex_home" />
-                </com.google.android.material.chip.ChipGroup>
-
-                <TextView
-                    style="@style/ExLabel"
                     android:layout_marginTop="10dp"
                     android:text="@string/ex_fee" />
 
@@ -369,7 +260,7 @@
                     style="@style/ExTextInput"
                     android:layout_marginTop="6dp"
                     android:inputType="number"
-                    android:maxLength="7"
+                    android:maxLength="8"
                     android:singleLine="true" />
             </LinearLayout>
 
