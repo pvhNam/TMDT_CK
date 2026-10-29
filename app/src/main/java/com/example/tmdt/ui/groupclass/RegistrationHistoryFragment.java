@@ -110,8 +110,9 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
         LinearLayout info = ui.column();
         TextView title = ui.text(item.title,17,Ui.INK,true); title.setSingleLine(true); title.setEllipsize(TextUtils.TruncateAt.END); ui.add(info,title); ui.space(info,3);
         ui.add(info,ui.text(item.subject+" · "+item.tutorName,14,Ui.MUTED,false)); ui.space(info,6);
-        ui.add(info,ui.fact(R.drawable.ic_calendar,"Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),16,14,Ui.INK,false));
-        ui.add(info,ui.fact(R.drawable.ic_clock,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),16,14,Ui.INK,false));
+        ui.add(info,ui.fact(R.drawable.ic_send,"Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),16,14,Ui.INK,false));
+        ui.add(info,ui.fact(R.drawable.ic_calendar,"Khai giảng "+item.startLabel(),16,14,Ui.INK,false));
+        ui.add(info,ui.fact(R.drawable.ic_clock,item.scheduleLabel(),16,14,Ui.INK,false));
         ui.weight(row,info); ui.gap(row,8);
         row.addView(pill(ui,item,registration,13),ui.lp(-2,-2));
         ui.add(card,row);
