@@ -132,6 +132,7 @@ public final class TutorProfileFragment extends Fragment {
         // Đánh giá của học viên
         binding.llReviews.removeAllViews();
         binding.tvReviewsSummaryCount.setText(R.string.tutor_profile_no_reviews);
+        setupComments(finalTeacher.id);
 
         // Favorite Button
         setupFavorite(host, finalTeacher);
@@ -139,6 +140,16 @@ public final class TutorProfileFragment extends Fragment {
         // Footer Action Buttons
         binding.btnMessage.setOnClickListener(v -> host.classroom.message(finalTeacher.name));
         binding.btnBook.setOnClickListener(v -> book(host, catalog, finalTeacher));
+    }
+
+    private void setupComments(String id) {
+        if (!isAdded() || getChildFragmentManager().isStateSaved()) return;
+        Fragment current = getChildFragmentManager().findFragmentById(R.id.tutor_comments_container);
+        if (current instanceof TutorCommentsFragment && current.getArguments() != null
+                && id.equals(current.getArguments().getString("tutor_id", ""))) return;
+        getChildFragmentManager().beginTransaction()
+                .replace(R.id.tutor_comments_container, TutorCommentsFragment.newInstance(id), "tutor_comments")
+                .commitNow();
     }
 
     private void setupTeachingModes(String mode) {
