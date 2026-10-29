@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -100,6 +101,12 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
     }
     @Override public void save(GroupClass.Registration registration) {
         WriteBatch batch = db.batch(); put(batch,registration); commit(batch);
+    }
+    @Override public void answer(GroupClass item, String student, String answer) {
+        String owner = user;
+        db.collection(CLASSES).document(item.id)
+                .update(FieldPath.of("de_nghi_doi_lich","phan_hoi",student),answer,FieldPath.of("updated_at"),FieldValue.serverTimestamp())
+                .addOnFailureListener(failure -> { if (Objects.equals(owner,user)) fail("Chưa lưu được câu trả lời. "+message(failure)); });
     }
     private void put(WriteBatch batch, GroupClass.Registration registration) {
         put(batch,db.collection(REGISTRATIONS).document(registration.id()),registration.toMap(),

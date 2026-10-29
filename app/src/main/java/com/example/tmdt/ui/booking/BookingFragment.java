@@ -56,8 +56,9 @@ public final class BookingFragment extends ScreenFragment {
         LinearLayout meta=ui.row();meta.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout verified=ui.row();verified.setGravity(Gravity.CENTER_VERTICAL);verified.setPadding(ui.dp(7),ui.dp(3),ui.dp(9),ui.dp(3));ui.fieldSurface(verified,Ui.PALE,0);
         verified.addView(ui.icon(R.drawable.ic_star,14,Ui.GOLD));ui.gap(verified,4);verified.addView(ui.text("Đã xác minh",12,Ui.BLUE,true));
-        meta.addView(verified);ui.weight(meta,new View(classroom.context()));
-        TextView price=ui.text(tutor.rateLabel(),15,Ui.INK,true);price.setSingleLine(true);meta.addView(price);
+        meta.addView(verified);ui.gap(meta,10);
+        TextView price=ui.text(tutor.rateLabel(),15,Ui.INK,true);price.setSingleLine(true);price.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        price.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);ui.weight(meta,price);
         ui.add(info,meta);ui.weight(summary,info);ui.add(body,summary);ui.space(body,10);
         LinearLayout trial=ui.row();trial.setGravity(Gravity.CENTER_VERTICAL);trial.setPadding(ui.dp(14),ui.dp(12),ui.dp(10),ui.dp(12));ui.fieldSurface(trial,Ui.PALE,0);
         LinearLayout trialText=ui.column();ui.add(trialText,ui.text("Muốn học thử trước?",17,Ui.BLUE,true));ui.space(trialText,2);
@@ -67,7 +68,7 @@ public final class BookingFragment extends ScreenFragment {
         ui.section(body,"Hình thức học",18);ui.space(body,8);modes=ui.row();ui.add(body,modes);
         addressBox=ui.column();ui.space(addressBox,10);address=ui.input("Địa chỉ học tại nhà");address.setText(savedAddress);
         address.setContentDescription("Địa chỉ học tại nhà");address.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS);
-        ui.add(addressBox,address);ui.add(body,addressBox);renderModes();ui.space(body,18);
+        ui.add(addressBox,address);ui.add(body,addressBox);renderModes();ui.space(body,24);
         ui.section(body,"Chọn ngày học",18);
         month=ui.text("",15,Ui.INK,false);month.setMinimumHeight(ui.dp(26));month.setGravity(Gravity.CENTER_VERTICAL);
         ui.clickable(month,this::datePicker);ui.add(body,month);

@@ -4,6 +4,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -51,14 +52,14 @@ public final class ScheduleFragment extends ScreenFragment {
             } else if(item.members.contains(classroom.me())) {
                 if(item.cancelled()) {
                     if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,item.scheduleLabel(),
-                            ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+". Học phí ký quỹ đang chờ hoàn tiền.")));
+                            ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+".")));
                     continue;
                 }
                 for(GroupClass.Session session:item.sessionList()) {
                     if(tab==2?!session.ended():session.ended()||!item.active())continue;
-                    visible.add(new Entry(session.start(),classCard(item,session.date.format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minute,item.minutes),
+                    visible.add(new Entry(session.start(),classCard(item,session.label(),
                             ui.pill("Buổi "+session.number+"/"+item.sessions,14,tab==2?Ui.MUTED:Ui.GREEN,tab==2?0xFFEEF2F7:Ui.GREEN_BG),
-                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",item.online()&&session.roomOpen())));
+                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",item.online()&&session.roomOpen(),tab==0?moveNote(item,session):null)));
                 }
             }
         }
@@ -109,8 +110,8 @@ public final class ScheduleFragment extends ScreenFragment {
     }
 
     /** A group class session or registration, laid out like a lesson card; "Chi tiết" summarises the class. */
-    private View classCard(GroupClass item, String when, TextView status, String note) { return classCard(item,when,status,note,false); }
-    private View classCard(GroupClass item, String when, TextView status, String note, boolean live) {
+    private View classCard(GroupClass item, String when, TextView status, String note) { return classCard(item,when,status,note,false,null); }
+    private View classCard(GroupClass item, String when, TextView status, String note, boolean live, View extra) {
         LinearLayout card=ui.bordered();card.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
         LinearLayout row=ui.row();row.setGravity(Gravity.TOP);
         row.addView(ui.photo(item.art(),null,73,77,12));ui.gap(row,14);
@@ -121,14 +122,73 @@ public final class ScheduleFragment extends ScreenFragment {
         TextView teacher=ui.text(item.tutorName,15,Ui.MUTED,false);ui.clickable(teacher,()->classroom.openTutor(item.tutorId,item.tutorName));ui.add(details,teacher);ui.space(details,8);
         ui.add(details,ui.fact(R.drawable.ic_calendar,when,18,14,Ui.MUTED,false));
         ui.add(details,ui.fact(R.drawable.ic_users,item.mode+" · Lớp nhóm",18,15,Ui.MUTED,false));
-        ui.weight(row,details);ui.add(card,row);ui.space(card,9);
+        ui.weight(row,details);ui.add(card,row);
+        if(extra!=null){ui.space(card,8);ui.add(card,extra);}
+        ui.space(card,9);
         String summary=note+"\n\n"+item.subject+" · "+item.level+"\nLịch học: "+item.scheduleLabel()+"\nKhai giảng: "+item.startLabel()+" · "+item.sessions+" buổi\n"
                 +item.mode+(item.address.isEmpty()?"":" · "+item.address)+(item.online()?"\nPhòng học: "+(item.roomLink.isEmpty()?"phòng Jitsi của app":item.roomHost()):"")+"\nSĩ số: "+item.members.size()+"/"+item.capacity+"\nHọc phí: "+item.priceLabel();
         LinearLayout actions=ui.row();
         ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(item.tutorName)),38);ui.gap(actions,9);
         ui.weightAction(actions,live?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
-                :ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
+                :ui.action("Chi tiết",0,Ui.PRIMARY,item.cancelled()?()->classroom.openRegistration(item):()->classroom.dialog(item.title,summary)),38);
         ui.add(card,actions);return card;
+    }
+
+    /** The tutor's proposal for this session and the student's answer, or where a moved session came from. */
+    private View moveNote(GroupClass item,GroupClass.Session session) {
+        if(item.proposalOpen()&&item.proposal.number==session.number) {
+            String answer=item.proposal.answers.get(classroom.me()),target=item.proposal.move.label(item.minutes);
+            LinearLayout note=GroupClass.Proposal.JOIN.equals(answer)
+                    ?ui.note(R.drawable.ic_calendar,"Bạn tham gia được giờ mới "+target+".\nChạm để xem hoặc đổi câu trả lời.",Ui.PALE,Ui.BLUE,Ui.INK)
+                    :GroupClass.Proposal.BUSY.equals(answer)
+                    ?ui.note(R.drawable.ic_info,"Bạn đã báo bận giờ mới "+target+".\nBuổi học vẫn giữ giờ cũ. Chạm để đổi câu trả lời.",0xFFFFE9EC,Ui.RED,Ui.INK)
+                    :ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi buổi này sang "+target+".\nChạm để trả lời.",Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE);
+            ui.clickable(note,()->answerMove(item));return note;
+        }
+        if(!session.moved())return null;
+        return ui.note(R.drawable.ic_calendar,"Đã đổi lịch từ "+session.plannedLabel()+".\nLý do: "+session.move.reason,Ui.GREEN_BG,Ui.GREEN,Ui.INK);
+    }
+
+    /** Both slots, the reason and the deadline; the student answers whether they can come at the new time. */
+    private void answerMove(GroupClass item) {
+        if(!item.proposalOpen()){classroom.show("schedule");return;}
+        GroupClass.Proposal proposal=item.proposal;GroupClass.Session session=item.sessionList().get(proposal.number-1);
+        String answer=proposal.answers.get(classroom.me()),clash=classroom.store.moveConflict(item);
+        LinearLayout view=ui.column();view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
+        LinearLayout top=ui.row();top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(ui.photo(item.art(),null,52,52,12));ui.gap(top,14);
+        LinearLayout heading=ui.column();
+        TextView title=ui.text(item.title,19,Ui.INK,true);title.setSingleLine(true);title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        ui.add(heading,title);ui.space(heading,4);ui.add(heading,ui.text("Buổi "+proposal.number+"/"+item.sessions+" · "+item.tutorName,14,Ui.MUTED,false));
+        ui.weight(top,heading);ui.add(view,top);ui.space(view,16);
+        ui.add(view,RescheduleFragment.slot(ui,"Lịch hiện tại",session.label(),Ui.PALE,Ui.INK));ui.space(view,10);
+        ui.add(view,RescheduleFragment.slot(ui,"Lịch đề xuất",proposal.move.label(item.minutes),Ui.GREEN_BG,Ui.GREEN));ui.space(view,14);
+        ui.label(view,"Lý do đổi lịch");
+        TextView reason=ui.text(proposal.move.reason,15,Ui.INK,false);reason.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
+        ui.fieldSurface(reason,Ui.PALE,Ui.BORDER);ui.add(view,reason);ui.space(view,12);
+        if(clash!=null){ui.add(view,ui.note(R.drawable.ic_info,"Giờ đề xuất trùng với "+clash+" của bạn.",0xFFFFE9EC,Ui.RED,Ui.INK));ui.space(view,10);}
+        ui.add(view,ui.note(R.drawable.ic_clock,"Trả lời trước "+proposal.deadlineLabel()+".\nKhông ai báo bận thì buổi học chuyển sang giờ mới.",Ui.PALE,Ui.BLUE,Ui.MUTED));
+        if(answer!=null){
+            ui.space(view,10);
+            ui.add(view,ui.fact(GroupClass.Proposal.JOIN.equals(answer)?R.drawable.ic_calendar:R.drawable.ic_info,
+                    "Bạn đã trả lời: "+(GroupClass.Proposal.JOIN.equals(answer)?"Tham gia được":"Bận"),18,14,Ui.MUTED,false));
+        }
+        ui.space(view,16);
+        AlertDialog dialog=ui.dialog().create();
+        LinearLayout actions=ui.row();
+        ui.weightAction(actions,ui.action("Báo bận",0,Ui.OUTLINE,()->{dialog.dismiss();answer(item,false);}),46);ui.gap(actions,10);
+        ui.weightAction(actions,ui.action("Tham gia được",0,Ui.PRIMARY,()->{dialog.dismiss();answer(item,true);}),46);
+        ui.add(view,actions);
+        TextView close=ui.link("Đóng",15,dialog::dismiss);close.setTextColor(Ui.MUTED);close.setGravity(Gravity.CENTER);
+        ui.space(view,6);ui.add(view,close);
+        android.widget.ScrollView scroll=new android.widget.ScrollView(classroom.context());scroll.addView(view);
+        dialog.setView(scroll);dialog.show();
+    }
+    private void answer(GroupClass item,boolean join) {
+        String error=classroom.store.answerMove(item,join);
+        if(error!=null){classroom.dialog("Chưa gửi được câu trả lời",error);return;}
+        classroom.show("schedule");
+        classroom.notice(join?"Đã báo gia sư: bạn tham gia được giờ mới.":"Đã báo bận. Gia sư sẽ giữ giờ cũ hoặc đề nghị giờ khác.");
     }
 
     /** A card with the time it is sorted by, so lessons and class sessions share one list. */

@@ -77,6 +77,9 @@ public final class TeachingScheduleFragment extends ScreenFragment {
                     +lesson.dateLabel()+" "+lesson.timeLabel()+" → "+lesson.proposalLabel(),Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE));
             ui.space(content,8); proposals++;
         }
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && item.active() && item.proposalOpen()) {
+            ui.add(content,proposalNote(item,true)); ui.space(content,8); proposals++;
+        }
         for (Lesson lesson : mine()) if (lesson.replied()) {
             ui.add(content,ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
                     lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK));
@@ -96,13 +99,13 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         Entry(LocalDateTime start, View view) { this.start=start; this.view=view; }
     }
 
-    /** One session of a group class; it follows the class schedule, so it is moved by editing the class, not by a proposal. */
+    /** One session of a group class; the tutor can move it alone, and it moves once no member is busy at the new time. */
     private View classCard(GroupClass.Session session, boolean withDate) {
         GroupClass item = session.groupClass();
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(14),ui.dp(12),ui.dp(14),ui.dp(14));
         LinearLayout top = ui.row(); top.setGravity(Gravity.CENTER_VERTICAL);
         top.addView(ui.icon(R.drawable.ic_clock,18,Ui.BLUE)); ui.gap(top,6);
-        ui.weight(top,ui.text((withDate?session.date.format(Lesson.DATE).substring(0,5)+" · ":"")+Lesson.range(item.hour,item.minute,item.minutes).replace("–"," – "),17,Ui.INK,true));
+        ui.weight(top,ui.text((withDate?session.date.format(Lesson.DATE).substring(0,5)+" · ":"")+session.timeLabel().replace("–"," – "),17,Ui.INK,true));
         top.addView(ui.pill("Lớp nhóm",13,Ui.BLUE,Ui.PALE)); ui.add(card,top); ui.space(card,12);
 
         LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL);
@@ -113,17 +116,130 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         ui.add(info,ui.text("Buổi "+session.number+"/"+item.sessions+" · "+item.members.size()+"/"+item.capacity+" học viên",14,Ui.MUTED,false));
         ui.weight(row,info); ui.gap(row,8);
         row.addView(ui.pill(item.mode,13,item.online()?Ui.BLUE:Ui.GREEN,item.online()?Ui.PALE:Ui.GREEN_BG),ui.lp(-2,26));
+        row.setContentDescription(item.title+". Chạm để xem lớp"); ui.clickable(row,()->classroom.openClass(item,"review"));
         ui.add(card,row); ui.space(card,12);
 
         if (item.online() && !session.ended()) {
             ui.add(card,linkRow(ui,item.roomLink,item.roomHost(),()->editClassLink(classroom,item,this::render))); ui.space(card,12);
         }
+        boolean asked = item.proposalOpen() && item.proposal.number == session.number;
+        if (asked) { ui.add(card,proposalNote(item,false)); ui.space(card,12); }
+        else if (session.moved() && !session.ended()) {
+            ui.add(card,ui.note(R.drawable.ic_calendar,"Đã đổi từ "+session.plannedLabel()+".\nLý do: "+session.move.reason,Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(card,12);
+        }
         LinearLayout actions = ui.row(); card.addView(actions,ui.lp(-1,-2));
         ui.weightAction(actions,ui.action("Thành viên",R.drawable.ic_users,Ui.OUTLINE,()->OpenedClassesFragment.members(classroom,item)),42); ui.gap(actions,10);
-        ui.weightAction(actions,item.online() && session.roomOpen()
-                ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+        ui.weightAction(actions,item.online() && session.roomOpen() ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                : asked ? ui.action("Xem phản hồi",0,Ui.PRIMARY,()->moveDetails(item))
+                : classroom.store.movable(item,session) ? ui.action("Đổi lịch",0,Ui.PRIMARY,()->proposeMove(session))
                 : ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),42);
         return card;
+    }
+
+    /** Where a proposal stands: how many members can come, or who is busy. */
+    private LinearLayout proposalNote(GroupClass item, boolean withClass) {
+        GroupClass.Proposal proposal = item.proposal; List<String> busy = item.busy();
+        String target = proposal.move.label(item.minutes);
+        String head = withClass ? "Lớp "+item.title+" · Buổi "+proposal.number+"\n"+item.sessionList().get(proposal.number-1).label()+" → "+target
+                : "Đề nghị đổi sang "+target;
+        LinearLayout note = busy.isEmpty()
+                ? ui.note(R.drawable.ic_clock,head+"\n"+item.joining()+"/"+item.members.size()+" học viên tham gia được · Hạn "+proposal.deadlineLabel(),Ui.ORANGE_BG,Ui.ORANGE,Ui.INK)
+                : ui.note(R.drawable.ic_info,head+"\n"+names(item,busy)+" báo bận. Chạm để xử lý.",0xFFFFE9EC,Ui.RED,Ui.INK);
+        note.setContentDescription(head+". Chạm để xem phản hồi"); ui.clickable(note,()->moveDetails(item));
+        return note;
+    }
+    private static String names(GroupClass item, List<String> members) {
+        List<String> names = new ArrayList<>(); for (String member : members) names.add(item.nameOf(member));
+        return android.text.TextUtils.join(", ",names);
+    }
+
+    /** Picks a new day and start for one session; its length stays the same. */
+    private void proposeMove(GroupClass.Session session) {
+        GroupClass item = session.groupClass();
+        if (item.proposalOpen() && item.proposal.number != session.number) {
+            classroom.dialog("Chưa đổi được lịch","Học viên đang trả lời đề nghị đổi buổi "+item.proposal.number+". Hãy đợi đề nghị đó xong hoặc giữ giờ cũ cho buổi đó.");
+            return;
+        }
+        LocalDate[] date = {session.date}; int[] start = {session.hour,session.minute};
+        LinearLayout form = ui.column(); form.setPadding(ui.dp(22),ui.dp(8),ui.dp(22),0);
+        ui.add(form,ui.note(R.drawable.ic_info,item.members.isEmpty()?"Lớp chưa có học viên nên buổi học đổi ngay."
+                :"Học viên sẽ trả lời tham gia được hay bận.\nBuổi học chỉ đổi giờ khi không ai báo bận.",Ui.PALE,Ui.BLUE,Ui.INK));
+        ui.space(form,12); ui.add(form,ui.fact(R.drawable.ic_clock,"Hiện tại: "+session.label(),18,14,Ui.MUTED,false)); ui.space(form,12);
+        ui.label(form,"Ngày mới"); TextView dateValue = ui.value(date[0].format(Lesson.DATE));
+        ui.add(form,ui.picker(R.drawable.ic_calendar,dateValue,()->{
+            DatePickerDialog picker = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{date[0]=LocalDate.of(year,month+1,day);dateValue.setText(date[0].format(Lesson.DATE));},
+                    date[0].getYear(),date[0].getMonthValue()-1,date[0].getDayOfMonth());
+            picker.getDatePicker().setMinDate(System.currentTimeMillis()-1000); picker.show();
+        }));
+        ui.space(form,14);
+        TimeRange time = new TimeRange(ui,7,23,item.minutes,item.minutes,30,30,session.hour,session.minute,item.minutes,(h,mi,m)->{start[0]=h;start[1]=mi;});
+        start[0] = time.hour(); start[1] = time.minute(); ui.add(form,time.view("Giờ học mới"));
+        ui.space(form,12); ui.label(form,"Lý do đổi lịch"); EditText reason = ui.entry("Ví dụ: Gia sư có lịch công tác.",false);
+        reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)}); ui.add(form,reason);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(classroom.context()); scroll.addView(form);
+        AlertDialog dialog = classroom.ui.dialog().setTitle("Đổi lịch buổi "+session.number+"/"+item.sessions).setView(scroll)
+                .setNegativeButton("Hủy",null).setPositiveButton(item.members.isEmpty()?"Đổi lịch":"Gửi đề nghị",null).create();
+        dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String text = reason.getText().toString().trim();
+            if (text.isEmpty()) { reason.setError("Vui lòng nhập lý do"); return; }
+            String error = classroom.store.proposeMove(item,session.number,date[0],start[0],start[1],text);
+            if (error != null) { classroom.dialog("Chưa đổi được lịch",error); return; }
+            dialog.dismiss(); classroom.hideKeyboard(); render();
+            classroom.notice(item.proposal == null ? "Đã đổi buổi "+session.number+" sang "+date[0].format(Lesson.DATE)+"."
+                    : "Đã gửi đề nghị. Học viên trả lời trước "+item.proposal.deadlineLabel()+".");
+        }));
+        dialog.show();
+    }
+
+    /** Both slots, the reason and every member's answer; the tutor keeps the old time or proposes another one. */
+    private void moveDetails(GroupClass item) {
+        if (!item.proposalOpen()) { render(); return; }
+        GroupClass.Proposal proposal = item.proposal; GroupClass.Session session = item.sessionList().get(proposal.number-1);
+        LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
+        LinearLayout top = ui.row(); top.setGravity(Gravity.CENTER_VERTICAL);
+        top.addView(ui.photo(item.art(),null,52,52,12)); ui.gap(top,14);
+        LinearLayout heading = ui.column();
+        TextView title = ui.text(item.title,19,Ui.INK,true); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        ui.add(heading,title); ui.space(heading,4); ui.add(heading,ui.text("Đổi lịch buổi "+proposal.number+"/"+item.sessions,14,Ui.MUTED,false));
+        ui.weight(top,heading); ui.add(view,top); ui.space(view,16);
+        ui.add(view,com.example.tmdt.ui.schedule.RescheduleFragment.slot(ui,"Lịch hiện tại",session.label(),Ui.PALE,Ui.INK)); ui.space(view,10);
+        ui.add(view,com.example.tmdt.ui.schedule.RescheduleFragment.slot(ui,"Lịch đề xuất",proposal.move.label(item.minutes),Ui.GREEN_BG,Ui.GREEN)); ui.space(view,14);
+        ui.label(view,"Lý do đổi lịch");
+        TextView reason = ui.text(proposal.move.reason,15,Ui.INK,false); reason.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
+        ui.fieldSurface(reason,Ui.PALE,Ui.BORDER); ui.add(view,reason); ui.space(view,14);
+
+        ui.label(view,"Phản hồi của học viên");
+        LinearLayout answers = ui.column(); answers.setPadding(ui.dp(12),ui.dp(2),ui.dp(12),ui.dp(2)); ui.cardSurface(answers,Ui.WHITE,Ui.BORDER);
+        for (String member : item.members) {
+            if (answers.getChildCount() > 0) ui.line(answers);
+            String answer = proposal.answers.get(member);
+            LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setMinimumHeight(ui.dp(48));
+            row.addView(ui.avatar(member,item.nameOf(member),32)); ui.gap(row,10);
+            TextView name = ui.text(item.nameOf(member),15,Ui.INK,false); name.setSingleLine(true); name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            ui.weight(row,name); ui.gap(row,8);
+            row.addView(GroupClass.Proposal.JOIN.equals(answer) ? ui.pill("Tham gia được",13,Ui.GREEN,Ui.GREEN_BG)
+                    : GroupClass.Proposal.BUSY.equals(answer) ? ui.pill("Bận",13,Ui.RED,0xFFFFE9EC) : ui.pill("Chưa trả lời",13,Ui.MUTED,0xFFEEF2F7),ui.lp(-2,26));
+            ui.add(answers,row);
+        }
+        ui.add(view,answers); ui.space(view,12);
+        ui.add(view,ui.note(R.drawable.ic_clock,"Hạn trả lời: "+proposal.deadlineLabel()+".\n"+(item.busy().isEmpty()?"Không ai báo bận thì buổi học chuyển sang giờ mới.":"Có học viên bận nên buổi học đang giữ giờ cũ."),Ui.PALE,Ui.BLUE,Ui.MUTED));
+        ui.space(view,16);
+
+        AlertDialog dialog = ui.dialog().create();
+        LinearLayout actions = ui.row();
+        ui.weightAction(actions,ui.action("Giữ giờ cũ",0,Ui.OUTLINE,()->{dialog.dismiss();keepTime(item);}),46); ui.gap(actions,10);
+        ui.weightAction(actions,ui.action("Đề nghị giờ khác",0,Ui.PRIMARY,()->{dialog.dismiss();proposeMove(session);}),46);
+        ui.add(view,actions);
+        TextView close = ui.link("Đóng",15,dialog::dismiss); close.setTextColor(Ui.MUTED); close.setGravity(Gravity.CENTER);
+        ui.space(view,6); ui.add(view,close);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(classroom.context()); scroll.addView(view);
+        dialog.setView(scroll); dialog.show();
+    }
+    private void keepTime(GroupClass item) {
+        int number = item.proposal == null ? 0 : item.proposal.number;
+        String error = classroom.store.keepSessionTime(item);
+        if (error != null) { classroom.dialog("Chưa giữ được giờ cũ",error); return; }
+        render(); classroom.notice("Buổi "+number+" của lớp \""+item.title+"\" giữ nguyên giờ cũ.");
     }
 
     private List<Lesson> mine() {

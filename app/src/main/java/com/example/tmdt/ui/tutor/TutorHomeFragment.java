@@ -84,7 +84,7 @@ public final class TutorHomeFragment extends ScreenFragment {
 
         sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
-        for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
+        for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session)); ui.space(body,10); }
         if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
         return root;
     }
@@ -174,13 +174,14 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
-    private View classTodayCard(GroupClass item) {
+    private View classTodayCard(GroupClass.Session session) {
+        GroupClass item = session.groupClass();
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
         card.addView(ui.photo(item.art(),null,69,73,12)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
-        ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minute,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
+        ui.add(info,ui.text(session.label(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
         row.addView(item.roomOpen()?ui.action("Vào phòng",0,Ui.PRIMARY,()->classroom.openClassRoom(item))
                 :ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));

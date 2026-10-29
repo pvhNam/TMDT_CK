@@ -43,7 +43,9 @@ public final class RescheduleFragment extends ScreenFragment {
         return root;
     }
 
-    private View slot(String title, String value, int fill, int accent) {
+    private View slot(String title, String value, int fill, int accent) { return slot(ui,title,value,fill,accent); }
+    /** Current or proposed slot, also used when a group-class session moves. */
+    public static View slot(Ui ui, String title, String value, int fill, int accent) {
         LinearLayout box = ui.column(); box.setPadding(ui.dp(10),ui.dp(11),ui.dp(10),ui.dp(12)); ui.cardSurface(box,fill,0);
         ui.add(box,ui.text(title,18,accent,true)); ui.space(box,9);
         LinearLayout row = ui.row(); row.setPadding(ui.dp(3),0,0,0); row.addView(ui.icon(R.drawable.ic_calendar,23,accent)); ui.gap(row,13);

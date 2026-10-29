@@ -141,8 +141,14 @@ public final class Classroom {
             if(!mine)continue;
             String before=classStates.put(item.id,item.status);
             if(before!=null&&!before.equals(item.status)&&item.cancelled())notice("Lớp \""+item.title+"\" đã bị gia sư hủy.");
+            String asked=item.members.contains(me())&&item.proposalOpen()?item.proposal.key():"";
+            String previous=classMoves.put(item.id,asked);
+            if(previous!=null&&!asked.isEmpty()&&!asked.equals(previous))
+                notice("Gia sư đề nghị đổi giờ buổi "+item.proposal.number+" của lớp \""+item.title+"\". Mở Lịch học để trả lời.");
         }
     }
+    /** The proposal each joined class last asked about, to announce a new one while the app is open. */
+    private final Map<String,String> classMoves=new HashMap<>();
     public boolean replySeen(Lesson lesson){
         return preferences.getStringSet("reply_seen_"+me(),new HashSet<>()).contains(lesson.id+":"+lesson.reply);
     }
