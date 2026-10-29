@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tutor_comments_section" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:layout_marginTop="20dp" android:paddingBottom="12dp">
+    <TextView android:id="@+id/tutor_comments_title" style="@style/SectionTitle"
+        android:text="@string/tutor_comments_title" android:layout_marginBottom="8dp" />
+    <TextView style="@style/BodyText" android:text="@string/tutor_comments_caption" android:layout_marginBottom="12dp" />
+    <TextView android:id="@+id/tutor_comments_read_only" style="@style/BodyText" android:layout_marginBottom="8dp"
+        android:accessibilityLiveRegion="polite" android:visibility="gone" />
+    <LinearLayout android:id="@+id/tutor_comments_composer" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/tutor_comment_reply_target" style="@style/FieldLabel" android:layout_width="0dp"
+                android:layout_weight="1" android:layout_marginBottom="0dp" android:maxLines="1" android:ellipsize="end"
+                android:text="@string/tutor_comments_question_label" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/cancel_tutor_comment_reply" style="@style/TextButton"
+                android:layout_width="wrap_content" android:minHeight="40dp" android:text="@string/tutor_comments_new_question" android:visibility="gone" />
+        </LinearLayout>
+        <EditText android:id="@+id/tutor_comment_input" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="2" android:maxLines="4"
+            android:maxLength="1000" android:padding="12dp" android:background="@drawable/bg_input" android:textSize="14sp"
+            android:textColor="#081F50" android:hint="@string/tutor_comments_input_hint" android:saveEnabled="false" android:importantForAutofill="no" />
+        <TextView android:id="@+id/tutor_comment_character_count" style="@style/BodyText" android:textSize="12sp" android:gravity="end" android:layout_marginBottom="2dp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/send_tutor_comment" style="@style/PrimaryButton" android:text="@string/tutor_comments_send" />
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton android:id="@+id/tutor_comments_sign_in" style="@style/PrimaryButton"
+        android:text="@string/tutor_comments_sign_in" android:visibility="gone" />
+    <ProgressBar android:id="@+id/tutor_comments_progress" android:layout_width="32dp" android:layout_height="32dp"
+        android:layout_gravity="center_horizontal" android:contentDescription="@string/tutor_comments_loading" android:visibility="gone" />
+    <TextView android:id="@+id/tutor_comments_offline" style="@style/BodyText" android:text="@string/tutor_comments_offline"
+        android:accessibilityLiveRegion="polite" android:visibility="gone" />
+    <TextView android:id="@+id/tutor_comments_error" style="@style/BodyText" android:textColor="#B3261E"
+        android:accessibilityLiveRegion="polite" android:visibility="gone" />
+    <TextView android:id="@+id/tutor_comments_notice" style="@style/BodyText" android:textColor="#236B42"
+        android:accessibilityLiveRegion="polite" android:visibility="gone" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/tutor_comments_retry" style="@style/SecondaryButton"
+        android:text="@string/tutor_comments_retry" android:visibility="gone" />
+    <TextView android:id="@+id/tutor_comments_empty" style="@style/BodyText" android:text="@string/tutor_comments_empty"
+        android:background="@drawable/bg_pale" android:padding="16dp" android:visibility="gone" />
+    <LinearLayout android:id="@+id/tutor_comments_list" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/tutor_comments_load_more" style="@style/SecondaryButton"
+        android:text="@string/tutor_comments_load_more" android:visibility="gone" />
+</LinearLayout>

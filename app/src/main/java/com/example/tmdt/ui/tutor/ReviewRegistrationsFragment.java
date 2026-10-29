@@ -31,6 +31,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         summary = ui.text("",18,Ui.INK,false); ui.add(info,summary); ui.space(info,8);
         ui.add(info,ui.text("▣ "+item.sessions+" buổi · "+item.mode,16,Ui.INK,false)); ui.space(info,6);
         ui.add(info,ui.text("▦ "+item.scheduleLabel(),15,Ui.INK,false)); ui.weight(card,info); ui.add(body,card); ui.space(body,16);
+        com.example.tmdt.ui.groupclass.ClassQuestionEntry.add(this,ui,body,item.id);
         if (item.cancelled()) {
             ui.add(body,ui.note(R.drawable.ic_info,"Lớp đã hủy · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
         }

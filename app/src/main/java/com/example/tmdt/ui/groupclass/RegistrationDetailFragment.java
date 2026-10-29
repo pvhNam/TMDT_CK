@@ -94,6 +94,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         ui.tableRow(details,R.drawable.ic_info,"Trạng thái lớp",classStatus());
         ui.add(body,details); ui.space(body,18);
 
+        ClassQuestionEntry.add(this,ui,body,item.id);
         actions(body,group);
         return root;
     }

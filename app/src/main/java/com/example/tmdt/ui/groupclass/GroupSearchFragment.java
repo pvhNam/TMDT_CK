@@ -122,6 +122,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),19,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,item.priceLabel(),19,16,Ui.INK,true)); ui.space(info,3);
         info.addView(availability(item),ui.lp(-2,28)); ui.weight(top,info); ui.add(card,top); ui.space(card,8);
+        ClassQuestionEntry.add(this,ui,card,item.id);
         ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,item.full()?"full":"join")),41);
         return card;
     }
