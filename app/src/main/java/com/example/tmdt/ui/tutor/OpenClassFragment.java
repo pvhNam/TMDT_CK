@@ -185,6 +185,9 @@ public final class OpenClassFragment extends ScreenFragment {
         if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
         GroupClass item = editing != null ? editing : new GroupClass(classroom.store.newId("group_classes"),classroom.me(),classroom.tutorName());
+        // A new schedule replaces the sessions moved one by one.
+        if (editing != null && (!editing.startDate.equals(start.toString()) || !java.util.Arrays.equals(editing.days,days) || editing.hour != hour
+                || editing.minute != minute || editing.minutes != minutes || editing.sessions != sessions)) { item.moves.clear(); item.proposal = null; }
         item.title=title; item.subject=subject; item.level=levelOf(title); item.mode=mode; item.address=mode.equals("Tại nhà")?place:"";
         item.description=about; item.startDate=start.toString(); item.sessions=sessions; item.price=fee; item.capacity=capacity;
         item.days=days; item.hour=hour; item.minute=minute; item.minutes=minutes;

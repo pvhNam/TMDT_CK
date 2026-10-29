@@ -18,7 +18,11 @@ public final class Store {
         void save(Lesson lesson);
         void save(GroupClass item, List<GroupClass.Registration> registrations);
         void save(GroupClass.Registration registration);
+        /** Writes only the member's own answer to the class's proposal. */
+        void answer(GroupClass item, String student, String answer);
     }
+    /** Hours of notice a moved session and its new slot need, and how long before the earlier of the two answers close. */
+    public static final int MOVE_NOTICE = 24, MOVE_ANSWER = 12;
 
     public final List<Lesson> lessons = new ArrayList<>();
     public final List<GroupClass> classes = new ArrayList<>();
@@ -233,17 +237,100 @@ public final class Store {
         remote.save(item, closeWaiting(item)); return null;
     }
 
+    /** A session the tutor may still move: at least a day ahead, in a class that has not ended. */
+    public boolean movable(GroupClass item, GroupClass.Session session) {
+        return item.tutorId.equals(user) && item.active() && !session.start().isBefore(LocalDateTime.now().plusHours(MOVE_NOTICE));
+    }
+    /**
+     * The tutor moves one session of a class. Without members it moves at once; otherwise every member is asked and the
+     * session keeps its time until nobody is busy. The new slot stays between the sessions before and after it.
+     */
+    public String proposeMove(GroupClass item, int number, LocalDate date, int hour, int minute, String reason) {
+        List<GroupClass.Session> list = item.sessionList();
+        if (number < 1 || number > list.size()) return "Buổi học không còn trong lịch của lớp.";
+        GroupClass.Session session = list.get(number-1);
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới đổi lịch được.";
+        if (!movable(item,session)) return "Chỉ đổi lịch buổi học còn ít nhất "+MOVE_NOTICE+" giờ nữa mới bắt đầu.";
+        if (item.proposalOpen() && item.proposal.number != number)
+            return "Học viên đang trả lời đề nghị đổi buổi "+item.proposal.number+". Hãy đợi đề nghị đó xong hoặc giữ giờ cũ cho buổi đó.";
+        String text = reason.trim();
+        if (text.isEmpty()) return "Vui lòng nhập lý do đổi lịch.";
+        if (text.length() > 120) return "Lý do đổi lịch tối đa 120 ký tự.";
+        LocalDateTime start = date.atTime(hour,minute), end = start.plusMinutes(item.minutes);
+        if (start.isBefore(LocalDateTime.now().plusHours(MOVE_NOTICE))) return "Giờ mới cần cách hiện tại ít nhất "+MOVE_NOTICE+" giờ để học viên kịp sắp xếp.";
+        if (start.equals(session.start())) return "Giờ mới đang trùng với lịch hiện tại của buổi này.";
+        if (hour*60+minute+item.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
+        if (number > 1 && start.isBefore(list.get(number-2).end()))
+            return "Buổi "+number+" cần diễn ra sau buổi "+(number-1)+" ("+list.get(number-2).label()+").";
+        if (number < list.size() && end.isAfter(list.get(number).start()))
+            return "Buổi "+number+" cần kết thúc trước buổi "+(number+1)+" ("+list.get(number).label()+").";
+        String clash = moveClash(item,date.toString(),hour*60+minute);
+        if (clash != null) return clash;
+        item.settleProposal();
+        GroupClass.Move move = new GroupClass.Move(date.toString(),hour,minute,text);
+        LocalDateTime first = start.isBefore(session.start()) ? start : session.start();
+        if (item.members.isEmpty()) { item.moves.put(number,move); item.proposal = null; }
+        else item.proposal = new GroupClass.Proposal(number,move,first.minusHours(MOVE_ANSWER));
+        remote.save(item, Collections.emptyList()); return null;
+    }
+    /** The tutor's other lessons and classes, and the classes of every member; members' own lessons the tutor cannot see are left to their answers. */
+    private String moveClash(GroupClass item, String date, int begin) {
+        for (Lesson lesson : lessons) {
+            if (!lesson.active() || !lesson.date.equals(date) || !GroupClass.overlap(begin,item.minutes,lesson.hour*60+lesson.minute,lesson.minutes)) continue;
+            if (lesson.studentId.equals(item.tutorId) || (lesson.tutorId.equals(item.tutorId) && lesson.confirmed()))
+                return "Giờ mới trùng với buổi \""+lesson.title+"\" của bạn ("+lesson.timeLabel()+").";
+            if (item.members.contains(lesson.studentId)) return "Giờ mới trùng với buổi học của học viên "+item.nameOf(lesson.studentId)+" ("+lesson.timeLabel()+").";
+        }
+        for (GroupClass other : classes) {
+            if (other.id.equals(item.id) || !other.active() || !other.meetsAt(date,begin,item.minutes)) continue;
+            if (other.tutorId.equals(item.tutorId) || other.attends(item.tutorId)) return "Giờ mới trùng với lớp \""+other.title+"\" của bạn.";
+            for (String member : item.members)
+                if (other.attends(member)) return "Giờ mới trùng với lớp \""+other.title+"\" của học viên "+item.nameOf(member)+".";
+        }
+        return null;
+    }
+    /** The member's own lesson or class at the proposed time, named so they can answer "busy"; null when the slot is free. */
+    public String moveConflict(GroupClass item) {
+        if (item.proposal == null) return null;
+        GroupClass.Move move = item.proposal.move;
+        for (Lesson lesson : lessons)
+            if (lesson.studentId.equals(user) && lesson.active() && lesson.date.equals(move.date)
+                    && GroupClass.overlap(move.begin(),item.minutes,lesson.hour*60+lesson.minute,lesson.minutes))
+                return "buổi \""+lesson.title+"\" ("+lesson.timeLabel()+")";
+        for (GroupClass other : classes)
+            if (!other.id.equals(item.id) && other.active() && other.attends(user) && other.meetsAt(move.date,move.begin(),item.minutes))
+                return "lớp \""+other.title+"\"";
+        return null;
+    }
+    /** A member says whether they can come; the answer can change until the deadline or until the proposal applies. */
+    public String answerMove(GroupClass item, boolean join) {
+        if (!item.members.contains(user)) return "Chỉ học viên trong lớp mới trả lời được đề nghị này.";
+        if (!item.proposalOpen()) return "Đề nghị đổi lịch đã hết hạn trả lời hoặc đã được áp dụng.";
+        String answer = join ? GroupClass.Proposal.JOIN : GroupClass.Proposal.BUSY;
+        item.proposal.answers.put(user,answer); remote.answer(item,user,answer); return null;
+    }
+    /** The tutor withdraws a proposal that has not applied, so the session keeps its time. */
+    public String keepSessionTime(GroupClass item) {
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới giữ được giờ cũ.";
+        if (item.proposal == null || item.proposalAccepted()) return "Đề nghị đổi lịch không còn hiệu lực.";
+        item.proposal = null; remote.save(item, Collections.emptyList()); return null;
+    }
+
     /**
      * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer
      * recruits closes the registrations still waiting, which frees the students' time slots.
-     * Only the class's tutor may write it, and only once per class, so a refused write is not retried in a loop.
+     * A proposal members can no longer answer becomes part of the schedule, or is dropped when someone was busy.
+     * Only the class's tutor may write it, and only once per class or proposal, so a refused write is not retried in a loop.
      */
     public void updateClasses() {
         for (GroupClass item : classes) {
             boolean ended = item.active() && item.over();
             if (ended) item.status = GroupClass.ENDED;
             List<GroupClass.Registration> closed = GroupClass.OPEN.equals(item.status) ? Collections.emptyList() : closeWaiting(item);
-            if ((ended || !closed.isEmpty()) && item.tutorId.equals(user) && settled.add(item.id)) remote.save(item, closed);
+            boolean mine = item.tutorId.equals(user);
+            boolean moved = mine && item.proposal != null && !item.proposalOpen() && settled.add(item.id+"#"+item.proposal.key()) && item.settleProposal();
+            boolean changed = (ended || !closed.isEmpty()) && mine && settled.add(item.id);
+            if (changed || moved) remote.save(item, closed);
         }
     }
     private static List<GroupClass.Registration> closeWaiting(GroupClass item) {

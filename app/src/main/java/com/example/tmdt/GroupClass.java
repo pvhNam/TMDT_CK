@@ -2,7 +2,9 @@ package com.example.tmdt;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,17 +53,117 @@ public final class GroupClass {
     public int[] days;
     public final List<String> members = new ArrayList<>();
     public final List<Registration> registrations = new ArrayList<>();
+    /** Sessions the tutor moved one by one, by session number (Firestore "doi_lich"). */
+    public final Map<Integer,Move> moves = new HashMap<>();
+    /** The proposal the members are answering, or null (Firestore "de_nghi_doi_lich"). */
+    public Proposal proposal;
 
     public GroupClass(String id, String tutorId, String tutorName) { this.id=id; this.tutorId=tutorId; this.tutorName=tutorName; }
+
+    /** The new slot of one session and why it moved. */
+    public static final class Move {
+        public final String date, reason;
+        public final int hour, minute;
+        public Move(String date, int hour, int minute, String reason) { this.date=date; this.hour=hour; this.minute=minute; this.reason=reason; }
+        public int begin() { return hour*60+minute; }
+        public LocalDateTime start() { return LocalDate.parse(date).atTime(hour,minute); }
+        public String label(int minutes) { return LocalDate.parse(date).format(Lesson.DATE)+" · "+Lesson.range(hour,minute,minutes); }
+        Map<String,Object> toMap() {
+            Map<String,Object> data = new HashMap<>();
+            data.put("ngay",date); data.put("gio",hour); data.put("phut",minute); data.put("ly_do",reason);
+            return data;
+        }
+        @SuppressWarnings("unchecked")
+        static Move from(Object value) {
+            if (!(value instanceof Map)) return null;
+            Map<String,Object> data = (Map<String,Object>) value;
+            Move move = new Move(Lesson.text(data,"ngay"),Lesson.number(data,"gio"),Lesson.number(data,"phut"),Lesson.text(data,"ly_do"));
+            try { LocalDate.parse(move.date); } catch (RuntimeException invalid) { return null; }
+            return move.hour >= 0 && move.hour < 24 && move.minute >= 0 && move.minute < 60 ? move : null;
+        }
+    }
+
+    /** The tutor asks to move one session; every member answers whether they can come at the new time. */
+    public static final class Proposal {
+        public static final String JOIN = "THAM_GIA", BUSY = "BAN";
+        public final int number;
+        public final Move move;
+        public final LocalDateTime deadline;
+        /** Member uid → JOIN or BUSY; a member who never answers counts as joining once the deadline passes. */
+        public final Map<String,String> answers = new HashMap<>();
+        public Proposal(int number, Move move, LocalDateTime deadline) { this.number=number; this.move=move; this.deadline=deadline; }
+        /** Tells proposals apart, so a settled one is only written once. */
+        public String key() { return number+"@"+move.date+"T"+move.begin(); }
+        public String deadlineLabel() { return deadline.format(Lesson.TIME)+" ngày "+deadline.format(Lesson.DATE); }
+        Map<String,Object> toMap() {
+            Map<String,Object> data = move.toMap();
+            data.put("buoi",number); data.put("han",Date.from(deadline.atZone(ZoneId.systemDefault()).toInstant())); data.put("phan_hoi",new HashMap<>(answers));
+            return data;
+        }
+        @SuppressWarnings("unchecked")
+        static Proposal from(Object value) {
+            Move move = Move.from(value);
+            if (move == null) return null;
+            Map<String,Object> data = (Map<String,Object>) value;
+            LocalDateTime deadline = Lesson.time(data.get("han")); int number = Lesson.number(data,"buoi");
+            if (deadline == null || number < 1) return null;
+            Proposal proposal = new Proposal(number,move,deadline);
+            if (data.get("phan_hoi") instanceof Map)
+                for (Map.Entry<?,?> answer : ((Map<?,?>) data.get("phan_hoi")).entrySet())
+                    if (answer.getKey() instanceof String && (JOIN.equals(answer.getValue()) || BUSY.equals(answer.getValue())))
+                        proposal.answers.put((String) answer.getKey(),(String) answer.getValue());
+            return proposal;
+        }
+    }
+
+    /** Members who answered that they cannot come at the proposed time. */
+    public List<String> busy() {
+        List<String> list = new ArrayList<>();
+        if (proposal != null) for (String member : members) if (Proposal.BUSY.equals(proposal.answers.get(member))) list.add(member);
+        return list;
+    }
+    public int joining() {
+        int count = 0;
+        if (proposal != null) for (String member : members) if (Proposal.JOIN.equals(proposal.answers.get(member))) count++;
+        return count;
+    }
+    /** Nobody is busy, and either every member can come or the deadline has passed. */
+    public boolean proposalAccepted() {
+        return proposal != null && busy().isEmpty() && (joining() == members.size() || !LocalDateTime.now().isBefore(proposal.deadline));
+    }
+    /** Members can still answer; until then the session keeps its time and the proposed slot stays reserved. */
+    public boolean proposalOpen() { return proposal != null && !proposalAccepted() && LocalDateTime.now().isBefore(proposal.deadline); }
+    /** Makes an accepted proposal part of the schedule and drops one that can no longer apply; false while members can still answer. */
+    public boolean settleProposal() {
+        if (proposal == null || proposalOpen()) return false;
+        if (proposalAccepted()) moves.put(proposal.number,proposal.move);
+        proposal = null; return true;
+    }
+    /** The slot a session moved to, or null while it follows the class schedule. */
+    public Move moved(int number) { return proposal != null && proposal.number == number && proposalAccepted() ? proposal.move : moves.get(number); }
 
     /** One meeting of the class; "number" counts from 1 up to the class's number of sessions. */
     public final class Session {
         public final LocalDate date;
-        public final int number;
-        Session(LocalDate date, int number) { this.date=date; this.number=number; }
+        public final int number, hour, minute;
+        /** The slot from the class schedule, shown when the session moved away from it. */
+        public final LocalDateTime planned;
+        public final Move move;
+        Session(LocalDate day, int number, Move move) {
+            this.number=number; this.move=move; planned = day.atTime(GroupClass.this.hour,GroupClass.this.minute);
+            date = move == null ? day : LocalDate.parse(move.date);
+            hour = move == null ? GroupClass.this.hour : move.hour; minute = move == null ? GroupClass.this.minute : move.minute;
+        }
         public GroupClass groupClass() { return GroupClass.this; }
         public LocalDateTime start() { return date.atTime(hour,minute); }
-        public boolean ended() { return !LocalDateTime.now().isBefore(start().plusMinutes(minutes)); }
+        public LocalDateTime end() { return start().plusMinutes(minutes); }
+        public int begin() { return hour*60+minute; }
+        public boolean moved() { return move != null; }
+        public String timeLabel() { return Lesson.range(hour,minute,minutes); }
+        public String label() { return date.format(Lesson.DATE)+" · "+timeLabel(); }
+        public String plannedLabel() { return planned.format(Lesson.DATE)+" · "+Lesson.range(planned.getHour(),planned.getMinute(),minutes); }
+        public boolean started() { return !LocalDateTime.now().isBefore(start()); }
+        public boolean ended() { return !LocalDateTime.now().isBefore(end()); }
         /** The room opens ten minutes before the session and closes when it ends. */
         public boolean roomOpen() { LocalDateTime now = LocalDateTime.now(); return !now.isBefore(start().minusMinutes(10)) && !ended(); }
     }
@@ -83,12 +185,16 @@ public final class GroupClass {
     /** Members and students whose registration is still waiting both keep the class's time slot. */
     public boolean attends(String student) { return members.contains(student) || registrationOf(student) != null; }
 
-    /** True once the last session has finished. */
-    public boolean over() { List<Session> list = sessionList(); return !list.isEmpty() && list.get(list.size()-1).ended(); }
+    /** True once every session has finished. */
+    public boolean over() {
+        List<Session> list = sessionList();
+        for (Session session : list) if (!session.ended()) return false;
+        return !list.isEmpty();
+    }
 
     public List<Session> sessionList() {
         List<Session> list = new ArrayList<>(); List<LocalDate> dates = dates(LocalDate.parse(startDate),days,sessions);
-        for (int i = 0; i < dates.size(); i++) list.add(new Session(dates.get(i),i+1));
+        for (int i = 0; i < dates.size(); i++) list.add(new Session(dates.get(i),i+1,moved(i+1)));
         return list;
     }
     /** The class meets on its weekdays (1 = Monday … 7 = Sunday) from the start date until all sessions are held. */
@@ -98,9 +204,11 @@ public final class GroupClass {
             for (int day : days) if (date.getDayOfWeek().getValue() == day) { list.add(date); break; }
         return list;
     }
-    /** True when one of the class's sessions falls on the date and overlaps the given time. */
+    /** True when one of the class's sessions, or the slot an open proposal holds, falls on the date and overlaps the given time. */
     public boolean meetsAt(String date, int otherBegin, int otherMinutes) {
-        return overlap(begin(),minutes,otherBegin,otherMinutes) && dates(LocalDate.parse(startDate),days,sessions).contains(LocalDate.parse(date));
+        for (Session session : sessionList())
+            if (session.date.toString().equals(date) && overlap(session.begin(),minutes,otherBegin,otherMinutes)) return true;
+        return proposalOpen() && proposal.move.date.equals(date) && overlap(proposal.move.begin(),minutes,otherBegin,otherMinutes);
     }
     /** Both starts are minutes after midnight. */
     public static boolean overlap(int begin, int minutes, int otherBegin, int otherMinutes) {
@@ -159,6 +267,9 @@ public final class GroupClass {
         List<Integer> dayList = new ArrayList<>(); for (int day : days) dayList.add(day); data.put("thu",dayList);
         data.put("gio",hour); data.put("phut",minute); data.put("thoi_luong",minutes); data.put("so_buoi",sessions); data.put("hoc_phi",price); data.put("tinh_theo_buoi",perSession);
         data.put("suc_chua",capacity); data.put("thanh_vien",new ArrayList<>(members)); data.put("trang_thai",status); data.put("hinh_minh_hoa",art); data.put("ly_do_huy",cancelReason); data.put("link_phong_hoc",roomLink);
+        Map<String,Object> moved = new HashMap<>();
+        for (Map.Entry<Integer,Move> move : moves.entrySet()) moved.put(String.valueOf(move.getKey()),move.getValue().toMap());
+        data.put("doi_lich",moved); data.put("de_nghi_doi_lich",proposal==null?null:proposal.toMap());
         return data;
     }
     public static GroupClass from(String id, Map<String,Object> data) {
@@ -173,6 +284,12 @@ public final class GroupClass {
         if (data.get("thu") instanceof List) for (Object day : (List<?>) data.get("thu")) if (day instanceof Number) dayList.add(((Number) day).intValue());
         item.days = new int[dayList.size()]; for (int i = 0; i < item.days.length; i++) item.days[i] = dayList.get(i);
         if (data.get("thanh_vien") instanceof List) for (Object member : (List<?>) data.get("thanh_vien")) if (member instanceof String) item.members.add((String) member);
+        if (data.get("doi_lich") instanceof Map) for (Map.Entry<?,?> entry : ((Map<?,?>) data.get("doi_lich")).entrySet()) {
+            Move move = Move.from(entry.getValue()); String number = String.valueOf(entry.getKey());
+            if (move != null && number.matches("[0-9]{1,2}")) item.moves.put(Integer.parseInt(number),move);
+        }
+        item.proposal = Proposal.from(data.get("de_nghi_doi_lich"));
+        if (item.proposal != null && item.proposal.number > item.sessions) item.proposal = null;
         try { LocalDate.parse(item.startDate); } catch (RuntimeException invalid) { return null; }
         boolean valid = !item.tutorId.isEmpty() && !item.status.isEmpty() && item.days.length > 0 && item.sessions > 0 && item.minutes > 0;
         for (int day : item.days) valid &= day >= 1 && day <= 7;
