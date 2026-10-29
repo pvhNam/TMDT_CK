@@ -16,7 +16,9 @@ import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Lesson;
+import com.example.tmdt.Tutor;
 
 /** Screen 34 · Mở lớp nhóm (UC16), also used to edit an open class (UC17). */
 public final class OpenClassFragment extends ScreenFragment {
@@ -25,6 +27,8 @@ public final class OpenClassFragment extends ScreenFragment {
     private static final String[] WEEKDAYS = {"T2","T3","T4","T5","T6","T7","CN"};
     private static final int FIRST_HOUR = 7, LAST_END = 23;
     private GroupClass editing;
+    /** Students who posted the same need, when the form was opened from "Gợi ý ghép nhóm". */
+    private GroupMatch.Group draft;
     private boolean started;
     private String subject = "Toán", mode = "Trực tuyến";
     private int capacity = 5, sessions = 4, hour = 19, minute = 0, minutes = 60;
@@ -35,9 +39,15 @@ public final class OpenClassFragment extends ScreenFragment {
     private LinearLayout subjects, modes, addressField, weekdays, dates;
     private TimeRange time;
 
-    /** A new class starts from the defaults; an edited one (UC17) from its saved values. */
+    /** A new class starts from the defaults or from a group of students; an edited one (UC17) from its saved values. */
     private void start() {
         started = true; editing = classroom.store.groupClass(classroom.classId);
+        draft = editing == null ? classroom.classDraft : null; classroom.classDraft = null;
+        if (draft != null) {
+            subject = draft.subject; capacity = Math.max(2,Math.min(10,draft.size()));
+            if (draft.day() > 0) days = new int[]{draft.day()};
+            if (draft.hour() >= 0) hour = Math.max(FIRST_HOUR,Math.min(LAST_END-1,draft.hour()));
+        }
         start = nextClassDay(LocalDate.now().plusDays(1));
         if (editing != null) {
             subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour; minute=editing.minute;
@@ -49,6 +59,10 @@ public final class OpenClassFragment extends ScreenFragment {
         if (!started) start();
         LinearLayout root = ui.column(); ui.header(root,editing==null?"Mở lớp nhóm":"Chỉnh sửa lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
+        if (draft != null) {
+            ui.add(body,ui.note(R.drawable.ic_users,"Điền sẵn cho nhóm "+draft.size()+" học viên cần "+draft.need()+".\nXem lại thông tin trước khi tạo lớp.",Ui.PALE,Ui.BLUE,Ui.INK));
+            ui.space(body,12);
+        }
 
         LinearLayout info = group(body,"Thông tin lớp");
         ui.label(info,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
@@ -94,6 +108,9 @@ public final class OpenClassFragment extends ScreenFragment {
         price.setContentDescription("Học phí mỗi học viên, đồng một khóa");
         ui.weight(priceBox,price); priceBox.addView(ui.text("đ / khóa",15,Ui.MUTED,true)); ui.add(fee,priceBox); ui.space(fee,6);
         ui.add(fee,ui.text("Mỗi học viên, từ 50.000đ đến 10.000.000đ cho cả khóa.",13,Ui.MUTED,false));
+        if (draft != null && draft.budget() > 0) {
+            ui.space(fee,4); ui.add(fee,ui.text("Gợi ý theo ngân sách khoảng "+Tutor.money((int) draft.budget())+" / buổi của nhóm.",13,Ui.BLUE,false));
+        }
 
         LinearLayout footer = ui.footer(root);
         ui.weightAction(footer,ui.action(editing==null?"Tạo lớp":"Lưu thay đổi",0,Ui.PRIMARY,this::submit),48);
@@ -101,6 +118,10 @@ public final class OpenClassFragment extends ScreenFragment {
         if (editing != null) {
             name.setText(editing.title); price.setText(String.valueOf(editing.price));
             address.setText(editing.address); description.setText(editing.description);
+        }
+        if (draft != null) {
+            name.setText(draft.title()); description.setText(draft.description());
+            if (draft.price(sessions) > 0) price.setText(String.valueOf(draft.price(sessions)));
         }
         counter.setText(description.length()+"/200");
         render();
@@ -197,9 +218,12 @@ public final class OpenClassFragment extends ScreenFragment {
         classroom.store.saveClass(item); classroom.hideKeyboard(); classroom.classTab=0; classroom.show("classes");
         classroom.notice(editing==null?"Đã mở lớp \""+title+"\".":"Đã lưu thay đổi của lớp.");
     }
-    /** The level is taken from the class name ("… lớp 12"), or left general. */
+    /** The level is taken from the class name ("… lớp 12", "… THPT"), or left general. */
     private String levelOf(String title) {
         java.util.regex.Matcher match = java.util.regex.Pattern.compile("(?i)lớp\\s*(\\d{1,2})").matcher(title);
-        return match.find() ? "Lớp "+match.group(1) : editing != null ? editing.level : "Nhiều cấp độ";
+        if (match.find()) return "Lớp "+match.group(1);
+        for (String level : new String[]{"THPT","THCS","Tiểu học","Luyện thi"})
+            if (title.toLowerCase(java.util.Locale.ROOT).contains(level.toLowerCase(java.util.Locale.ROOT))) return level;
+        return editing != null ? editing.level : "Nhiều cấp độ";
     }
 }

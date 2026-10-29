@@ -22,7 +22,7 @@ import java.util.Objects;
 
 /** Firestore side of {@link Store}: keeps it filled from live queries and saves its changes. */
 public final class ClassroomCloud extends ViewModel implements Store.Remote {
-    private static final String LESSONS = "lessons", CLASSES = "group_classes", REGISTRATIONS = "class_registrations";
+    private static final String LESSONS = "lessons", CLASSES = "group_classes", REGISTRATIONS = "class_registrations", REQUESTS = "tutor_requests";
     public final Store store = new Store(this);
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final MutableLiveData<Integer> changes = new MutableLiveData<>(0);
@@ -30,6 +30,7 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
     private final List<ListenerRegistration> personal = new ArrayList<>();
     private final ListenerRegistration classListener;
     private String user, error = "";
+    private boolean watchingRequests;
 
     public ClassroomCloud() { classListener = listen("classes",db.collection(CLASSES),null); }
 
@@ -40,19 +41,29 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
         if (uid.equals(user)) return;
         for (ListenerRegistration listener : personal) listener.remove();
         personal.clear(); results.keySet().removeIf(name -> !name.equals("classes"));
-        user = uid; store.user = uid;
+        user = uid; store.user = uid; watchingRequests = false; store.requestsError = "";
         if (!uid.isEmpty()) {
             personal.add(listen("booked",db.collection(LESSONS).whereEqualTo("student_id",uid),uid));
             personal.add(listen("taught",db.collection(LESSONS).whereEqualTo("tutor_id",uid),uid));
             personal.add(listen("sent",db.collection(REGISTRATIONS).whereEqualTo("student_id",uid),uid));
             personal.add(listen("received",db.collection(REGISTRATIONS).whereEqualTo("tutor_id",uid),uid));
+            personal.add(listen("asked",db.collection(REQUESTS).whereEqualTo("student_id",uid),uid));
         }
         rebuild();
+    }
+    /** Starts reading every open tutor request, which only a verified tutor may do, for the group suggestions; retry starts it again after a failure. */
+    public void watchRequests(boolean retry) {
+        if ((watchingRequests && !(retry && !store.requestsError.isEmpty())) || user == null || user.isEmpty()) return;
+        watchingRequests = true; store.requestsError = "";
+        personal.add(listen("open",db.collection(REQUESTS).whereEqualTo("trang_thai","OPEN"),user));
     }
 
     private ListenerRegistration listen(String name, Query query, String owner) {
         return query.addSnapshotListener((snapshot,failure) -> {
             if (owner != null && !owner.equals(user)) return;
+            // Tutor requests belong to another feature: a failure only empties the suggestions instead of interrupting the user.
+            if (failure != null && name.equals("open")) { store.requestsError = message(failure); changes.setValue(changes.getValue()+1); return; }
+            if (failure != null && name.equals("asked")) return;
             if (failure != null) { fail("Không tải được lịch học và lớp nhóm. "+message(failure)); return; }
             Map<String,Map<String,Object>> docs = new LinkedHashMap<>();
             for (DocumentSnapshot doc : snapshot) docs.put(doc.getId(),doc.getData());
@@ -84,6 +95,15 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
             }
         store.lessons.clear(); store.lessons.addAll(lessons.values());
         store.classes.clear(); store.classes.addAll(classes.values());
+        for (String name : new String[]{"asked","open"}) {
+            List<GroupMatch.Request> requests = name.equals("asked") ? store.myRequests : store.openRequests;
+            requests.clear();
+            for (Map.Entry<String,Map<String,Object>> doc : docs(name).entrySet()) {
+                GroupMatch.Request request = GroupMatch.Request.from(doc.getKey(),doc.getValue());
+                if (request != null) requests.add(request);
+            }
+        }
+        store.matchesReady = results.containsKey("asked") && results.containsKey("classes"); store.openRequestsLoaded = results.containsKey("open");
         changes.setValue(changes.getValue()+1);
     }
 

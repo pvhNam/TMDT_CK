@@ -11,6 +11,7 @@ import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
@@ -37,10 +38,25 @@ public final class OpenedClassesFragment extends ScreenFragment {
             com.example.tmdt.ui.common.Motion.reveal(listContainer);
         });
         ui.space(listContainer,4);
+        if(classroom.classTab==0){ui.add(listContainer,matchLink());ui.space(listContainer,12);}
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list){ui.add(listContainer,card(item));ui.space(listContainer,11);}
         if(list.isEmpty())ui.add(listContainer,ui.note(R.drawable.ic_info,classroom.classTab==0
                 ?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới.":"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
+    }
+
+    /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */
+    private View matchLink() {
+        int groups = GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE)); ui.gap(row,12);
+        LinearLayout text = ui.column(); ui.add(text,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true)); ui.space(text,2);
+        ui.add(text,ui.text(groups>0?groups+" nhóm học viên cùng nhu cầu":"Học viên cùng môn và cấp học",13,Ui.MUTED,false));
+        ui.weight(row,text);
+        if (groups > 0) { row.addView(ui.pill(String.valueOf(groups),13,Ui.WHITE,Ui.BLUE),ui.lp(-2,-2)); ui.gap(row,6); }
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Gợi ý ghép nhóm"); ui.clickable(row,()->classroom.show("matches")); return row;
     }
 
     private List<GroupClass> mine(String status) {

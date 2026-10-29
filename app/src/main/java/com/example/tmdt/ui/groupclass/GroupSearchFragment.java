@@ -11,13 +11,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.text.Normalizer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.IntConsumer;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 
 /** Screen 37 · Tìm lớp học nhóm (UC19): search and filter open group classes. */
 public final class GroupSearchFragment extends ScreenFragment {
@@ -93,13 +96,20 @@ public final class GroupSearchFragment extends ScreenFragment {
 
     private void renderResults() {
         results.removeAllViews(); String query = normalized(search.getText().toString()); int count = 0;
+        // Ghép nhóm có cùng yêu cầu: classes that suit the student's own tutor requests come first while nothing is searched.
+        Map<GroupClass,GroupMatch.Request> suggestions = query.isEmpty() && subject.isEmpty() && mode.isEmpty() && !seats ? classroom.suggestions() : new HashMap<>();
+        if (!suggestions.isEmpty()) {
+            ui.add(results,ui.text("Phù hợp với tin đăng của bạn",18,Ui.INK,true)); ui.space(results,10);
+            for (Map.Entry<GroupClass,GroupMatch.Request> entry : suggestions.entrySet()) { ui.add(results,card(entry.getKey(),entry.getValue())); ui.space(results,13); }
+            ui.space(results,4); ui.add(results,ui.text("Tất cả lớp",18,Ui.INK,true)); ui.space(results,10);
+        }
         for (GroupClass item : classroom.store.classes) {
             if (!item.active()) continue;
             if (!subject.isEmpty() && !item.subject.equals(subject)) continue;
             if (!mode.isEmpty() && !item.mode.equals(mode)) continue;
             if (seats && !item.recruiting()) continue;
             if (!normalized(item.title+" "+item.subject+" "+item.level+" "+item.tutorName).contains(query)) continue;
-            ui.add(results,card(item)); ui.space(results,13); count++;
+            ui.add(results,card(item,null)); ui.space(results,13); count++;
         }
         if (count == 0) {
             LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.cardSurface(empty,Ui.PALE,0);
@@ -111,8 +121,13 @@ public final class GroupSearchFragment extends ScreenFragment {
         }
     }
 
-    private View card(GroupClass item) {
+    /** A class card; a suggested one names the student's request it suits. */
+    private View card(GroupClass item, GroupMatch.Request request) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
+        if (request != null) {
+            String title = request.title.length() > 36 ? request.title.substring(0,35).trim()+"…" : request.title;
+            ui.add(card,ui.note(R.drawable.ic_file,"Khớp tin đăng \""+title+"\"",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(card,10);
+        }
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
         top.addView(ui.photo(item.art(),null,99,133,14)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);
