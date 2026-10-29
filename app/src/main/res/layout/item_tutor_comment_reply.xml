@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="wrap_content" android:layout_marginBottom="10dp" android:orientation="vertical"
+    android:background="@drawable/bg_pale" android:padding="12dp">
+    <TextView android:id="@+id/tutor_comment_reply_author" style="@style/FieldLabel" android:layout_marginBottom="4dp" />
+    <TextView android:id="@+id/tutor_comment_reply_tutor_badge" style="@style/BodyText" android:text="@string/tutor_comments_tutor_badge"
+        android:textColor="#236B42" android:textSize="12sp" android:layout_marginBottom="4dp" android:visibility="gone" />
+    <TextView android:id="@+id/tutor_comment_reply_date" style="@style/BodyText" android:textSize="12sp" android:layout_marginBottom="6dp" />
+    <TextView android:id="@+id/tutor_comment_reply_content" style="@style/BodyText" android:textColor="#081F50"
+        android:layout_marginBottom="0dp" android:textIsSelectable="true" />
+</LinearLayout>
