@@ -4,6 +4,8 @@
     <!-- Menu trên trang Cá nhân -->
     <string name="ex_menu_title">Học tập và giao dịch</string>
     <string name="ex_menu_contracts">Hợp đồng của tôi</string>
+    <string name="ex_menu_agreement">Hợp đồng cộng tác với hệ thống</string>
+    <string name="ex_menu_templates">Mẫu hợp đồng</string>
     <string name="ex_menu_reviews">Đánh giá về tôi</string>
     <string name="ex_menu_reports">Báo cáo của tôi</string>
     <string name="ex_menu_new_report">Gửi báo cáo vi phạm</string>
@@ -25,8 +27,8 @@
     <string name="ex_total">Tổng cộng</string>
     <string name="ex_terms">Nội dung thỏa thuận</string>
     <string name="ex_terms_note">Hai bên xác nhận lịch và học phí. Tiền ký quỹ được giải ngân theo buổi học hoàn thành.</string>
-    <string name="ex_agree">Tôi đồng ý với nội dung thỏa thuận</string>
-    <string name="ex_effective_note">Hợp đồng có hiệu lực sau khi hai bên xác nhận và hoàn tất ký quỹ.</string>
+    <string name="ex_agree">Tôi đã đọc và đồng ý với nội dung hợp đồng</string>
+    <string name="ex_effective_note">Gia sư gửi hợp đồng, học viên xác nhận. Hợp đồng có hiệu lực sau khi hoàn tất ký quỹ.</string>
     <string name="ex_subject">Môn học</string>
     <string name="ex_sessions">Số buổi</string>
     <string name="ex_minutes">Thời lượng mỗi buổi</string>
@@ -39,6 +41,10 @@
     <string name="ex_decrease">Giảm</string>
     <string name="ex_increase">Tăng</string>
     <string name="ex_terms_base">1. Hai bên dạy và học đúng lịch đã thống nhất; đổi lịch cần báo trước ít nhất 24 giờ qua ứng dụng.\n2. Học phí được ký quỹ trên nền tảng và giải ngân cho gia sư sau mỗi buổi học hoàn thành.\n3. Không giao dịch hay thanh toán ngoài nền tảng.\n4. Hủy buổi học trong vòng 24 giờ có thể không được hoàn học phí buổi đó.\n5. Tranh chấp được giải quyết qua chức năng báo cáo vi phạm.</string>
+    <!-- UC23: mẫu hợp đồng gợi ý cho quản trị viên khi chưa có mẫu trên Firestore -->
+    <string name="ex_template_student_title">Hợp đồng dạy học giữa học viên và gia sư</string>
+    <string name="ex_template_tutor_title">Hợp đồng cộng tác giữa gia sư và hệ thống</string>
+    <string name="ex_template_tutor_content">1. Gia sư cung cấp thông tin hồ sơ, bằng cấp trung thực và chịu trách nhiệm về nội dung giảng dạy.\n2. Gia sư nhận học viên, gửi hợp đồng dạy và trao đổi với học viên qua ứng dụng; không giao dịch hay thanh toán ngoài nền tảng.\n3. Học phí do học viên ký quỹ trên nền tảng và được giải ngân cho gia sư sau mỗi buổi học hoàn thành, sau khi trừ phí dịch vụ theo quy định hiện hành.\n4. Gia sư dạy đúng lịch đã thống nhất; đổi lịch hoặc hủy buổi học phải báo trước ít nhất 24 giờ qua ứng dụng.\n5. Gia sư không quấy rối, xúc phạm học viên và bảo mật thông tin cá nhân của học viên.\n6. Vi phạm có thể dẫn tới cảnh cáo, khóa tài khoản và hoàn học phí cho học viên theo kết quả xử lý báo cáo vi phạm.\n7. Hợp đồng có hiệu lực từ ngày ký đến khi một bên chấm dứt; hệ thống thông báo khi điều khoản thay đổi và gia sư ký lại phiên bản mới.</string>
     <string name="ex_terms_extra">Thỏa thuận thêm</string>
     <string name="ex_terms_extra_hint">Ví dụ: tài liệu, mục tiêu điểm số, địa điểm học…</string>
 

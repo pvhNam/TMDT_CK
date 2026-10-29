@@ -1,7 +1,5 @@
 package com.example.tmdt.ui.exchange;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,14 +16,14 @@ import com.example.tmdt.Exchange;
 import com.example.tmdt.MainActivity;
 import com.example.tmdt.R;
 import com.example.tmdt.databinding.FragmentContractBinding;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
 
 /**
  * Màn 40 – Chốt hợp đồng dạy (UC23).
- * Soạn đề nghị → hai bên xác nhận → học sinh thanh toán toàn khóa bằng VNPay.
- * Backend xác nhận nhận đủ tiền rồi kích hoạt hợp đồng.
+ * Gia sư soạn hợp đồng cho buổi học đã chấp nhận: lịch, thời lượng, hình thức lấy theo buổi học; gia sư điền môn,
+ * số buổi, học phí và thỏa thuận thêm; điều khoản chung là mẫu của quản trị viên. Học viên xem rồi
+ * "Xác nhận hợp đồng" (→ chờ thanh toán) hoặc từ chối; gia sư được hủy khi học viên chưa xác nhận.
+ * Hợp đồng đã chốt: học viên thanh toán toàn khóa bằng VNPay (luồng thanh toán của nhóm).
+
  */
 public final class ContractFragment extends Fragment {
     private FragmentContractBinding binding;
@@ -47,12 +45,13 @@ public final class ContractFragment extends Fragment {
         binding.termsRow.setOnClickListener(v -> showTerms());
         binding.agree.setOnCheckedChangeListener((b, checked) -> render());
         contracts.changes().observe(getViewLifecycleOwner(), ignored -> render());
+        exchange.agreements.changes().observe(getViewLifecycleOwner(), ignored -> render());
         contracts.start();
         render();
     }
 
     // ----------------------------------------------------------------------------------------------
-    // Soạn đề nghị
+    // Gia sư soạn hợp đồng
     // ----------------------------------------------------------------------------------------------
 
     private void bindEditor() {
@@ -64,37 +63,12 @@ public final class ContractFragment extends Fragment {
         });
         binding.minus.setOnClickListener(v -> changeSessions(-1));
         binding.plus.setOnClickListener(v -> changeSessions(1));
-        binding.minutesGroup.setOnCheckedStateChangeListener((group, ids) -> {
-            Contract d = exchange.draft(); if (d == null || ids.isEmpty()) return;
-            int id = ids.get(0);
-            d.minutes = id == R.id.minutes_120 ? 120 : id == R.id.minutes_90 ? 90 : 60;
-            Exchange.schedule(d, Exchange.startDay(d), Exchange.startTime(d)); renderDraftValues(d);
-        });
-        binding.modeGroup.setOnCheckedStateChangeListener((group, ids) -> {
-            Contract d = exchange.draft(); if (d == null || ids.isEmpty()) return;
-            d.mode = ids.get(0) == R.id.mode_home ? getString(R.string.ex_home) : getString(R.string.ex_online);
-        });
-        binding.startInput.setOnClickListener(v -> {
-            Contract d = exchange.draft(); if (d == null) return;
-            LocalDate day = Exchange.startDay(d);
-            DatePickerDialog picker = new DatePickerDialog(requireContext(), (p, y, m, dayOfMonth) -> {
-                Exchange.schedule(d, LocalDate.of(y, m + 1, dayOfMonth), Exchange.startTime(d)); renderDraftValues(d);
-            }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
-            picker.getDatePicker().setMinDate(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-            picker.show();
-        });
-        binding.timeInput.setOnClickListener(v -> {
-            Contract d = exchange.draft(); if (d == null) return;
-            LocalTime time = Exchange.startTime(d);
-            new TimePickerDialog(requireContext(), (p, hour, minute) -> {
-                Exchange.schedule(d, Exchange.startDay(d), LocalTime.of(hour, minute)); renderDraftValues(d);
-            }, time.getHour(), time.getMinute(), true).show();
-        });
     }
     private void changeSessions(int delta) {
         Contract d = exchange.draft(); if (d == null) return;
         d.sessions = Math.max(1, Math.min(Contract.MAX_SESSIONS, d.sessions + delta));
-        renderDraftValues(d);
+        binding.sessionsValue.setText(String.valueOf(d.sessions));
+        renderCost(d);
     }
 
     // ----------------------------------------------------------------------------------------------
@@ -120,13 +94,13 @@ public final class ContractFragment extends Fragment {
         binding.state.setVisibility(View.GONE); binding.content.setVisibility(View.VISIBLE); binding.actions.setVisibility(View.VISIBLE);
         String me = contracts.myId();
 
-        binding.code.setText(editing ? "Đề nghị hợp đồng mới" : "Hợp đồng số " + contract.code);
+        binding.code.setText(editing ? "Hợp đồng mới gửi " + contract.studentName : "Hợp đồng số " + contract.code);
         ExUi.pill(binding.status, editing ? "Bản nháp" : contract.statusLabel(), editing ? ExUi.NEUTRAL : ExUi.kind(contract));
         boolean showClosed = !editing && contract.closed();
         binding.closedNote.setVisibility(showClosed ? View.VISIBLE : View.GONE);
         if (showClosed) binding.closedNote.setText(Contract.REJECTED.equals(contract.status)
-                ? "Đề nghị đã bị từ chối" + (contract.rejectReason.isEmpty() ? "." : ": " + contract.rejectReason)
-                : "Đề nghị đã được hủy.");
+                ? "Học viên đã từ chối hợp đồng" + (contract.rejectReason.isEmpty() ? "." : ": " + contract.rejectReason)
+                : "Gia sư đã hủy hợp đồng này.");
 
         // Các bên
         ExUi.avatar(binding.studentAvatar.avatarPhoto, binding.studentAvatar.avatarInitials, null, contract.studentName);
@@ -134,18 +108,17 @@ public final class ContractFragment extends Fragment {
         binding.studentName.setText(contract.studentName);
         binding.tutorName.setText(contract.tutorName);
 
-        // Lớp học
-        binding.infoView.setVisibility(editing ? View.GONE : View.VISIBLE);
+        // Lớp học: lịch, bắt đầu, hình thức luôn theo buổi học đã đặt
+        binding.infoView.setVisibility(View.VISIBLE);
+        binding.subjectView.setVisibility(editing ? View.GONE : View.VISIBLE);
+        binding.sessionsView.setVisibility(editing ? View.GONE : View.VISIBLE);
+        binding.subjectView.setText(contract.subject);
+        binding.sessionsView.setText(contract.sessionsLabel());
+        binding.scheduleView.setText("Lịch hằng tuần: " + contract.schedule);
+        binding.startView.setText("Bắt đầu từ " + contract.startDate + (editing ? " (theo lịch học đã chấp nhận)" : ""));
+        binding.modeView.setText(contract.mode + " · " + contract.minutes + " phút/buổi");
         binding.infoEdit.setVisibility(editing ? View.VISIBLE : View.GONE);
-        if (editing) { if (filled != draft) fillEditor(draft); }
-        else {
-            filled = null;
-            binding.subjectView.setText(contract.subject);
-            binding.sessionsView.setText(contract.sessionsLabel());
-            binding.scheduleView.setText(contract.schedule);
-            binding.startView.setText("Bắt đầu từ " + contract.startDate);
-            binding.modeView.setText(contract.mode);
-        }
+        if (editing) { if (filled != draft) fillEditor(draft); } else filled = null;
         renderCost(contract);
         renderActions(contract, editing, me);
     }
@@ -154,16 +127,7 @@ public final class ContractFragment extends Fragment {
         filled = d;
         binding.subjectInput.setText(d.subject);
         binding.feeInput.setText(d.fee > 0 ? String.valueOf(d.fee) : "");
-        binding.minutesGroup.check(d.minutes == 120 ? R.id.minutes_120 : d.minutes == 90 ? R.id.minutes_90 : R.id.minutes_60);
-        binding.modeGroup.check(getString(R.string.ex_home).equals(d.mode) ? R.id.mode_home : R.id.mode_online);
-        renderDraftValues(d);
-    }
-    private void renderDraftValues(Contract d) {
-        if (binding == null) return;
         binding.sessionsValue.setText(String.valueOf(d.sessions));
-        binding.startInput.setText(d.startDate);
-        binding.timeInput.setText(Exchange.startTime(d).toString());
-        binding.scheduleHint.setText("Lịch hằng tuần: " + d.schedule);
         renderCost(d);
     }
     private void renderCost(Contract c) {
@@ -173,27 +137,27 @@ public final class ContractFragment extends Fragment {
 
     private void renderActions(Contract c, boolean editing, String me) {
         boolean busy = contracts.busy();
-        boolean proposer = me.equals(c.proposedBy);
-        boolean needsAgreement = editing || (c.pending() && !proposer);
+        boolean tutor = me.equals(c.tutorId);
+        boolean needsAgreement = editing || c.awaits(me);
         binding.agree.setVisibility(needsAgreement ? View.VISIBLE : View.GONE);
         boolean agreed = binding.agree.isChecked();
         binding.secondary.setVisibility(View.GONE); binding.tertiary.setVisibility(View.GONE);
         binding.primary.setIconResource(R.drawable.ic_ex_shield);
 
         if (editing) {
-            binding.primary.setText("Gửi đề nghị hợp đồng");
+            binding.primary.setText("Gửi hợp đồng cho học viên");
             binding.primary.setEnabled(agreed && !busy);
             binding.primary.setOnClickListener(v -> propose(c));
-        } else if (c.pending() && proposer) {
-            binding.primary.setText("Chờ " + c.otherName(me) + " xác nhận");
+        } else if (c.pending() && tutor) {
+            binding.primary.setText("Chờ " + c.studentName + " xác nhận");
             binding.primary.setEnabled(false);
-            binding.tertiary.setVisibility(View.VISIBLE); binding.tertiary.setText("Hủy đề nghị");
+            binding.tertiary.setVisibility(View.VISIBLE); binding.tertiary.setText("Hủy hợp đồng");
             binding.tertiary.setEnabled(!busy);
-            binding.tertiary.setOnClickListener(v -> new AlertDialog.Builder(requireContext()).setTitle("Hủy đề nghị hợp đồng?")
-                    .setMessage("Bạn có thể tạo đề nghị mới sau khi hủy.").setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton("Hủy đề nghị", (d, w) -> contracts.cancel(c)).show());
+            binding.tertiary.setOnClickListener(v -> new AlertDialog.Builder(requireContext()).setTitle("Hủy hợp đồng đã gửi?")
+                    .setMessage("Học viên sẽ không xác nhận được hợp đồng này. Bạn có thể gửi hợp đồng mới sau khi hủy.").setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton("Hủy hợp đồng", (d, w) -> contracts.cancel(c)).show());
         } else if (c.pending()) {
-            binding.primary.setText("Xác nhận đề nghị");
+            binding.primary.setText("Xác nhận hợp đồng");
             binding.primary.setEnabled(agreed && !busy);
             binding.primary.setOnClickListener(v -> contracts.confirm(c));
             binding.tertiary.setVisibility(View.VISIBLE); binding.tertiary.setText("Từ chối");
@@ -205,11 +169,14 @@ public final class ContractFragment extends Fragment {
             binding.primary.setEnabled(!busy);
             binding.primary.setOnClickListener(v -> ((MainActivity)requireActivity()).openPayment("CONTRACT",c.id,c.studentId));
             // Nút Đánh giá (UC26) và Báo cáo (UC27) sẽ thêm khi push các UC đó.
-        } else {
-            binding.primary.setText("Tạo đề nghị mới");
+        } else if (tutor) {
+            binding.primary.setText("Tạo hợp đồng mới");
             binding.primary.setIconResource(R.drawable.ic_ex_doc);
             binding.primary.setEnabled(!busy);
             binding.primary.setOnClickListener(v -> { binding.agree.setChecked(false); exchange.redraft(c); render(); });
+        } else {
+            binding.primary.setText(Contract.REJECTED.equals(c.status) ? "Bạn đã từ chối hợp đồng này" : "Hợp đồng đã bị hủy");
+            binding.primary.setEnabled(false);
         }
     }
 
@@ -219,7 +186,6 @@ public final class ContractFragment extends Fragment {
             ExUi.snack(binding.getRoot(), "Học phí mỗi buổi từ " + ExUi.money(Contract.MIN_FEE) + " đến " + ExUi.money(Contract.MAX_FEE) + ".");
             binding.feeInput.requestFocus(); return;
         }
-        if (d.startAt < System.currentTimeMillis()) { ExUi.snack(binding.getRoot(), "Chọn thời gian bắt đầu trong tương lai."); return; }
         ((MainActivity) requireActivity()).hideKeyboard();
         contracts.propose(d);
     }
@@ -230,18 +196,20 @@ public final class ContractFragment extends Fragment {
         input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(300)});
         LinearLayout box = new LinearLayout(requireContext());
         int pad = ExUi.dp(requireContext(), 20); box.setPadding(pad, 0, pad, 0); box.addView(input, new LinearLayout.LayoutParams(-1, -2));
-        new AlertDialog.Builder(requireContext()).setTitle("Từ chối đề nghị hợp đồng").setView(box)
+        new AlertDialog.Builder(requireContext()).setTitle("Từ chối hợp đồng").setView(box)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton("Từ chối", (d, w) -> contracts.reject(c, ExUi.text(input))).show();
     }
 
+    /** Điều khoản chung (mẫu của quản trị viên, chỉ xem) và thỏa thuận thêm (gia sư nhập khi soạn). */
     private void showTerms() {
         Contract draft = exchange.draft();
         Contract c = draft != null ? draft : contracts.contract(exchange.contractId());
         if (c == null) return;
-        String base = getString(R.string.ex_terms_base);
+        String base = c.baseTerms.isEmpty() ? getString(R.string.ex_terms_base) : c.baseTerms;
+        String version = c.templateVersion > 0 ? " (mẫu phiên bản " + c.templateVersion + ")" : "";
         if (draft == null) {
-            new AlertDialog.Builder(requireContext()).setTitle(R.string.ex_terms)
+            new AlertDialog.Builder(requireContext()).setTitle(getString(R.string.ex_terms) + version)
                     .setMessage(base + (c.terms.isEmpty() ? "" : "\n\n" + getString(R.string.ex_terms_extra) + ":\n" + c.terms))
                     .setPositiveButton(R.string.close, null).show();
             return;
@@ -256,7 +224,7 @@ public final class ContractFragment extends Fragment {
         text.setTextColor(requireContext().getColor(R.color.chat_ink));
         box.addView(text); box.addView(input, new LinearLayout.LayoutParams(-1, -2));
         android.widget.ScrollView scroll = new android.widget.ScrollView(requireContext()); scroll.addView(box);
-        new AlertDialog.Builder(requireContext()).setTitle(R.string.ex_terms).setView(scroll)
+        new AlertDialog.Builder(requireContext()).setTitle(getString(R.string.ex_terms) + version).setView(scroll)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.understood, (d, w) -> draft.terms = ExUi.text(input)).show();
     }

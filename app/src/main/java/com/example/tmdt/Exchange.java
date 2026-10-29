@@ -4,7 +4,9 @@ import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
+import com.example.tmdt.ui.exchange.ContractTemplatesFragment;
 import com.example.tmdt.ui.exchange.ContractsFragment;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -15,17 +17,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Thành viên 4 – UC23 Chốt hợp đồng dạy: màn 40 và "Hợp đồng của tôi", lựa chọn đang mở và điều hướng quay lại.
- * MainActivity chỉ chuyển tiếp sang lớp này (giống {@link Classroom}).
+ * Thành viên 4 – UC23 Chốt hợp đồng dạy: màn 40, Hợp đồng của tôi, hợp đồng cộng tác gia sư – hệ thống
+ * và mẫu hợp đồng của quản trị viên. MainActivity chỉ chuyển tiếp sang lớp này (giống {@link Classroom}).
+ *
+ * Luồng: học viên đặt lịch → gia sư chấp nhận → gia sư gửi hợp đồng (theo mẫu của quản trị viên) → học viên xác nhận.
  */
 public final class Exchange {
-    public static final String CONTRACT = "contract", CONTRACTS = "contracts";
-    public static final String TUTOR = "TUTOR", STUDENT = "STUDENT";
+    public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
     private final MainActivity host;
     public final ContractState contracts;
+    public final AgreementState agreements;
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
@@ -34,7 +38,9 @@ public final class Exchange {
 
     Exchange(MainActivity host, Bundle state) {
         this.host = host;
-        contracts = new ViewModelProvider(host).get(ContractState.class);
+        ViewModelProvider provider = new ViewModelProvider(host);
+        contracts = provider.get(ContractState.class);
+        agreements = provider.get(AgreementState.class);
         if (state != null) {
             contractId = state.getString("ex.contract");
             Bundle saved = state.getBundle("ex.origins");
@@ -49,15 +55,19 @@ public final class Exchange {
 
     // Điều hướng dùng bởi MainActivity ---------------------------------------------------------------
 
-    /** Đăng nhập/đăng xuất: bật hoặc tắt listener hợp đồng của tài khoản. */
+    /** Đăng nhập/đăng xuất: bật hoặc tắt các listener của tài khoản. */
     void accountChanged(boolean signedIn) {
-        if (signedIn) contracts.start(); else { contracts.stop(); contracts.draft = null; contractId = null; }
+        if (signedIn) { contracts.start(); agreements.start(); }
+        else { contracts.stop(); agreements.stop(); contracts.draft = null; contractId = null; }
     }
-    static boolean owns(String destination) { return CONTRACT.equals(destination) || CONTRACTS.equals(destination); }
-    /** Khách cần đăng nhập; mở màn 40 mà không có hợp đồng/bản nháp thì về danh sách. */
+    static boolean owns(String destination) {
+        return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination);
+    }
+    /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
     String redirect(String destination) {
         if (!owns(destination)) return destination;
         if (!host.account.signedIn()) return "login";
+        if (TEMPLATES.equals(destination) && !isAdmin()) return "account";
         if (CONTRACT.equals(destination) && contractId == null && contracts.draft == null) return CONTRACTS;
         return destination;
     }
@@ -65,6 +75,8 @@ public final class Exchange {
         switch (destination) {
             case CONTRACT: return new ContractFragment();
             case CONTRACTS: return new ContractsFragment();
+            case AGREEMENT: return new AgreementFragment();
+            case TEMPLATES: return new ContractTemplatesFragment();
             default: return null;
         }
     }
@@ -83,7 +95,10 @@ public final class Exchange {
 
     // Thông tin người đang đăng nhập -----------------------------------------------------------------
 
-    public boolean isTutor() { UserProfile p = host.account.profile(); return p != null && (p.tutor || TUTOR.equals(p.role)); }
+    public boolean isAdmin() { UserProfile p = host.account.profile(); return p != null && "ADMIN".equals(p.role); }
+    /** Gia sư đã được duyệt (VERIFIED), giống điều kiện của chế độ gia sư. */
+    public boolean isTutor() { return host.classroom.isTutor(); }
+    public String myId() { return contracts.myId(); }
     public String myName() { UserProfile p = host.account.profile(); return p != null && !p.name.isEmpty() ? p.name : "Người dùng"; }
     public void back() { host.back(); }
     public void show(String destination) { host.show(destination); }
@@ -91,72 +106,88 @@ public final class Exchange {
         new AlertDialog.Builder(host).setTitle(title).setMessage(message).setPositiveButton(R.string.understood, null).show();
     }
 
-    // UC23 – Hợp đồng --------------------------------------------------------------------------------
+    // Lối vào ----------------------------------------------------------------------------------------
 
     public String contractId() { return contractId; }
     public Contract draft() { return contracts.draft; }
     public void openContracts() { open(CONTRACTS); }
+    public void openAgreement() { open(AGREEMENT); }
+    public void openTemplates() { open(TEMPLATES); }
     public void openContract(Contract contract) { contractId = contract.id; contracts.draft = null; open(CONTRACT); }
-    /** Sau khi gửi đề nghị: màn 40 chuyển sang xem hợp đồng vừa tạo. */
+    /** Sau khi gửi: màn 40 chuyển sang xem hợp đồng vừa tạo. */
     public void showCreated(String id) { contractId = id; contracts.draft = null; }
 
-    /** Mục "Hợp đồng dạy" trong màn trò chuyện: mở hợp đồng đang có, hoặc soạn đề nghị mới từ buổi học đang trao đổi. */
-    public void openContractFor(Conversation conversation) {
-        Contract existing = contracts.latestFor(conversation.id);
+    /** Hợp đồng của buổi học (null nếu chưa có). Học thử không có hợp đồng. */
+    public Contract contractFor(Lesson lesson) { return lesson == null ? null : contracts.forLesson(lesson.id); }
+    /** Buổi học cần hợp đồng: đặt lịch (không phải học thử) đã được gia sư chấp nhận. */
+    public static boolean needsContract(Lesson lesson) { return lesson != null && !lesson.trial && lesson.confirmed(); }
+
+    /**
+     * Gọi ngay sau khi gia sư bấm "Chấp nhận" một yêu cầu đặt lịch: gợi ý gửi hợp đồng cho học viên.
+     * Học thử không cần hợp đồng.
+     */
+    public void afterAccepted(Lesson lesson) {
+        if (!needsContract(lesson)) return;
+        new AlertDialog.Builder(host).setTitle("Gửi hợp đồng dạy?")
+                .setMessage("Đã chấp nhận lịch học với " + lesson.studentName + ". Gửi hợp đồng dạy để học viên xem và xác nhận số buổi, học phí và điều khoản.")
+                .setNegativeButton("Để sau", null)
+                .setPositiveButton("Soạn hợp đồng", (d, w) -> openLessonContract(lesson)).show();
+    }
+
+    /**
+     * Mở hợp đồng của buổi học: có hợp đồng đang chờ/đã chốt thì mở nó; gia sư chưa có thì soạn mới
+     * (cần đã ký hợp đồng cộng tác và quản trị viên đã soạn mẫu); học viên chưa có thì báo chờ gia sư.
+     */
+    public void openLessonContract(Lesson lesson) {
+        if (lesson == null) return;
+        Contract existing = contracts.forLesson(lesson.id);
         if (existing != null && !existing.closed()) { openContract(existing); return; }
-        Contract value = newDraft(conversation, existing);
-        if (value == null) {
-            dialog("Chưa thể lập hợp đồng", "Hợp đồng dạy được lập giữa một học viên và một gia sư. Cuộc trò chuyện này chưa xác định được bên gia sư.");
+        String me = myId();
+        if (!me.equals(lesson.tutorId)) {
+            if (existing != null) { openContract(existing); return; }
+            dialog("Chưa có hợp đồng", "Gia sư " + lesson.tutorName + " sẽ gửi hợp đồng dạy sau khi chấp nhận lịch học. Bạn sẽ thấy hợp đồng ở đây và ở mục Cá nhân → Hợp đồng của tôi.");
             return;
         }
-        contracts.draft = value; contractId = null; open(CONTRACT);
+        if (!needsContract(lesson)) { dialog("Chưa thể gửi hợp đồng", "Chỉ gửi hợp đồng cho lịch học đã chấp nhận (không áp dụng cho học thử)."); return; }
+        if (!agreements.signed()) {
+            new AlertDialog.Builder(host).setTitle("Ký hợp đồng cộng tác trước")
+                    .setMessage("Gia sư cần ký hợp đồng cộng tác với hệ thống trước khi gửi hợp đồng dạy cho học viên.")
+                    .setNegativeButton(R.string.cancel, null).setPositiveButton("Ký ngay", (d, w) -> openAgreement()).show();
+            return;
+        }
+        AgreementState.Template template = agreements.template(AgreementState.STUDENT_TUTOR);
+        if (template == null) {
+            dialog("Chưa có mẫu hợp đồng", "Quản trị viên chưa soạn mẫu hợp đồng học viên – gia sư. Vui lòng thử lại sau.");
+            return;
+        }
+        Contract d = fromLesson(lesson);
+        if (existing != null) keepTerms(d, existing);
+        d.baseTerms = template.content; d.templateVersion = template.version;
+        contracts.draft = d; contractId = null; open(CONTRACT);
     }
-    /** "Tạo đề nghị mới" từ hợp đồng đã bị từ chối/hủy: giữ nguyên các điều khoản cũ để sửa. */
+    /** "Tạo hợp đồng mới" từ hợp đồng đã bị từ chối/hủy: giữ số buổi, học phí, thỏa thuận cũ; điều khoản lấy mẫu mới nhất. */
     public void redraft(Contract old) {
-        Contract value = copy(old);
-        value.id = ""; value.code = ""; value.status = Contract.PENDING; value.rejectReason = "";
+        AgreementState.Template template = agreements.template(AgreementState.STUDENT_TUTOR);
+        if (template == null) { dialog("Chưa có mẫu hợp đồng", "Quản trị viên chưa soạn mẫu hợp đồng học viên – gia sư."); return; }
+        Lesson lesson = host.classroom.store.lesson(old.lessonId);
+        if (lesson == null || !needsContract(lesson)) { dialog("Chưa thể tạo hợp đồng mới", "Buổi học của hợp đồng này không còn ở trạng thái đã chấp nhận."); return; }
+        Contract value = fromLesson(lesson);
+        keepTerms(value, old);
+        value.baseTerms = template.content; value.templateVersion = template.version;
         contracts.draft = value; contractId = null; host.show(CONTRACT);
     }
-    private Contract newDraft(Conversation c, Contract previous) {
-        String me = host.account.signedIn() ? host.chat.myId() : "";
-        Contract d = previous != null ? copy(previous) : new Contract();
-        d.id = ""; d.code = ""; d.status = Contract.PENDING; d.rejectReason = ""; d.conversationId = c.id;
-        if (TUTOR.equals(c.peerRole)) { d.studentId = me; d.tutorId = c.peerId; d.studentName = myName(); d.tutorName = c.peerName; }
-        else if (TUTOR.equals(c.myRole) || isTutor()) { d.tutorId = me; d.studentId = c.peerId; d.tutorName = myName(); d.studentName = c.peerName; }
-        else return null;
-        if (previous != null) return d;
-        LocalDate start = LocalDate.now().plusDays(1);
-        LocalTime time = LocalTime.of(19, 0);
-        if (c.hasLesson()) {
-            d.subject = c.lessonTitle;
-            // Ví dụ "15/09/2026 · 19:00–20:00"
-            try {
-                String[] parts = c.lessonTime.split("·");
-                LocalDate day = LocalDate.parse(parts[0].trim(), DATE);
-                if (day.isAfter(LocalDate.now())) start = day;
-                String[] range = parts[1].trim().split("[–-]");
-                time = LocalTime.parse(range[0].trim());
-                LocalTime end = LocalTime.parse(range[1].trim());
-                int minutes = (int) java.time.Duration.between(time, end).toMinutes();
-                if (minutes == 60 || minutes == 90 || minutes == 120) d.minutes = minutes;
-            } catch (RuntimeException ignored) { /* Không đọc được: dùng giá trị mặc định. */ }
-        }
-        CatalogState.Teacher teacher = null;
-        for (CatalogState.Teacher t : host.catalog.teachers.values()) if (t.userId.equals(d.tutorId)) teacher = t;
-        if (teacher != null && !teacher.offerings.isEmpty()) {
-            CatalogState.Offering offering = teacher.offerings.get(0);
-            d.fee = offering.price;
-            String subject = host.catalog.subjects.get(offering.subjectId);
-            if (d.subject.isEmpty() && subject != null) d.subject = (subject + " " + CatalogState.level(offering.level)).trim();
-            if (!c.hasLesson()) d.minutes = 90;
-        }
-        if (d.fee == 0) d.fee = 150000;
-        if (d.subject.isEmpty()) d.subject = "Môn học";
-        if (d.subject.length() > 120) d.subject = d.subject.substring(0, 120);
-        schedule(d, start, time);
+
+    /** Bản nháp điền sẵn từ buổi học đã chấp nhận: môn, giờ bắt đầu, thời lượng, hình thức, học phí một buổi. */
+    static Contract fromLesson(Lesson lesson) {
+        Contract d = new Contract();
+        d.lessonId = lesson.id; d.studentId = lesson.studentId; d.tutorId = lesson.tutorId;
+        d.studentName = lesson.studentName; d.tutorName = lesson.tutorName;
+        d.subject = lesson.title.length() > 120 ? lesson.title.substring(0, 120) : lesson.title;
+        d.minutes = lesson.minutes; d.mode = lesson.mode; d.fee = lesson.price; d.sessions = 4;
+        schedule(d, LocalDate.parse(lesson.date), LocalTime.of(lesson.hour, lesson.minute));
         return d;
     }
-    /** Cập nhật ngày bắt đầu và giờ học của bản nháp: lịch hằng tuần lấy theo thứ của ngày bắt đầu. */
+    /** Ngày bắt đầu và giờ học: lịch hằng tuần lấy theo thứ của ngày bắt đầu. */
     public static void schedule(Contract d, LocalDate start, LocalTime time) {
         d.startDate = start.format(DATE);
         d.startAt = start.atTime(time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -169,13 +200,8 @@ public final class Exchange {
     public static LocalTime startTime(Contract d) {
         return java.time.Instant.ofEpochMilli(d.startAt).atZone(ZoneId.systemDefault()).toLocalTime().withSecond(0).withNano(0);
     }
-    private static Contract copy(Contract o) {
-        Contract c = new Contract();
-        c.conversationId = o.conversationId; c.studentId = o.studentId; c.tutorId = o.tutorId; c.studentName = o.studentName; c.tutorName = o.tutorName;
-        c.subject = o.subject; c.schedule = o.schedule; c.startDate = o.startDate; c.mode = o.mode; c.terms = o.terms;
-        c.sessions = o.sessions; c.minutes = o.minutes; c.fee = o.fee; c.startAt = o.startAt;
-        LocalDate start = startDay(o);
-        if (start.isBefore(LocalDate.now().plusDays(1))) schedule(c, LocalDate.now().plusDays(1), startTime(o));
-        return c;
+    /** Giữ phần gia sư đã điền ở hợp đồng cũ; lịch, thời lượng, hình thức luôn theo buổi học hiện tại. */
+    static void keepTerms(Contract into, Contract old) {
+        into.subject = old.subject; into.sessions = old.sessions; into.fee = old.fee; into.terms = old.terms;
     }
 }
