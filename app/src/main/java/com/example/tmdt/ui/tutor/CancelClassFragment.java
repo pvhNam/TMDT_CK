@@ -60,7 +60,7 @@ public final class CancelClassFragment extends ScreenFragment {
         ui.add(box,ui.fact(R.drawable.ic_users,item.members.size()+" học viên được báo lớp đã hủy",18,14,Ui.INK,false));
         if (waiting > 0) ui.add(box,ui.fact(R.drawable.ic_clock,waiting+" đăng ký đang chờ sẽ tự đóng",18,14,Ui.INK,false));
         ui.add(box,ui.fact(R.drawable.ic_calendar,"Các buổi còn lại gỡ khỏi lịch học",18,14,Ui.INK,false));
-        ui.add(box,ui.fact(R.drawable.ic_coin,"Học phí ký quỹ chờ hoàn lại học viên",18,14,Ui.INK,false));
+        ui.add(box,ui.fact(R.drawable.ic_coin,"Học viên đã đóng phí được hoàn tiền",18,14,Ui.INK,false));
         return box;
     }
 

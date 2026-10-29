@@ -100,7 +100,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     }
     private void reject(GroupClass.Registration registration) {
         classroom.ui.dialog().setTitle("Từ chối "+registration.studentName+"?")
-                .setMessage("Tiền ký quỹ của học viên sẽ được hoàn theo quy định (Thành viên 4 xử lý).")
+                .setMessage("Đăng ký này chưa thu học phí nên học viên không mất khoản phí nào.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Từ chối",(dialog,which)->{
                     String error = classroom.store.reject(registration);

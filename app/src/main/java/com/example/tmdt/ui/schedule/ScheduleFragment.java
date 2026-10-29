@@ -51,7 +51,7 @@ public final class ScheduleFragment extends ScreenFragment {
             } else if(item.members.contains(classroom.me())) {
                 if(item.cancelled()) {
                     if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,item.scheduleLabel(),
-                            ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+". Học phí ký quỹ đang chờ hoàn tiền.")));
+                            ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+".")));
                     continue;
                 }
                 for(GroupClass.Session session:item.sessionList()) {
@@ -127,7 +127,7 @@ public final class ScheduleFragment extends ScreenFragment {
         LinearLayout actions=ui.row();
         ui.weightAction(actions,ui.action("Nhắn tin",0,Ui.OUTLINE,()->classroom.message(item.tutorName)),38);ui.gap(actions,9);
         ui.weightAction(actions,live?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
-                :ui.action("Chi tiết",0,Ui.PRIMARY,()->classroom.dialog(item.title,summary)),38);
+                :ui.action("Chi tiết",0,Ui.PRIMARY,item.cancelled()?()->classroom.openRegistration(item):()->classroom.dialog(item.title,summary)),38);
         ui.add(card,actions);return card;
     }
 
