@@ -26,6 +26,11 @@ public final class Store {
 
     public final List<Lesson> lessons = new ArrayList<>();
     public final List<GroupClass> classes = new ArrayList<>();
+    /** Open tutor requests: the user's own, and every student's once a tutor looks for groups to match. */
+    public final List<GroupMatch.Request> myRequests = new ArrayList<>(), openRequests = new ArrayList<>();
+    /** True once the classes and the user's own requests have both loaded, so earlier matches are not announced as new. */
+    public boolean matchesReady, openRequestsLoaded;
+    public String requestsError = "";
     private final Remote remote;
     private final Set<String> settled = new HashSet<>();
     /** uid of the signed-in user, empty for a guest. */
