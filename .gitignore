@@ -14,10 +14,19 @@
 .externalNativeBuild
 .cxx
 local.properties
+/vnpay.properties
 
 # Local Firebase Emulator output
 /firebase-debug.log
 /firestore-debug.log
 /ui-debug.log
 /.firebase/
+
+# Backend secrets and local dependencies
+/email-otp-server/.env
+/email-otp-server/node_modules/
+/payment-server/.env
+/payment-server/node_modules/
+/payment-server/secrets/
+/payment-server/*.log
 /vnpay.properties

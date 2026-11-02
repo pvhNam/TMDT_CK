@@ -69,7 +69,7 @@
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/email"
                         style="@style/LoginInput"
-                        android:hint="@string/ref_email_hint"
+                        android:hint="Email hoặc tên đăng nhập admin"
                         android:inputType="textEmailAddress"
                         android:autofillHints="emailAddress"
                         android:maxLength="254" />

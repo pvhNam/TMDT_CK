@@ -8,23 +8,28 @@ import com.example.tmdt.ui.common.Ui;
 public final class PaymentHistoryFragment extends PaymentScreen {
     @Override protected View build(){
         LinearLayout root=root(state().admin?"Quản lý thanh toán":"Thanh toán của tôi"),body=ui.page(root);feedback(body);
-        if(state().admin)action(body,"Chi trả gia sư theo tháng",Ui.PRIMARY,()->host().show("admin_payroll"));
+        if(state().admin){ui.tabs(body,new String[]{"Học phí","Hoàn tiền"},state().adminPaymentTab,i->{state().adminPaymentTab=i;scrollToTop();refresh();});ui.space(body,16);}
+        if(!state().admin||state().adminPaymentTab==0){
         if(state().tutor)action(body,"Thu nhập và tài khoản nhận tiền",Ui.OUTLINE,()->host().show("tutor_income"));
-        ui.add(body,ui.text("Học phí chuyển về hệ thống. Gia sư được đối soát theo các buổi đã hoàn thành, đến hạn ngày 5 tháng sau.",14,Ui.MUTED,false));ui.space(body,18);
-        if(state().payments.isEmpty())summary(body,"Chưa có giao dịch","Mở buổi học, hợp đồng hoặc đăng ký lớp đã được chấp nhận để thanh toán.","");
+        LinearLayout heading=ui.row();ui.weight(heading,ui.text("Lịch sử giao dịch",19,Ui.INK,true));heading.addView(ui.pill(String.valueOf(state().payments.size()),12,Ui.BLUE,Ui.PALE));ui.add(body,heading);ui.space(body,14);
+        if(state().payments.isEmpty())summary(body,"Chưa có giao dịch","","");
         for(PaymentState.Row payment:newest(state().payments.values())){
-            LinearLayout card=ui.card();ui.add(card,ui.text(payment.text("title"),17,Ui.INK,true));ui.space(card,6);
-            ui.add(card,ui.text(payment.text("tutor_name")+" · "+payment.number("session_count")+" buổi",14,Ui.MUTED,false));ui.space(card,8);
-            ui.add(card,ui.text(PaymentState.money(payment.number("amount")),21,Ui.BLUE,true));ui.space(card,6);
-            ui.add(card,ui.text(PaymentState.status(payment.text("status")),14,Ui.INK,true));
+            LinearLayout card=ui.card(),top=ui.row();
+            ui.weight(top,ui.text(payment.text("title").isEmpty()?"Thanh toán học phí":payment.text("title"),17,Ui.INK,true));ui.gap(top,8);top.addView(ui.text("›",25,Ui.BLUE,false));ui.add(card,top);ui.space(card,8);
+            ui.add(card,ui.text(payment.text("tutor_name")+" · "+payment.number("session_count")+" buổi",13,Ui.MUTED,false));ui.space(card,14);
+            ui.add(card,ui.text(PaymentState.money(payment.number("amount")),24,Ui.BLUE,true));ui.space(card,10);
+            ui.add(card,statusPill(payment.text("status")));
+            if(payment.time("created_at")>0){ui.space(card,10);ui.add(card,ui.text(date(payment.time("created_at")),12,Ui.MUTED,false));}
+            card.setContentDescription("Xem giao dịch "+(payment.text("title").isEmpty()?payment.id:payment.text("title")));
             ui.clickable(card,()->state().openExisting(payment.id,"payments"));ui.add(body,card);ui.space(body,12);
         }
-        if(state().admin){
+        }
+        if(state().admin&&state().adminPaymentTab==1){
             ui.space(body,10);ui.add(body,ui.text("Yêu cầu hoàn tiền",19,Ui.INK,true));ui.space(body,10);
+            if(state().refunds.isEmpty())ui.add(body,ui.note(com.example.tmdt.R.drawable.ic_info,"Chưa có yêu cầu hoàn học phí.",Ui.PALE,Ui.BLUE,Ui.INK));
             for(PaymentState.Row refund:newest(state().refunds.values())){
                 summary(body,refund.text("title"),refund.text("reason")+"\n"+PaymentState.status(refund.text("status")),PaymentState.money(refund.number("amount")));
                 if("PENDING".equals(refund.text("status"))){
-                    ui.add(body,ui.text("Đối soát số tiền và tài khoản hoàn với học sinh trước khi chuyển.",13,Ui.MUTED,false));ui.space(body,8);
                     action(body,"Xác nhận đã chuyển hoàn tiền",Ui.OUTLINE,()->{
                     state().selectedRefund=refund.id;prompt("Chỉ xác nhận sau khi đã chuyển tiền","Mã giao dịch ngân hàng thực tế",state()::finishRefund);
                     });

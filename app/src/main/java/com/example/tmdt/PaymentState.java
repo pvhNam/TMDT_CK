@@ -35,6 +35,7 @@ public final class PaymentState extends ViewModel {
     public String owner="",selected="",selectedPayout="",selectedRefund="",requestedType="",requestedSource="",requestedStudent="",origin="account",destination,error="",notice="";
     public String incomePeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString(),payrollPeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusMonths(1).toString();
     public boolean admin,tutor,busy;
+    public int adminPaymentTab;
     public Map<String,Object> bank=new HashMap<>();
     public void account(AccountState account){
         UserProfile profile=account.profile();
@@ -97,7 +98,7 @@ public final class PaymentState extends ViewModel {
     public boolean sandbox(){return api.sandbox();}
     public void returned(String paymentId,String url){
         if(!sandbox())return;
-        request("POST","/payments/"+paymentId+"/return",json("url",url),r->{String status=r.optString("status");notice=status.equals("PAID")?"Thanh toán TEST thành công. Học phí thử đã được ghi nhận.":"Kết quả VNPay TEST: "+status(status);});
+        request("POST","/payments/"+paymentId+"/return",json("url",url),r->{String status=r.optString("status");notice=status.equals("PAID")?"Thanh toán thành công.":"Kết quả thanh toán: "+status(status);});
     }
     public void changed(){changes.setValue(changes.getValue()+1);}
     public void clearFeedback(){error="";notice="";}
@@ -107,13 +108,13 @@ public final class PaymentState extends ViewModel {
     }
     public void refresh(){request("POST","/payments/"+selected+"/refresh",json(),result->notice=sandbox()?result.optString("message"):"Đã đối chiếu trạng thái với VNPay.");}
     public void session(int number,String action,String reason){
-        request("POST","/payments/"+selected+"/sessions/"+number+"/"+action,json("reason",reason),result->notice=action.equals("confirm")?"Đã xác nhận. Tiền dạy được ghi nhận vào kỳ tháng này.":"Đã cập nhật buổi học.");
+        request("POST","/payments/"+selected+"/sessions/"+number+"/"+action,json("reason",reason),result->notice=action.equals("confirm")?"Đã xác nhận buổi học.":"Đã cập nhật buổi học.");
     }
     public void saveBank(String name,String number,String holder){request("PUT","/bank",json("bank_name",name,"account_number",number,"account_name",holder),r->notice="Đã lưu tài khoản nhận tiền.");}
-    public void preparePayroll(){request("POST","/admin/payroll",json("period",payrollPeriod),r->notice="Đã lập "+r.optInt("created")+" bảng chi trả. Buổi đã đưa vào bảng sẽ không được tính lại.");}
+    public void preparePayroll(){request("POST","/admin/payroll",json("period",payrollPeriod),r->notice="Đã lập "+r.optInt("created")+" bảng chi trả.");}
     public void markPayout(String reference){request("POST","/admin/payouts/"+selectedPayout+"/paid",json("reference",reference),r->notice="Đã ghi nhận khoản chuyển tiền cho gia sư.");}
-    public void cancelPayout(String reason){request("POST","/admin/payouts/"+selectedPayout+"/cancel",json("reason",reason),r->notice="Đã hủy bảng chưa chi. Cập nhật tài khoản nhận tiền rồi lập lại kỳ thanh toán.");}
-    public void refund(String reason){request("POST","/payments/"+selected+"/refund",json("reason",reason),r->notice="Đã gửi yêu cầu. Khóa tạm dừng ghi nhận buổi mới trong lúc xử lý hoàn tiền.");}
+    public void cancelPayout(String reason){request("POST","/admin/payouts/"+selectedPayout+"/cancel",json("reason",reason),r->notice="Đã hủy bảng chi trả.");}
+    public void refund(String reason){request("POST","/payments/"+selected+"/refund",json("reason",reason),r->notice="Đã gửi yêu cầu hoàn học phí.");}
     public void finishRefund(String reference){request("POST","/admin/refunds/"+selectedRefund+"/paid",json("reference",reference),r->notice="Đã ghi nhận hoàn tiền cho học sinh.");}
     public void rejectRefund(String reason){request("POST","/admin/refunds/"+selectedRefund+"/reject",json("reason",reason),r->notice="Đã cập nhật kết quả đối soát yêu cầu hoàn tiền.");}
     private void request(String method,String path,JSONObject body,Consumer<JSONObject> success){

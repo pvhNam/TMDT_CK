@@ -40,7 +40,10 @@ public class MainActivity extends AppCompatActivity {
     /** Hợp đồng dạy (member 4, UC23). */
     public Exchange exchange;
     public PaymentState payments;
+    public AdminState administration;
+    public boolean isAdmin(){return account!=null&&account.signedIn()&&account.profile()!=null&&"ADMIN".equals(account.profile().role)&&"ACTIVE".equals(account.profile().status);}
     String screen="home";
+    public String currentScreen(){return screen;}
     private String pendingDestination;
     private String authenticatedDestination;
     private String selectedRequestId="";
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private String requestSearchOrigin="home";
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
+    private boolean adminMenuIcons;
     private boolean keyboardVisible;
     private int bottomInset,systemBottomInset;
     private String navigatingTo;
@@ -78,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
         classroom=new Classroom(this,savedInstanceState);
         exchange=new Exchange(this,savedInstanceState);
         payments=new ViewModelProvider(this).get(PaymentState.class);
+        administration=new ViewModelProvider(this).get(AdminState.class);
+        if(savedInstanceState!=null){administration.userOrigin=savedInstanceState.getString("admin_user_origin","admin_users");administration.contractOrigin=savedInstanceState.getString("admin_contract_origin","admin_contracts");administration.selectedTutor=savedInstanceState.getString("admin_tutor","");administration.selectedUser=savedInstanceState.getString("admin_user","");administration.selectedContract=savedInstanceState.getString("admin_contract","");}
         if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
@@ -128,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
         account.changes().observe(this,ignored->{
             tutorReviews.account(account);
             classroom.onAccount();
+            payments.account(account);
+            administration.account(account);
             if(account.destination!=null){
                 String destination=account.destination;
                 account.destination=null;
@@ -170,6 +178,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void show(String destination){
+        if(destination.startsWith("admin_")&&!isAdmin())destination=account.signedIn()?"account":"login";
+        if(isAdmin()&&"home".equals(destination))destination="admin_dashboard";
         if("email_otp".equals(destination))destination="email_verification"; // Older saved navigation state.
         if(account.requiresEmailVerification())destination="email_verification";
         if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
@@ -206,6 +216,13 @@ public class MainActivity extends AppCompatActivity {
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
+            case "admin_dashboard":fragment=new com.example.tmdt.ui.admin.AdminDashboardFragment();break;
+            case "admin_users":fragment=new com.example.tmdt.ui.admin.AdminUsersFragment();break;
+            case "admin_user":fragment=new com.example.tmdt.ui.admin.AdminUserDetailFragment();break;
+            case "admin_contracts":fragment=new com.example.tmdt.ui.admin.AdminContractsFragment();break;
+            case "admin_contract":fragment=new com.example.tmdt.ui.admin.AdminContractDetailFragment();break;
+            case "admin_income":fragment=new com.example.tmdt.ui.admin.AdminIncomeFragment();break;
+            case "admin_finance":fragment=new com.example.tmdt.ui.admin.AdminFinanceFragment();break;
             case "payments":fragment=new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
             case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
             case "tutor_income":fragment=new com.example.tmdt.ui.payments.TutorIncomeFragment();break;
@@ -257,12 +274,17 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
-        if(account.isBusy()||account.isSendingCode()||payments.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
+        if(account.isBusy()||account.isSendingCode()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
         else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
+        if(isAdmin()){
+            destination=itemId==R.id.nav_schedule?"admin_users":itemId==R.id.nav_messages?"admin_contracts":itemId==R.id.nav_account?"admin_finance":"admin_dashboard";
+            administration.notice="";
+            if(itemId==R.id.nav_messages)administration.selectTutor("");
+        }
         destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
             account.clearFeedback();
@@ -277,6 +299,12 @@ public class MainActivity extends AppCompatActivity {
     private void renderNavigation(){
         updatingNavigation=true;
         android.view.Menu menu=binding.bottomNavigation.getMenu();
+        menu.findItem(R.id.nav_messages).setTitle(isAdmin()?"Hợp đồng":"Tin nhắn");
+        menu.findItem(R.id.nav_account).setTitle(isAdmin()?"Tài chính":"Cá nhân");
+        if(adminMenuIcons!=isAdmin()){
+            adminMenuIcons=isAdmin();
+            if(adminMenuIcons)NavigationAssets.applyAdmin(binding.bottomNavigation);else NavigationAssets.apply(binding.bottomNavigation);
+        }
         for(int i=0;i<menu.size();i++)menu.getItem(i).setEnabled(!account.isBusy()&&!account.isSendingCode());
         int selected=R.id.nav_home;
         if("schedule".equals(screen))selected=R.id.nav_schedule;
@@ -285,12 +313,19 @@ public class MainActivity extends AppCompatActivity {
         if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
         if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
         selected=classroom.navigationItem(menu,screen,selected);
+        if(isAdmin()){
+            menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Tài khoản");
+            menu.findItem(R.id.nav_account).setTitle("Tài chính");
+            selected=screen.equals("admin_users")||screen.equals("admin_user")?R.id.nav_schedule:
+                screen.equals("admin_contracts")||screen.equals("admin_contract")?R.id.nav_messages:
+                java.util.Arrays.asList("admin_finance","admin_income","admin_payroll","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
+        }
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_users".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
@@ -321,15 +356,21 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
     public void back(){
-        if(account.isBusy()||payments.busy||(isRequestScreen(screen)&&requestManager().busy()))return;
+        if(account.isBusy()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return;
         hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
         if(target==null)target=exchange.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
+            case "admin_user":show(administration.userOrigin);break;
+            case "admin_contract":show(administration.contractOrigin);break;
+            case "admin_contracts":if(!administration.selectedTutor.isEmpty()){administration.selectTutor("");show("admin_contracts");}else show("admin_dashboard");break;
+            case "admin_users":case "admin_finance":show("admin_dashboard");break;
+            case "admin_income":show("admin_finance");break;
+            case "admin_dashboard":finish();break;
             case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
-            case "payments":case "tutor_income":case "admin_payroll":show("account");break;
+            case "payments":case "tutor_income":case "admin_payroll":show(isAdmin()?"admin_finance":"account");break;
             case "payout_bank":show("tutor_income");break;
             case "welcome":finish();break;
             case "student_intro":show("welcome");break;
@@ -347,7 +388,8 @@ public class MainActivity extends AppCompatActivity {
             case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
             case "tutor_evidence":show("register_tutor");break;
             case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
-            case "tutor_pending":case "admin_tutors":show("account");break;
+            case "tutor_pending":show("account");break;
+            case "admin_tutors":show("admin_dashboard");break;
             case "post_request":show(postRequestOrigin);break;
             case "edit_request":requestManager().resetEdit();show("my_requests");break;
             case "request_applicants":show("my_requests");break;
@@ -456,5 +498,10 @@ public class MainActivity extends AppCompatActivity {
         out.putString("payment_id",payments.selected);
         out.putString("payout_id",payments.selectedPayout);
         out.putString("payment_origin",payments.origin);
+        out.putString("admin_user",administration.selectedUser);
+        out.putString("admin_contract",administration.selectedContract);
+        out.putString("admin_tutor",administration.selectedTutor);
+        out.putString("admin_user_origin",administration.userOrigin);
+        out.putString("admin_contract_origin",administration.contractOrigin);
     }
 }

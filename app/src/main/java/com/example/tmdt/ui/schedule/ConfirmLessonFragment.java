@@ -40,7 +40,6 @@ public final class ConfirmLessonFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_coin,"Học phí buổi học",Tutor.money(lesson.total())));
         ui.add(body,tiles); ui.space(body,16);
 
-        ui.add(body,ui.note(R.drawable.ic_info,"Gia sư báo hoàn thành, học sinh xác nhận rồi tiền dạy được cộng vào kỳ tháng này. Admin chi trả từ ngày 5 tháng sau.",Ui.PALE,Ui.BLUE,Ui.MUTED));
         ui.space(body,8);
         if (lesson.finished) {
             ui.addAction(body,ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null),47);

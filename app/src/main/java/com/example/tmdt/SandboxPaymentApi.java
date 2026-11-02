@@ -50,7 +50,7 @@ final class SandboxPaymentApi {
                     String id=parts[2],action=parts[3];
                     if(parts.length==4&&action.equals("return"))return returned(uid,admin,id,body.optString("url"));
                     if(parts.length==4&&action.equals("refresh")){Map<String,Object> p=must(Tasks.await(ref("payments",id).get(Source.SERVER)));member(uid,admin,p);
-                        return PaymentState.json("ok",true,"message","Đã tải trạng thái đã lưu. Nếu đóng VNPay trước khi trả kết quả, hãy mở lại phiên thanh toán.");}
+                        return PaymentState.json("ok",true,"message","Đã tải trạng thái thanh toán.");}
                     if(parts.length==6&&action.equals("sessions")){session(uid,admin,id,Integer.parseInt(parts[4]),parts[5],body);return PaymentState.json("ok",true);}
                     if(parts.length==4&&action.equals("refund")){refund(uid,admin,id,body);return PaymentState.json("ok",true);}
                 }
@@ -59,10 +59,10 @@ final class SandboxPaymentApi {
                     if(parts[2].equals("payouts")){payoutAction(uid,parts[3],parts[4],body);return PaymentState.json("ok",true);}
                     if(parts[2].equals("refunds")){refundAction(uid,parts[3],parts[4],body);return PaymentState.json("ok",true);}
                 }
-                throw bad("Thao tác thanh toán thử chưa hợp lệ.");
+                throw bad("Thao tác thanh toán chưa hợp lệ.");
             }catch(Exception e){Throwable cause=e;while(cause.getCause()!=null&&!(cause instanceof IllegalArgumentException)&&!(cause instanceof FirebaseFirestoreException))cause=cause.getCause();
                 String message=cause instanceof IllegalArgumentException?cause.getMessage():cause instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)cause).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED?
-                        "Firebase từ chối thanh toán thử. Hãy Publish FIRESTORE_RULES_FULL.txt có các collection sandbox_ trong project.":"Không tải được thanh toán thử. Kiểm tra kết nối rồi thử lại.";
+                        "Không có quyền truy cập giao dịch.":"Không tải được thanh toán. Kiểm tra kết nối rồi thử lại.";
                 throw new PaymentApi.Failure(message);
             }
         });
@@ -91,7 +91,7 @@ final class SandboxPaymentApi {
         return new SourceInfo(map("type",type,"source_id",id,"student_id",d.get("student_id"),"tutor_id",d.get("tutor_id"),"student_name",studentName,"tutor_name",tutorName,"title",title,"amount",amount,"session_count",count,"currency","VND"),end,group);
     }
     private JSONObject checkout(String uid,String type,String sourceId)throws Exception{
-        check(gateway.ready(),"Chưa có cấu hình VNPay TEST trong vnpay.properties. Build lại sau khi điền cấu hình.");
+        check(gateway.ready(),"Chưa có cấu hình VNPay.");
         String id=PaymentState.id(type,sourceId);DocumentReference ref=ref("payments",id);long now=clock.getAsLong();
         Map<String,Object> payment=Tasks.await(db.runTransaction(tx->{
             Map<String,Object> old=data(tx.get(ref));
@@ -117,7 +117,7 @@ final class SandboxPaymentApi {
             check(Arrays.asList("WAITING","FAILED","CANCELLED","GATEWAY_REVIEW").contains(text(p,"status")),"Phiên thanh toán không còn hợp lệ.");
             // Source eligibility is checked again before a paid course becomes usable.
             if(result.status.equals("PAID")){
-                SourceInfo s=source(tx,text(p,"type"),text(p,"source_id"));check(s.values.get("student_id").equals(p.get("student_id"))&&s.values.get("tutor_id").equals(p.get("tutor_id"))&&s.values.get("amount").equals(p.get("amount")),"Đăng ký đã thay đổi. Cần admin đối soát kết quả TEST.");
+                SourceInfo s=source(tx,text(p,"type"),text(p,"source_id"));check(s.values.get("student_id").equals(p.get("student_id"))&&s.values.get("tutor_id").equals(p.get("tutor_id"))&&s.values.get("amount").equals(p.get("amount")),"Đăng ký đã thay đổi. Cần đối soát giao dịch.");
                 tx.update(ref,map("status","PAID","received_amount",num(p,"amount"),"paid_at",stamp(),"provider_transaction_no",result.transactionNo,"return_url",url,"updated_at",stamp()));
             }else tx.update(ref,map("status",result.status,"response_code",result.code,"return_url",url,"updated_at",stamp()));
             return result.status;
@@ -164,7 +164,10 @@ final class SandboxPaymentApi {
         int count=0;for(Map.Entry<String,List<DocumentReference>> entry:teachers.entrySet())for(int offset=0;offset<entry.getValue().size();offset+=100){
             List<DocumentReference> group=entry.getValue().subList(offset,Math.min(offset+100,entry.getValue().size()));DocumentReference payout=ref("tutor_payouts",UUID.randomUUID().toString());
             boolean created=Tasks.await(db.runTransaction(tx->{List<DocumentSnapshot> rows=new ArrayList<>();for(DocumentReference r:group){DocumentSnapshot row=tx.get(r);if(row.exists()&&row.get("payout_id")==null)rows.add(row);}if(rows.isEmpty())return false;
-                Map<String,Object> bank=must(tx.get(ref("payout_accounts",entry.getKey())));long total=0;for(DocumentSnapshot row:rows)total+=num(row.getData(),"amount");
+                Map<String,Object> teacher=must(tx.get(db.collection("users").document(entry.getKey())));
+                if(!"ACTIVE".equals(text(teacher,"trang_thai")))return false;
+                Map<String,Object> bank=data(tx.get(ref("payout_accounts",entry.getKey())));if(bank==null)return false;
+                long total=0;for(DocumentSnapshot row:rows)total+=num(row.getData(),"amount");
                 tx.set(payout,map("is_sandbox",true,"period",period,"tutor_id",entry.getKey(),"tutor_name",rows.get(0).getString("tutor_name"),"amount",total,"session_count",rows.size(),"earning_ids",rows.stream().map(DocumentSnapshot::getId).collect(java.util.stream.Collectors.toList()),"bank",map("bank_name",bank.get("bank_name"),"account_number",bank.get("account_number"),"account_name",bank.get("account_name")),"status","READY","due_at",new Timestamp(Date.from(month.plusMonths(1).atDay(5).atStartOfDay(VN).toInstant())),"created_by",uid,"created_at",stamp(),"updated_at",stamp()));
                 for(DocumentSnapshot row:rows)tx.update(row.getReference(),"payout_id",payout.getId());return true;
             }));if(created)count++;
@@ -174,7 +177,10 @@ final class SandboxPaymentApi {
         check(Arrays.asList("paid","cancel").contains(action),"Thao tác chi trả chưa hợp lệ.");
         Tasks.await(db.runTransaction(tx->{DocumentReference ref=ref("tutor_payouts",id);Map<String,Object> p=must(tx.get(ref));
             if(action.equals("paid")&&text(p,"status").equals("PAID"))return null;check(text(p,"status").equals("READY"),"Chỉ xử lý bảng chưa chi trả.");
-            if(action.equals("paid")){check(clock.getAsLong()>=millis(p.get("due_at")),"Đến ngày 5 tháng sau mới được xác nhận chi trả.");tx.update(ref,map("status","PAID","bank_reference",reason(body,3,150,"reference"),"paid_by",uid,"paid_at",stamp(),"updated_at",stamp()));}
+            if(action.equals("paid")){
+                Map<String,Object> teacher=must(tx.get(db.collection("users").document(text(p,"tutor_id"))));
+                check("ACTIVE".equals(text(teacher,"trang_thai")),"Gia sư đang bị khóa. Chưa thể xác nhận chi trả.");
+                check(clock.getAsLong()>=millis(p.get("due_at")),"Đến ngày 5 tháng sau mới được xác nhận chi trả.");tx.update(ref,map("status","PAID","bank_reference",reason(body,3,150,"reference"),"paid_by",uid,"paid_at",stamp(),"updated_at",stamp()));}
             else{String reason=reason(body,5,500,"reason");List<DocumentReference> rows=new ArrayList<>();for(Object earning:(List<?>)p.get("earning_ids")){DocumentReference er=ref("tutor_earnings",String.valueOf(earning));check(id.equals(tx.get(er).getString("payout_id")),"Bảng chi trả đã thay đổi.");rows.add(er);}for(DocumentReference er:rows)tx.update(er,"payout_id",null);tx.update(ref,map("status","CANCELLED","cancel_reason",reason,"cancelled_by",uid,"updated_at",stamp()));}return null;
         }));
     }

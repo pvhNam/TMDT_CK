@@ -39,7 +39,7 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
         binding.tutorAction.setOnClickListener(v->{
             com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
-            if(state.profile()!=null&&"ADMIN".equals(state.profile().role))go("admin_tutors");
+            if(state.profile()!=null&&"ADMIN".equals(state.profile().role))go("admin_dashboard");
             else if(state.profile()!=null&&state.profile().tutor&&"VERIFIED".equals(review.status())){state.clearFeedback();host().classroom.setTutorMode(!host().classroom.tutorMode());}
             else if(state.profile()!=null&&state.profile().tutor)go("tutor_pending");
             else go("register_tutor");
@@ -76,7 +76,7 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.tutorTitle.setText(profile.tutor?R.string.tutor_manage_title:R.string.tutor_invite);
         binding.tutorCaption.setText(profile.tutor?R.string.tutor_manage_caption:R.string.tutor_invite_caption);
         com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
-        if("ADMIN".equals(profile.role)){binding.tutorAction.setText("Duyệt hồ sơ gia sư");binding.tutorTitle.setText("Quản trị gia sư");binding.tutorCaption.setText("Kiểm tra minh chứng và cập nhật kết quả xét duyệt.");}
+        if("ADMIN".equals(profile.role)){binding.tutorAction.setText("Mở trang quản trị");binding.tutorTitle.setText("Quản trị hệ thống");binding.tutorCaption.setText("Tài khoản, duyệt gia sư, hợp đồng và chi trả.");}
         else if(profile.tutor&&!"VERIFIED".equals(review.status())){binding.tutorAction.setText("Theo dõi hồ sơ gia sư");binding.tutorCaption.setText("Xem trạng thái xét duyệt và yêu cầu bổ sung.");}
         boolean canSearch=profile.tutor&&"ACTIVE".equals(profile.status)&&"VERIFIED".equals(review.status());
         binding.rowSearchRequests.setVisibility(canSearch?View.VISIBLE:View.GONE);

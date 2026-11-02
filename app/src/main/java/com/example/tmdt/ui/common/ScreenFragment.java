@@ -61,6 +61,8 @@ public abstract class ScreenFragment extends Fragment {
         return null;
     }
     protected abstract View build();
+    /** Use when a list changes to a detail view within the same fragment. */
+    public void scrollToTop(){restoredScroll=0;ScrollView current=frame==null?null:scroll(frame);if(current!=null)current.scrollTo(0,0);}
 
     @Override public void onSaveInstanceState(@NonNull Bundle out){
         super.onSaveInstanceState(out);ScrollView current=frame==null?null:scroll(frame);

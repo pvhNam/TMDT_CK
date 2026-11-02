@@ -15,7 +15,6 @@ public final class PayoutBankFragment extends Fragment {
     @Override public View onCreateView(@NonNull LayoutInflater inflater,@Nullable ViewGroup container,@Nullable Bundle saved){
         MainActivity host=(MainActivity)requireActivity();PaymentState state=host.payments;Ui ui=new Ui(requireContext());
         LinearLayout root=ui.column();ui.header(root,"Tài khoản nhận tiền",host::back,null);LinearLayout body=ui.page(root);
-        ui.add(body,ui.text("Kiểm tra kỹ thông tin trước khi lưu. Tài khoản này được dùng khi admin lập bảng chi trả; các bảng đã lập giữ nguyên thông tin đã chốt.",14,Ui.MUTED,false));ui.space(body,16);
         bank=ui.input("Tên ngân hàng");number=ui.input("Số tài khoản");holder=ui.input("Tên chủ tài khoản");number.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         bank.setText(saved==null?String.valueOf(state.bank.getOrDefault("bank_name","")):saved.getString("bank",""));
         number.setText(saved==null?String.valueOf(state.bank.getOrDefault("account_number","")):saved.getString("number",""));
