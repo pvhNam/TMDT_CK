@@ -14,7 +14,7 @@ public final class AdminTutorReviewFragment extends TutorReviewScreen {
     @Override public void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("detail",detail);out.putString("filter",filter);}
     @Override protected View build(){
         LinearLayout root=ui.column();root.setBackgroundColor(Ui.WHITE);
-        ui.header(root,detail?"Xét duyệt hồ sơ":"Duyệt gia sư",()->{if(detail){detail=false;refresh();}else go("account");},null);
+        ui.header(root,detail?"Xét duyệt hồ sơ":"Duyệt gia sư",()->{if(detail){detail=false;refresh();}else go("admin_dashboard");},null);
         LinearLayout body=ui.page(root);feedback(body);
         if(!review.admin){ui.add(body,ui.text("Trang này dành cho quản trị viên.",16,Ui.INK,true));return root;}
         if(detail){details(body);return root;}
