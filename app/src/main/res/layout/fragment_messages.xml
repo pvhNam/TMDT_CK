@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     android:orientation="vertical"
     android:paddingTop="20dp"
     tools:context="com.example.tmdt.ui.messages.MessagesFragment">
@@ -47,14 +47,14 @@
         android:layout_height="46dp"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="10dp"
-        android:background="@android:color/white"
+        android:background="@color/app_surface"
         app:tabGravity="fill"
-        app:tabIndicatorColor="@color/chat_blue"
+        app:tabIndicatorColor="@color/app_accent"
         app:tabIndicatorFullWidth="true"
         app:tabIndicatorHeight="3dp"
         app:tabMode="fixed"
         app:tabRippleColor="@color/chat_pale"
-        app:tabSelectedTextColor="@color/chat_blue"
+        app:tabSelectedTextColor="@color/app_accent"
         app:tabTextAppearance="@style/ChatTabText"
         app:tabTextColor="@color/chat_muted">
 

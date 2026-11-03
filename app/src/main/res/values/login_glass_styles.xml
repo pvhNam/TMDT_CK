@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="LoginGlassField" parent="ReferenceFilledField">
-        <item name="boxBackgroundColor">#F5F8FC</item>
+        <item name="boxBackgroundColor">@color/theme_fill_f5f8fc</item>
         <item name="boxStrokeColor">@color/login_field_stroke</item>
         <item name="boxStrokeWidthFocused">2dp</item>
         <item name="boxCornerRadiusTopStart">18dp</item>
@@ -13,7 +13,7 @@
     <style name="LoginInput" parent="ReferenceInput">
         <item name="android:minHeight">@dimen/control_height</item>
         <item name="android:textSize">14sp</item>
-        <item name="android:textColorHint">#7B8CA6</item>
+        <item name="android:textColorHint">@color/theme_text_7b8ca6</item>
     </style>
     <style name="LoginPrimary" parent="ReferencePrimary">
         <item name="android:layout_height">@dimen/control_height</item>
@@ -27,8 +27,8 @@
         <item name="android:layout_height">@dimen/control_height</item>
         <item name="android:padding">14dp</item>
         <item name="cornerRadius">26dp</item>
-        <item name="backgroundTint">#FFFFFF</item>
-        <item name="strokeColor">#E2EAF4</item>
+        <item name="backgroundTint">@color/theme_fill_ffffff</item>
+        <item name="strokeColor">@color/theme_border_e2eaf4</item>
     </style>
     <style name="LoginGlassFooter" parent="ReferenceFooter">
         <item name="backgroundTint">@android:color/transparent</item>

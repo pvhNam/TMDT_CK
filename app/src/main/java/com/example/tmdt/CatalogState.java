@@ -54,6 +54,14 @@ public final class CatalogState extends ViewModel {
     public boolean loading() { return loaded.size() < 3 && errors.isEmpty(); }
     public String error() { return errors.isEmpty() ? "" : "Không tải được danh sách gia sư. Kiểm tra kết nối rồi thử lại."; }
     private void changed() { changes.setValue(changes.getValue()+1); }
+    /** Keep live listeners and existing rows while explicitly checking the server. */
+    public com.google.android.gms.tasks.Task<Void> refreshFromServer(){
+        FirebaseFirestore db=FirebaseFirestore.getInstance();
+        return com.google.android.gms.tasks.Tasks.whenAll(
+                db.collection("subjects").whereEqualTo("dang_su_dung",true).get(com.google.firebase.firestore.Source.SERVER),
+                db.collection("tutor_profiles").whereEqualTo("trang_thai_xac_minh","VERIFIED").get(com.google.firebase.firestore.Source.SERVER),
+                db.collection("tutor_subjects").get(com.google.firebase.firestore.Source.SERVER));
+    }
     public void reload() {
         for(ListenerRegistration listener:listeners) listener.remove();
         listeners.clear(); errors.clear(); loaded.clear(); offline=false; changed();

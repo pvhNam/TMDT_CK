@@ -30,12 +30,12 @@ public final class SoftBlurBackground extends View {
         int w=Math.max(1,Math.round(width*scale)),h=Math.max(1,Math.round(height*scale));
         Bitmap next=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
         Canvas canvas=new Canvas(next);
-        canvas.drawColor(0xFFFFFFFF);
+        boolean dark=ThemeColors.dark(getContext());canvas.drawColor(ThemeColors.background(getContext()));
         Paint glow=new Paint(Paint.ANTI_ALIAS_FLAG);
         glow.setMaskFilter(new BlurMaskFilter(Math.max(12f,w*.20f),BlurMaskFilter.Blur.NORMAL));
-        glow.setColor(0xFFDCEEFF);
+        glow.setColor(dark?0xFF203A5B:0xFFDCEEFF);
         canvas.drawCircle(w*.62f,h*.13f,w*.36f,glow);
-        glow.setColor(0xFFF0F7FF);
+        glow.setColor(dark?0xFF1B2C44:0xFFF0F7FF);
         canvas.drawCircle(w*1.08f,h*.93f,w*.52f,glow);
         backdrop=next;
     }

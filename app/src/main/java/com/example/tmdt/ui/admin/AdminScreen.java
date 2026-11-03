@@ -25,8 +25,9 @@ abstract class AdminScreen extends ScreenFragment {
     private void dataChanged(){
         if(liveSearch!=null&&liveSearch.isAttachedToWindow()&&liveSearch.hasFocus()&&state().error.isEmpty()&&money().error.isEmpty())
             liveResults.accept(liveSearch.getText().toString());
-        else refresh();
+        else refreshData();
     }
+    @Override protected Object dataSnapshot(){return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,state(),money());}
     @Override public void onDestroyView(){liveSearch=null;liveResults=null;super.onDestroyView();}
     protected LinearLayout root(String title){
         LinearLayout root=ui.column();root.setBackgroundColor(0xFFF7F9FD);
@@ -42,14 +43,22 @@ abstract class AdminScreen extends ScreenFragment {
             .map(p->p.text("period")).filter(p->p.matches("[0-9]{4}-[0-9]{2}")).sorted().findFirst().orElse(money().payrollPeriod);
         money().payrollPeriod=period;open("admin_payroll");
     }
-    protected void destination(LinearLayout body,int icon,String title,String detail,String badge,Runnable run){
-        LinearLayout card=ui.card(),row=ui.row(),copy=ui.column();card.setMinimumHeight(ui.dp(74));
+    protected void destination(LinearLayout body,int icon,String title,String badge,Runnable run){
+        LinearLayout card=ui.card(),row=ui.row(),copy=ui.column();ui.pad(card,14,13);card.setMinimumHeight(ui.dp(64));
         LinearLayout symbol=ui.row();symbol.setGravity(android.view.Gravity.CENTER);ui.surface(symbol,Ui.PALE,14,0);
         symbol.addView(ui.icon(icon,23,Ui.BLUE));row.addView(symbol,ui.lp(44,44));ui.gap(row,12);
-        ui.add(copy,ui.text(title,16,Ui.INK,true));ui.space(copy,4);ui.add(copy,ui.text(detail,12,Ui.MUTED,false));ui.weight(row,copy);ui.gap(row,8);
+        ui.add(copy,ui.text(title,16,Ui.INK,true));ui.weight(row,copy);ui.gap(row,8);
         if(!badge.isEmpty()){row.addView(ui.pill(badge,12,Ui.BLUE,Ui.PALE));ui.gap(row,6);}
         row.addView(ui.text("›",24,Ui.MUTED,false));ui.add(card,row);card.setContentDescription(title);
         ui.clickable(card,()->{if(!state().busy)run.run();});ui.add(body,card);ui.space(body,10);
+    }
+    protected View shortcut(int icon,String title,Runnable run){
+        LinearLayout card=ui.card();card.setMinimumHeight(ui.dp(106));
+        LinearLayout row=ui.row();LinearLayout symbol=ui.row();symbol.setGravity(android.view.Gravity.CENTER);
+        ui.surface(symbol,Ui.PALE,13,0);symbol.addView(ui.icon(icon,23,Ui.BLUE));row.addView(symbol,ui.lp(40,40));
+        ui.weight(row,new View(requireContext()));row.addView(ui.text("›",22,Ui.MUTED,false));ui.add(card,row);ui.space(card,12);
+        android.widget.TextView label=ui.text(title,15,Ui.INK,true);label.setMaxLines(2);ui.add(card,label);
+        card.setContentDescription(title);ui.clickable(card,()->{if(!state().busy)run.run();});return card;
     }
     protected LinearLayout statistic(String title,String value,Runnable click){
         LinearLayout card=ui.card();ui.add(card,ui.text(title,12,Ui.MUTED,false));ui.space(card,7);
@@ -84,7 +93,7 @@ abstract class AdminScreen extends ScreenFragment {
     protected void action(LinearLayout body,String label,int style,Runnable run){ui.addAction(body,ui.action(label,0,state().busy?Ui.DISABLED:style,state().busy?null:run),48);ui.space(body,10);}
     protected void card(LinearLayout body,String title,String value,String detail,Runnable click){
         LinearLayout card=ui.card();ui.add(card,ui.text(title,15,Ui.MUTED,false));ui.space(card,7);
-        ui.add(card,ui.text(value,23,Ui.BLUE,true));
+        ui.add(card,ui.text(value,20,Ui.INK,true));
         if(!detail.isEmpty()){ui.space(card,7);ui.add(card,ui.text(detail,13,Ui.MUTED,false));}
         if(click!=null)ui.clickable(card,click);ui.add(body,card);ui.space(body,12);
     }
@@ -99,7 +108,7 @@ abstract class AdminScreen extends ScreenFragment {
         boolean ban=!"BANNED".equals(user.text("trang_thai"));
         EditText input=ui.entry("Lý do (5–500 ký tự)",true);input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(500)});
         LinearLayout content=ui.column();ui.pad(content,22,8);
-        ui.add(content,ui.text(ban?"Tài khoản sẽ bị chặn thao tác và tạm dừng chi trả mới. Dữ liệu học tập và số tiền đã ghi nhận vẫn được giữ để đối soát.":"Tài khoản có thể hoạt động trở lại.",14,Ui.MUTED,false));ui.space(content,12);ui.add(content,input);
+        ui.add(content,input);
         androidx.appcompat.app.AlertDialog dialog=ui.dialog().setTitle((ban?"Khóa ":"Mở khóa ")+user.text("ho_ten")).setView(content).setNegativeButton("Đóng",null).setPositiveButton("Xác nhận",null).create();
         dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{String reason=input.getText().toString().trim();if(reason.length()<5){input.setError("Nhập ít nhất 5 ký tự");return;}state().status(user.id,ban,reason);dialog.dismiss();}));dialog.show();
     }

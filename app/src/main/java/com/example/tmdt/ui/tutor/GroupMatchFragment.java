@@ -20,8 +20,6 @@ public final class GroupMatchFragment extends ScreenFragment {
     @Override protected View build() {
         LinearLayout root = ui.column(); ui.header(root,"Gợi ý ghép nhóm",classroom::back,null);
         LinearLayout body = ui.page(root);
-        ui.add(body,ui.note(R.drawable.ic_users,"Học viên đăng tin tìm gia sư cùng môn và cấp học.\nMở một lớp nhóm để các bạn học cùng nhau.",Ui.PALE,Ui.BLUE,Ui.INK));
-        ui.space(body,14);
         Store store = classroom.store;
         List<GroupMatch.Group> groups = GroupMatch.groups(store.openRequests,classroom.me());
         if (!store.requestsError.isEmpty()) {
@@ -29,13 +27,6 @@ public final class GroupMatchFragment extends ScreenFragment {
             ui.addAction(body,ui.action("Thử lại",0,Ui.OUTLINE,classroom::retryRequests),44);
         } else if (!store.openRequestsLoaded) {
             ui.add(body,ui.note(R.drawable.ic_clock,"Đang tải tin tìm gia sư…",Ui.PALE,Ui.BLUE,Ui.MUTED));
-        } else if (groups.isEmpty()) {
-            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(26)); ui.cardSurface(empty,Ui.PALE,0);
-            empty.addView(ui.icon(R.drawable.ic_users,40,Ui.BLUE)); ui.space(empty,14);
-            TextView title = ui.text("Chưa có nhóm phù hợp",18,Ui.INK,true); title.setGravity(Gravity.CENTER); ui.add(empty,title); ui.space(empty,8);
-            TextView hint = ui.text("Khi có từ 2 học viên đăng tin cùng môn\nvà cùng cấp học, nhóm sẽ hiện ở đây.",15,Ui.MUTED,false);
-            hint.setGravity(Gravity.CENTER); ui.add(empty,hint);
-            ui.add(body,empty);
         } else {
             for (GroupMatch.Group group : groups) { ui.add(body,card(group)); ui.space(body,13); }
         }

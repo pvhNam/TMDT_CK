@@ -5,7 +5,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     android:orientation="vertical">
 
     <include
@@ -19,11 +19,11 @@
         android:layout_marginHorizontal="16dp"
         android:visibility="gone"
         app:tabGravity="fill"
-        app:tabIndicatorColor="@color/chat_blue"
+        app:tabIndicatorColor="@color/app_accent"
         app:tabIndicatorFullWidth="true"
         app:tabIndicatorHeight="3dp"
         app:tabMode="fixed"
-        app:tabSelectedTextColor="@color/chat_blue"
+        app:tabSelectedTextColor="@color/app_accent"
         app:tabTextAppearance="@style/ChatTabText"
         app:tabTextColor="@color/chat_muted" />
 

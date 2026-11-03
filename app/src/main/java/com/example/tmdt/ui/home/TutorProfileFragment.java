@@ -140,6 +140,8 @@ public final class TutorProfileFragment extends Fragment {
         // Footer Action Buttons
         binding.btnMessage.setOnClickListener(v -> host.classroom.message(finalTeacher.name));
         binding.btnBook.setOnClickListener(v -> book(host, catalog, finalTeacher));
+        com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
+        com.example.tmdt.ui.common.Motion.bindControls(binding.getRoot());
     }
 
     private void setupComments(String id) {
@@ -192,16 +194,17 @@ public final class TutorProfileFragment extends Fragment {
     }
 
     private void setupOfferings(MainActivity host, CatalogState catalog, CatalogState.Teacher teacher) {
-        binding.llOfferings.removeAllViews();
+        com.example.tmdt.ui.common.StableBindings<ItemTutorProfileOfferingBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.llOfferings);rows.begin();
         if (teacher.offerings.isEmpty()) {
+            rows.commit(binding.llOfferings);
             binding.tvEmptyOfferings.setVisibility(View.VISIBLE);
             return;
         }
         binding.tvEmptyOfferings.setVisibility(View.GONE);
 
         for (CatalogState.Offering offering : teacher.offerings) {
-            ItemTutorProfileOfferingBinding itemBinding = ItemTutorProfileOfferingBinding.inflate(
-                    getLayoutInflater(), binding.llOfferings, false);
+            ItemTutorProfileOfferingBinding itemBinding = rows.item(offering.subjectId+"/"+offering.level,()->ItemTutorProfileOfferingBinding.inflate(
+                    getLayoutInflater(), binding.llOfferings, false));
 
             String subjectName = catalog.subjects().get(offering.subjectId);
             if (subjectName == null) subjectName = "Môn học";
@@ -216,8 +219,8 @@ public final class TutorProfileFragment extends Fragment {
             itemBinding.getRoot().setOnClickListener(bookClick);
             itemBinding.btnBookOffering.setOnClickListener(bookClick);
 
-            binding.llOfferings.addView(itemBinding.getRoot());
         }
+        rows.commit(binding.llOfferings);
     }
 
     private void setupFavorite(MainActivity host, CatalogState.Teacher teacher) {

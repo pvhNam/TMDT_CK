@@ -15,6 +15,7 @@ public final class ListScreen {
     public static void setup(FragmentListScreenBinding b, RecyclerView.Adapter<?> adapter) {
         b.list.setLayoutManager(new LinearLayoutManager(b.getRoot().getContext()));
         b.list.setAdapter(adapter);
+        com.example.tmdt.ui.common.Motion.list(b.list);
     }
     public static void tabs(FragmentListScreenBinding b, int selected, IntConsumer onSelect, String... titles) {
         b.tabs.setVisibility(View.VISIBLE);

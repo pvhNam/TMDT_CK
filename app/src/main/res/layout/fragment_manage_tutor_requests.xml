@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="@android:color/white">
+    android:orientation="vertical" android:background="@color/app_surface">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar" style="@style/ReferenceToolbar" app:title="@string/requests_heading" />
     <com.google.android.material.tabs.TabLayout
@@ -22,7 +22,7 @@
             <com.google.android.material.button.MaterialButton android:id="@+id/retry_requests"
                 style="@style/SecondaryButton" android:text="@string/requests_retry" android:visibility="gone" />
             <TextView android:id="@+id/requests_notice" style="@style/BodyText"
-                android:textColor="#236B42" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+                android:textColor="@color/theme_text_236b42" android:accessibilityLiveRegion="polite" android:visibility="gone" />
             <ProgressBar android:id="@+id/requests_progress" android:layout_width="32dp"
                 android:layout_height="32dp" android:layout_gravity="center_horizontal"
                 android:contentDescription="@string/requests_loading" android:visibility="gone" />

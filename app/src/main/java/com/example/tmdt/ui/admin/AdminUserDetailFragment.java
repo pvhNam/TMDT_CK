@@ -19,16 +19,16 @@ public final class AdminUserDetailFragment extends AdminScreen {
         if(!"ADMIN".equals(r.text("vai_tro")))action(body,"BANNED".equals(r.text("trang_thai"))?"Mở khóa tài khoản":"Khóa tài khoản", "BANNED".equals(r.text("trang_thai"))?Ui.PRIMARY:Ui.DANGER,()->ban(r));
         if(r.flag("la_gia_su"))action(body,"Xem hợp đồng đã ký của gia sư",Ui.PRIMARY,()->{state().selectTutor(r.id);host().show("admin_contracts");});
         else {
-        ui.section(body,"Hợp đồng đã tải của tài khoản",18);ui.space(body,10);
+        ui.section(body,"Hợp đồng",18);ui.space(body,10);
         int signed=0,total=0;for(PaymentState.Row c:state().contractsFor(r.id)){total++;if(state().signedContract(c))signed++;}
-        ui.add(body,ui.text(signed+" / "+total+" hợp đồng đã được cả hai bên xác nhận.",14,Ui.MUTED,false));ui.space(body,12);
+        ui.add(body,ui.text("Đã ký: "+signed+" / "+total,14,Ui.MUTED,false));ui.space(body,12);
         for(PaymentState.Row c:state().contractsFor(r.id))contractCard(body,c);
         if(state().moreContracts)action(body,"Tải thêm hợp đồng để đối chiếu",Ui.OUTLINE,()->state().moreContracts());
         }
         if(r.flag("la_gia_su")){
             long earned=0,paid=0;for(PaymentState.Row e:money().earnings.values())if(r.id.equals(e.text("tutor_id")))earned+=e.number("amount");
             for(PaymentState.Row p:money().payouts.values())if(r.id.equals(p.text("tutor_id"))&&"PAID".equals(p.text("status")))paid+=p.number("amount");
-            card(body,"Tiền dạy đã ghi nhận",PaymentState.money(earned),"Đã chi: "+PaymentState.money(paid)+"\nChưa chi: "+PaymentState.money(Math.max(0,earned-paid)),()->host().show("admin_income"));
+            card(body,"Thu nhập",PaymentState.money(earned),"Đã chi: "+PaymentState.money(paid)+"\nChưa chi: "+PaymentState.money(Math.max(0,earned-paid)),()->host().show("admin_income"));
         }return root;
     }
 }

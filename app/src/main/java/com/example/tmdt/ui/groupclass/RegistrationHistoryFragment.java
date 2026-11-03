@@ -79,14 +79,6 @@ public final class RegistrationHistoryFragment extends ScreenFragment {
             if (classroom.registrationFilter != ALL && group(entry.registration) != classroom.registrationFilter) continue;
             ui.add(body,card(entry)); ui.space(body,11); shown++;
         }
-        if (shown == 0) {
-            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.cardSurface(empty,Ui.PALE,0);
-            empty.addView(ui.icon(R.drawable.ic_users,40,Ui.BLUE)); ui.space(empty,14);
-            TextView title = ui.text(all.isEmpty()?"Bạn chưa đăng ký lớp nào":"Không có đăng ký ở mục này",18,Ui.INK,true); title.setGravity(Gravity.CENTER); ui.add(empty,title); ui.space(empty,8);
-            TextView hint = ui.text("Tìm lớp học nhóm phù hợp và gửi đăng ký để học cùng bạn bè.",15,Ui.MUTED,false); hint.setGravity(Gravity.CENTER); ui.add(empty,hint); ui.space(empty,16);
-            ui.addAction(empty,ui.action("Tìm lớp học nhóm",R.drawable.ic_search,Ui.PRIMARY,()->classroom.show("groups")),46);
-            ui.add(body,empty);
-        }
         return root;
     }
 

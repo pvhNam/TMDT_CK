@@ -18,8 +18,8 @@ public final class NavigationAssets {
         int[] ids={R.id.nav_schedule,R.id.nav_messages,R.id.nav_account};int[] resources={R.drawable.ic_users,R.drawable.ic_file,R.drawable.ic_wallet};
         for(int i=0;i<ids.length;i++){
             StateListDrawable states=new StateListDrawable();
-            Drawable checked=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();checked.setTint(Ui.BLUE);
-            Drawable idle=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();idle.setTint(Ui.MUTED);
+            Drawable checked=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();checked.setTint(ThemeColors.text(navigation.getContext(),Ui.BLUE));
+            Drawable idle=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();idle.setTint(ThemeColors.text(navigation.getContext(),Ui.MUTED));
             states.addState(new int[]{android.R.attr.state_checked},checked);states.addState(new int[]{},idle);
             navigation.getMenu().findItem(ids[i]).setIcon(states);
         }
@@ -29,8 +29,14 @@ public final class NavigationAssets {
         String[] names={"home","schedule","messages","account"};
         for(int i=0;i<ids.length;i++){
             StateListDrawable states=new StateListDrawable();
-            states.addState(new int[]{android.R.attr.state_checked},icon(navigation,names[i]+"_active"));
-            states.addState(new int[]{},icon(navigation,names[i]+"_idle"));
+            Drawable active=icon(navigation,names[i]+"_active").mutate();
+            Drawable idle=icon(navigation,names[i]+"_idle").mutate();
+            if(ThemeColors.dark(navigation.getContext())){
+                active.setTint(navigation.getContext().getColor(R.color.app_accent));
+                idle.setTint(navigation.getContext().getColor(R.color.app_muted));
+            }
+            states.addState(new int[]{android.R.attr.state_checked},active);
+            states.addState(new int[]{},idle);
             navigation.getMenu().findItem(ids[i]).setIcon(states);
         }
     }

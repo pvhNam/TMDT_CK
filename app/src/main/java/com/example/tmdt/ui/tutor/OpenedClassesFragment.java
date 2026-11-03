@@ -38,11 +38,9 @@ public final class OpenedClassesFragment extends ScreenFragment {
             com.example.tmdt.ui.common.Motion.reveal(listContainer);
         });
         ui.space(listContainer,4);
-        if(classroom.classTab==0){ui.add(listContainer,matchLink());ui.space(listContainer,12);}
+        if(classroom.classTab==0&&!GroupMatch.groups(classroom.store.openRequests,classroom.me()).isEmpty()){ui.add(listContainer,matchLink());ui.space(listContainer,12);}
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list){ui.add(listContainer,card(item));ui.space(listContainer,11);}
-        if(list.isEmpty())ui.add(listContainer,ui.note(R.drawable.ic_info,classroom.classTab==0
-                ?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới.":"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
     }
 
     /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */

@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="wrap_content"
     android:layout_marginBottom="16dp" app:cardCornerRadius="16dp"
-    app:cardBackgroundColor="@android:color/white" app:strokeColor="#DDE4EF" app:strokeWidth="1dp">
+    app:cardBackgroundColor="@color/app_surface" app:strokeColor="@color/theme_border_dde4ef" app:strokeWidth="1dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:padding="16dp">
         <TextView android:id="@+id/request_status" style="@style/FieldLabel"
-            android:textColor="#236B42" android:textSize="13sp" />
+            android:textColor="@color/theme_text_236b42" android:textSize="13sp" />
         <TextView android:id="@+id/request_title" style="@style/ScreenTitle" android:textSize="20sp" />
         <TextView android:id="@+id/request_subject_level" style="@style/BodyText" android:layout_marginBottom="8dp" />
         <TextView android:id="@+id/request_budget" style="@style/FieldLabel" />

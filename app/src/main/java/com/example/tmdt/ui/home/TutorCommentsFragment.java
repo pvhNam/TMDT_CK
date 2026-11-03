@@ -152,9 +152,9 @@ public final class TutorCommentsFragment extends Fragment {
         // Let Android restore the profile hierarchy's scroll on this view's first render.
         ScrollView scroll = preserveScroll ? profileScroll() : null;
         int offset = scroll == null ? 0 : scroll.getScrollY();
-        binding.tutorCommentsList.removeAllViews();
+        com.example.tmdt.ui.common.StableBindings<ItemTutorCommentBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.tutorCommentsList);rows.begin();
         if (available) for (GroupClassQuestion comment : state.questions()) {
-            ItemTutorCommentBinding row = ItemTutorCommentBinding.inflate(getLayoutInflater(), binding.tutorCommentsList, false);
+            ItemTutorCommentBinding row = rows.item(comment.id,()->ItemTutorCommentBinding.inflate(getLayoutInflater(), binding.tutorCommentsList, false));
             row.tutorCommentAuthor.setText(comment.authorName);
             row.tutorCommentTutorBadge.setVisibility(comment.authorId.equals(state.tutorId()) ? View.VISIBLE : View.GONE);
             row.tutorCommentDate.setText(date(comment.createdAtMillis));
@@ -179,18 +179,21 @@ public final class TutorCommentsFragment extends Fragment {
                 row.tutorCommentLoadMoreReplies.setVisibility(state.hasMoreReplies() ? View.VISIBLE : View.GONE);
                 row.tutorCommentLoadMoreReplies.setEnabled(!state.repliesLoading() && !state.busy() && !state.offline());
                 row.tutorCommentLoadMoreReplies.setOnClickListener(v -> state.loadMoreReplies());
+                com.example.tmdt.ui.common.StableBindings<ItemTutorCommentReplyBinding> replies=com.example.tmdt.ui.common.StableBindings.at(row.tutorCommentRepliesList);replies.begin();
                 for (GroupClassQuestion reply : state.replies()) {
-                    ItemTutorCommentReplyBinding child = ItemTutorCommentReplyBinding.inflate(getLayoutInflater(), row.tutorCommentRepliesList, false);
+                    ItemTutorCommentReplyBinding child = replies.item(reply.id,()->ItemTutorCommentReplyBinding.inflate(getLayoutInflater(), row.tutorCommentRepliesList, false));
                     child.tutorCommentReplyAuthor.setText(reply.authorName);
                     child.tutorCommentReplyTutorBadge.setVisibility(reply.authorId.equals(state.tutorId()) ? View.VISIBLE : View.GONE);
                     child.tutorCommentReplyDate.setText(date(reply.createdAtMillis));
                     child.tutorCommentReplyContent.setText(reply.content);
-                    row.tutorCommentRepliesList.addView(child.getRoot());
                 }
+                replies.commit(row.tutorCommentRepliesList);
             }
-            binding.tutorCommentsList.addView(row.getRoot());
         }
+        rows.commit(binding.tutorCommentsList);
         FragmentTutorCommentsBinding renderedBinding = binding;
+        com.example.tmdt.ui.common.ThemeColors.apply(binding.tutorCommentsList);
+        com.example.tmdt.ui.common.Motion.bindControls(binding.tutorCommentsList);
         if (scroll != null) renderedBinding.getRoot().post(() -> { if (binding == renderedBinding) scroll.scrollTo(0, offset); });
     }
 

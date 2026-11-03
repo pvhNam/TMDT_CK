@@ -1,0 +1,4 @@
+<resources>
+    <color name="chat_green">@color/app_success</color>
+    <color name="chat_red">@color/app_error</color>
+</resources>

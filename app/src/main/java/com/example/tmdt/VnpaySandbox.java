@@ -24,7 +24,7 @@ public final class VnpaySandbox {
     public boolean ready(){return !merchant.isEmpty()&&!secret.isEmpty();}
     public static String date(long millis){return Instant.ofEpochMilli(millis).atZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));}
     public String checkout(String ref,long amount,long created,long expires){
-        if(!ready()||!ref.matches("[A-Za-z0-9]{1,100}")||amount<1||amount>120000000)throw new IllegalArgumentException("Cấu hình VNPay TEST hoặc số tiền chưa hợp lệ.");
+        if(!ready()||!ref.matches("[A-Za-z0-9]{1,100}")||amount<1||amount>120000000)throw new IllegalArgumentException("Cấu hình VNPay hoặc số tiền chưa hợp lệ.");
         Map<String,String> p=new TreeMap<>();
         p.put("vnp_Version","2.1.0");p.put("vnp_Command","pay");p.put("vnp_TmnCode",merchant);
         p.put("vnp_Amount",String.valueOf(Math.multiplyExact(amount,100)));p.put("vnp_CurrCode","VND");

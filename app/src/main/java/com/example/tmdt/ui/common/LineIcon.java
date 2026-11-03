@@ -19,11 +19,11 @@ public final class LineIcon extends View {
     public LineIcon(Context context, String kind, int color) {
         super(context);
         this.kind = kind;
-        this.color = color;
+        this.color = ThemeColors.text(context,color);
         int resource="calendar".equals(kind)?com.example.tmdt.R.drawable.ic_calendar:
                 "chat".equals(kind)?com.example.tmdt.R.drawable.ic_chat:0;
         sharedIcon=resource==0?null:androidx.appcompat.content.res.AppCompatResources.getDrawable(context,resource).mutate();
-        if(sharedIcon!=null&&!NavigationAssets.useOriginalColors(resource,color))sharedIcon.setTint(color);
+        if(sharedIcon!=null&&!NavigationAssets.useOriginalColors(resource,color))sharedIcon.setTint(this.color);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 

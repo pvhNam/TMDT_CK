@@ -24,7 +24,17 @@ public final class SettingsFragment extends AccountFragmentBase {
         binding.rowReminder.setOnClickListener(v->binding.reminderSwitch.toggle());
         binding.rowMessages.setOnClickListener(v->binding.messageSwitch.toggle());
         binding.rowLanguage.setOnClickListener(v->Toast.makeText(requireContext(),"Hiện ứng dụng chỉ hỗ trợ Tiếng Việt",Toast.LENGTH_SHORT).show());
-        binding.rowTheme.setOnClickListener(v->Toast.makeText(requireContext(),"Hiện ứng dụng chỉ có giao diện Sáng",Toast.LENGTH_SHORT).show());
+        binding.themeValue.setText(com.example.tmdt.ui.common.AppAppearance.label(requireContext()));
+        binding.rowTheme.setOnClickListener(v->{
+            int[] modes={androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO,androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES,androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM};
+            int current=com.example.tmdt.ui.common.AppAppearance.mode(requireContext()),selected=0;
+            for(int i=0;i<modes.length;i++)if(modes[i]==current)selected=i;
+            new com.example.tmdt.ui.common.Ui(requireContext()).dialog().setTitle("Giao diện")
+                .setSingleChoiceItems(new String[]{"Sáng","Tối","Theo hệ thống"},selected,(dialog,index)->{
+                    dialog.dismiss();com.example.tmdt.ui.common.AppAppearance.select(requireContext(),modes[index]);
+                    if(binding!=null)binding.themeValue.setText(com.example.tmdt.ui.common.AppAppearance.label(requireContext()));
+                }).setNegativeButton("Đóng",null).show();
+        });
         binding.rowPassword.setOnClickListener(v->changePassword());
         binding.rowPrivacy.setOnClickListener(v->info("Quyền riêng tư",
                 "Họ tên, email và số điện thoại của bạn chỉ được dùng để tạo tài khoản, đặt lịch học và để gia sư liên hệ với bạn về buổi học. Bạn có thể cập nhật thông tin bất cứ lúc nào trong mục Chỉnh sửa hồ sơ."));
@@ -33,7 +43,7 @@ public final class SettingsFragment extends AccountFragmentBase {
         binding.rowTerms.setOnClickListener(v->info("Điều khoản sử dụng",
                 "Bằng việc sử dụng ứng dụng, bạn đồng ý cung cấp thông tin chính xác, tôn trọng gia sư và học viên khác, và tuân thủ lịch học đã đặt. Lịch học có thể được đổi hoặc hủy theo chính sách hiển thị trong từng buổi học."));
         binding.signOut.setOnClickListener(v->new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.sign_out).setMessage("Bạn có thể đăng nhập lại để xem thông tin cá nhân.")
+                .setTitle(R.string.sign_out)
                 .setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.sign_out,(dialog,which)->state.signOut()).show());
     }
     private void changePassword(){

@@ -68,7 +68,6 @@ public final class TeachingScheduleFragment extends ScreenFragment {
                     if (visible(session.date,day,month)) shown.add(new Entry(session.start(),classCard(session,month)));
         shown.sort(Comparator.comparing(entry->entry.start));
         for (Entry entry : shown) { ui.add(content,entry.view); ui.space(content,11); }
-        if (shown.isEmpty()) { ui.add(content,ui.note(R.drawable.ic_info,month?"Không có buổi dạy trong tháng này.":"Không có buổi dạy trong ngày này.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(content,11); }
 
         ui.space(content,4); ui.section(content,"Đề nghị thay đổi",19); ui.space(content,6);
         int proposals = 0;
@@ -85,7 +84,6 @@ public final class TeachingScheduleFragment extends ScreenFragment {
                     lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK));
             ui.space(content,8); proposals++;
         }
-        if (proposals == 0) ui.add(content,ui.note(R.drawable.ic_info,"Chưa có đề nghị thay đổi nào.",Ui.PALE,Ui.BLUE,Ui.MUTED));
     }
 
     /** The selected day in week view, or any day of the selected month in month view. */

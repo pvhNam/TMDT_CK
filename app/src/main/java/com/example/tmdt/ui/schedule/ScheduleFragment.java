@@ -4,40 +4,79 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ScrollView;
 import androidx.appcompat.app.AlertDialog;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Supplier;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.Motion;
+import com.example.tmdt.ui.common.ThemeColors;
+import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
 
 /** Screen 04 · Lịch học (UC24): the student's upcoming, pending and past lessons. */
 public final class ScheduleFragment extends ScreenFragment {
+    private final ScheduleCards<View> cards=new ScheduleCards<>();
+    private LinearLayout body,list;
+    private TextView history,tutorSwitch;
+    private TabLayout tabs;
+    private ScrollView scroll;
+    private int renderedTab=-1;
 
     @Override protected View build() {
-        LinearLayout root=ui.column();ui.title(root,"Lịch học",classroom.isTutor()?ui.link("Chế độ gia sư",15,this::tutorMode):null);
-        ui.tabs(root,new String[]{"Sắp tới","Chờ xác nhận","Đã học"},classroom.scheduleTab,index->{classroom.scheduleTab=index;classroom.show("schedule");});
-        LinearLayout content=ui.page(root);ui.space(content,6);
+        LinearLayout root=ui.column();
+        tutorSwitch=ui.link("Chế độ gia sư",15,this::tutorMode);ui.title(root,"Lịch học",tutorSwitch);
+        tabs=new TabLayout(requireContext());tabs.setTabMode(TabLayout.MODE_FIXED);tabs.setTabGravity(TabLayout.GRAVITY_FILL);
+        tabs.setTabTextColors(requireContext().getColor(R.color.app_muted),requireContext().getColor(R.color.app_accent));
+        tabs.setSelectedTabIndicatorColor(requireContext().getColor(R.color.app_accent));tabs.setSelectedTabIndicatorHeight(ui.dp(3));
+        for(String label:new String[]{"Sắp tới","Chờ xác nhận","Đã học"})tabs.addTab(tabs.newTab().setText(label),false);
+        tabs.getTabAt(classroom.scheduleTab).select();ui.add(root,tabs);ui.line(root);
+        body=ui.page(root);scroll=(ScrollView)body.getParent();ui.space(body,6);
+        history=ui.link("Xem lịch sử đăng ký lớp học  ›",15,classroom::openRegistrations);
+        history.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);ui.add(body,history);
+        list=ui.column();ui.add(body,list);
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){
+            @Override public void onTabSelected(TabLayout.Tab tab){
+                if(classroom.scheduleTab==tab.getPosition())return;
+                classroom.scheduleTab=tab.getPosition();render();scroll.scrollTo(0,0);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab){}
+            @Override public void onTabReselected(TabLayout.Tab tab){}
+        });
+        render();return root;
+    }
+
+    @Override protected boolean updateContent(){
+        if(list==null)return false;
+        if(tabs.getSelectedTabPosition()!=classroom.scheduleTab)tabs.getTabAt(classroom.scheduleTab).select();
+        render();return true;
+    }
+
+    private void render(){
+        tutorSwitch.setVisibility(classroom.isTutor()?View.VISIBLE:View.GONE);
         int tab=classroom.scheduleTab;
-        if(tab==1){
-            TextView history=ui.link("Xem lịch sử đăng ký lớp học  ›",15,classroom::openRegistrations);
-            history.setGravity(android.view.Gravity.END|android.view.Gravity.CENTER_VERTICAL);ui.add(content,history);ui.space(content,2);
-        }
         List<Entry> visible=new ArrayList<>();
         for(Lesson lesson:classroom.lessons) {
             if(!lesson.studentId.equals(classroom.me()))continue;
             boolean include=tab==1?lesson.pending()||Lesson.REJECTED.equals(lesson.status):
                     tab==2?(lesson.confirmed()&&lesson.ended())||Lesson.CANCELLED.equals(lesson.status):
                     lesson.confirmed()&&!lesson.ended();
-            if(include)visible.add(new Entry(lesson.start(),lessonCard(lesson)));
+            if(include)visible.add(new Entry("lesson/"+lesson.id,lesson.start(),
+                    Arrays.asList(lesson.toMap(),lesson.statusLabel(),lesson.needsConfirmation()),()->lessonCard(lesson)));
         }
         // Group classes: registrations wait under "Chờ xác nhận"; members see every session under "Sắp tới" or "Đã học".
         for(GroupClass item:classroom.store.classes) {
+            Object groupSnapshot=item.toMap();
             if(tab==1) {
                 for(GroupClass.Registration registration:item.registrations) {
                     if(!registration.studentId.equals(classroom.me())||!(registration.pending()||Lesson.REJECTED.equals(registration.status)))continue;
@@ -46,37 +85,49 @@ public final class ScheduleFragment extends ScreenFragment {
                     // Registrations still waiting when the class stopped recruiting are closed without the tutor's answer.
                     String note=waiting?"Đăng ký gửi ngày "+sent+".":item.cancelled()?"Lớp đã bị gia sư hủy nên đăng ký gửi ngày "+sent+" không được duyệt.":GroupClass.OPEN.equals(item.status)?"Gia sư đã từ chối đăng ký gửi ngày "+sent+"."
                             :"Lớp đã đóng tuyển sinh nên đăng ký gửi ngày "+sent+" không được duyệt.";
-                    visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
+                    visible.add(new Entry("registration/"+registration.id(),LocalDate.parse(item.startDate).atTime(item.hour,item.minute),
+                            Arrays.asList(groupSnapshot,registration.toMap(),note),()->classCard(item,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),
                             waiting?ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG):ui.pill("Bị từ chối",14,Ui.MUTED,0xFFEEF2F7),note)));
                 }
             } else if(item.members.contains(classroom.me())) {
                 if(item.cancelled()) {
-                    if(tab==0&&!item.over())visible.add(new Entry(LocalDate.parse(item.startDate).atTime(item.hour,item.minute),classCard(item,item.scheduleLabel(),
+                    if(tab==0&&!item.over())visible.add(new Entry("cancelled/"+item.id,LocalDate.parse(item.startDate).atTime(item.hour,item.minute),
+                            groupSnapshot,()->classCard(item,item.scheduleLabel(),
                             ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+".")));
                     continue;
                 }
                 for(GroupClass.Session session:item.sessionList()) {
                     if(tab==2?!session.ended():session.ended()||!item.active())continue;
-                    visible.add(new Entry(session.start(),classCard(item,session.label(),
+                    visible.add(new Entry("session/"+item.id+"/"+session.number,session.start(),
+                            Arrays.asList(groupSnapshot,session.start(),tab,item.online()&&session.roomOpen(),item.proposalOpen()),()->classCard(item,session.label(),
                             ui.pill("Buổi "+session.number+"/"+item.sessions,14,tab==2?Ui.MUTED:Ui.GREEN,tab==2?0xFFEEF2F7:Ui.GREEN_BG),
                             "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",item.online()&&session.roomOpen(),tab==0?moveNote(item,session):null)));
                 }
             }
         }
-        Comparator<Entry> order=Comparator.comparing(entry->entry.start);
+        Comparator<Entry> order=Comparator.comparing((Entry entry)->entry.start).thenComparing(entry->entry.id);
         visible.sort(tab==2?order.reversed():order);
-        for(Entry entry:visible){ui.add(content,entry.view);ui.space(content,11);}
-        if(visible.isEmpty()) {
-            LinearLayout empty=ui.column();ui.pad(empty,18,32);empty.setGravity(Gravity.CENTER);ui.cardSurface(empty,0xFFF3F8FE,0);
-            empty.addView(ui.icon(R.drawable.ic_calendar,42,Ui.BLUE));ui.space(empty,16);
-            TextView title=ui.text(classroom.scheduleTab==1?"Chưa có yêu cầu đặt học":classroom.scheduleTab==2?"Chưa có buổi học đã hoàn thành":"Chưa có lịch học sắp tới",17,Ui.INK,true);
-            title.setGravity(Gravity.CENTER);ui.add(empty,title);ui.space(empty,10);
-            TextView description=ui.text("Tìm gia sư phù hợp và bắt đầu hành trình học tập của bạn.",14,Ui.MUTED,false);description.setGravity(Gravity.CENTER);
-            ui.add(empty,description);ui.space(empty,18);ui.addAction(empty,ui.action("Tìm gia sư",R.drawable.ic_search,Ui.PRIMARY,()->classroom.show("home")),48);
-            ui.add(content,empty);ui.space(content,16);
+        List<View> next=new ArrayList<>();Set<String> ids=new HashSet<>();
+        for(Entry entry:visible){
+            ids.add(entry.id);
+            next.add(cards.get(entry.id,entry.content,()->{
+                View card=entry.create.get();ThemeColors.apply(card);Motion.bindControls(card);return card;
+            }));
         }
-        ui.space(content,7);ui.add(content,banner());
-        return root;
+        cards.retain(ids);
+        boolean changed=renderedTab!=tab||list.getChildCount()!=next.size();
+        if(!changed)for(int i=0;i<next.size();i++)if(list.getChildAt(i)!=next.get(i)){changed=true;break;}
+        if(!changed)return;
+        if(renderedTab!=-1)Motion.change(body);
+        history.setVisibility(tab==1?View.VISIBLE:View.GONE);
+        Set<View> retained=new HashSet<>(next);
+        for(int i=list.getChildCount()-1;i>=0;i--)if(!retained.contains(list.getChildAt(i)))list.removeViewAt(i);
+        for(int i=0;i<next.size();i++){
+            View card=next.get(i);if(list.getChildAt(i)==card)continue;
+            if(card.getParent()==list)list.removeView(card);
+            LinearLayout.LayoutParams params=ui.lp(-1,-2);params.bottomMargin=ui.dp(11);list.addView(card,i,params);
+        }
+        renderedTab=tab;
     }
 
     private View lessonCard(Lesson lesson) {
@@ -193,16 +244,14 @@ public final class ScheduleFragment extends ScreenFragment {
 
     /** A card with the time it is sorted by, so lessons and class sessions share one list. */
     private static final class Entry {
-        final LocalDateTime start; final View view;
-        Entry(LocalDateTime start,View view){this.start=start;this.view=view;}
+        final String id;final LocalDateTime start;final Object content;final Supplier<View> create;
+        Entry(String id,LocalDateTime start,Object content,Supplier<View> create){this.id=id;this.start=start;this.content=content;this.create=create;}
     }
 
-    /** "Sẵn sàng cho buổi học tiếp theo" banner with the calendar illustration of the design. */
-    private View banner() {
-        LinearLayout banner=ui.row();banner.setPadding(ui.dp(16),ui.dp(16),ui.dp(7),ui.dp(10));banner.setMinimumHeight(ui.dp(160));ui.cardSurface(banner,Ui.PALE,0);
-        LinearLayout text=ui.column();ui.add(text,ui.text("Sẵn sàng cho buổi học tiếp theo",21,Ui.INK,true));ui.space(text,8);
-        ui.add(text,ui.text("Xem lại mục tiêu trước khi bắt đầu.",16,Ui.MUTED,false));ui.weight(banner,text);
-        banner.addView(ui.art(R.drawable.anh_lich_hoc,126,126));
-        return banner;
+    @Override public void onDestroyView(){
+        if(body!=null)android.transition.TransitionManager.endTransitions(body);
+        cards.clear();body=null;list=null;tabs=null;scroll=null;history=null;tutorSwitch=null;renderedTab=-1;
+        super.onDestroyView();
     }
+
 }

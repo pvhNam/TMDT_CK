@@ -24,6 +24,8 @@ public abstract class ScreenFragment extends Fragment {
     private FrameLayout frame;
     private int restoredScroll;
     private boolean refreshQueued;
+    private Object renderedData;
+    private boolean forceRefresh;
     private final Runnable update=()->{refreshQueued=false;rebuild();};
 
     @Override public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle state) {
@@ -32,19 +34,32 @@ public abstract class ScreenFragment extends Fragment {
     }
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) { super.onViewCreated(view,state); refresh(); }
 
-    /** Rebuilds the whole screen from the current data. */
+    /** Refreshes data, retaining the hierarchy on screens that update their own content. */
     public void refresh() {
+        forceRefresh=true;queueRefresh();
+    }
+    /** Metadata-only and duplicate server events must leave the current hierarchy alone. */
+    public void refreshData(){queueRefresh();}
+    private void queueRefresh(){
         if (frame == null) return;
         if(frame.getChildCount()==0){rebuild();return;}
         if(!refreshQueued){refreshQueued=true;frame.postOnAnimation(update);}
     }
     private void rebuild() {
         if(frame==null)return;
+        classroom = ((MainActivity) requireActivity()).classroom; ui = classroom.ui;
+        Object snapshot=dataSnapshot();
+        boolean forced=forceRefresh;forceRefresh=false;
+        if(frame.getChildCount()>0&&!forced&&java.util.Objects.equals(renderedData,snapshot))return;
+        renderedData=snapshot;
+        if(frame.getChildCount()>0&&updateContent())return;
         ScrollView previous=scroll(frame);
         int offset=previous==null?restoredScroll:Math.max(restoredScroll,previous.getScrollY());
-        classroom = ((MainActivity) requireActivity()).classroom; ui = classroom.ui;
         View content=build();
+        content.setBackgroundColor(ThemeColors.background(requireContext()));
+        ThemeColors.apply(content);Motion.bindControls(content);
         frame.removeAllViews(); frame.addView(content, new FrameLayout.LayoutParams(-1,-1));
+        // Commit the complete new layout in one frame. Data updates never fade the page itself.
         ScrollView next=scroll(content);
         restoredScroll=offset;
         if(next!=null)OneShotPreDrawListener.add(next,()->{
@@ -61,6 +76,9 @@ public abstract class ScreenFragment extends Fragment {
         return null;
     }
     protected abstract View build();
+    /** Return true when an existing hierarchy was updated without replacing the page. */
+    protected boolean updateContent(){return false;}
+    protected Object dataSnapshot(){return RenderSnapshot.of(classroom,java.time.LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES));}
     /** Use when a list changes to a detail view within the same fragment. */
     public void scrollToTop(){restoredScroll=0;ScrollView current=frame==null?null:scroll(frame);if(current!=null)current.scrollTo(0,0);}
 
@@ -69,7 +87,7 @@ public abstract class ScreenFragment extends Fragment {
         out.putInt("screen_scroll",current==null?restoredScroll:Math.max(restoredScroll,current.getScrollY()));
     }
     @Override public void onDestroyView() {
-        if(frame!=null)frame.removeCallbacks(update);refreshQueued=false;
+        if(frame!=null)frame.removeCallbacks(update);refreshQueued=false;renderedData=null;forceRefresh=false;
         super.onDestroyView(); frame = null;
     }
 }

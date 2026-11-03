@@ -3,5 +3,5 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <solid
-        android:color="#EAF6FF" />
+        android:color="@color/theme_fill_eaf6ff" />
 </shape>

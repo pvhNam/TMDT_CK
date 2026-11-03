@@ -95,7 +95,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.CANCELLED.equals(lesson.status)) return "Buổi học đã hủy"+(lesson.cancelReason.isEmpty()?".":" · Lý do: "+lesson.cancelReason+".");
         if (Lesson.REJECTED.equals(lesson.status)) return "Gia sư đã từ chối yêu cầu này. Bạn có thể chọn thời gian khác.";
         if (lesson.pending()) return "Gia sư sẽ xác nhận yêu cầu của bạn.";
-        if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để ghi nhận tiền dạy vào kỳ chi trả tháng này.";
+        if (lesson.needsConfirmation()) return "Chờ xác nhận hoàn thành.";
         if (lesson.finished) return "Bạn đã xác nhận buổi học này hoàn thành.";
         return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : (lesson.roomLink.isEmpty()?"Phòng học":"Phòng học "+lesson.roomHost())+" mở trước giờ bắt đầu 10 phút.";
     }

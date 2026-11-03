@@ -125,9 +125,9 @@
     <style name="ExOutline" parent="ReferenceOutline">
         <item name="android:layout_width">match_parent</item>
         <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/chat_blue</item>
+        <item name="android:textColor">@color/app_accent</item>
         <item name="iconGravity">textStart</item>
-        <item name="iconTint">@color/chat_blue</item>
+        <item name="iconTint">@color/app_accent</item>
         <item name="cornerRadius">12dp</item>
     </style>
     <style name="ExDanger" parent="ExOutline">

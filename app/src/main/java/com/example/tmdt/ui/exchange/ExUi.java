@@ -47,8 +47,8 @@ public final class ExUi {
             default: fg = 0xFF6A7FA6; bg = 0xFFF0F3F8;
         }
         GradientDrawable shape = new GradientDrawable();
-        shape.setColor(bg); shape.setCornerRadius(dp(view.getContext(), 8));
-        view.setBackground(shape); view.setTextColor(fg); view.setText(text);
+        shape.setColor(com.example.tmdt.ui.common.ThemeColors.fill(view.getContext(),bg)); shape.setCornerRadius(dp(view.getContext(), 8));
+        view.setBackground(shape); view.setTextColor(com.example.tmdt.ui.common.ThemeColors.text(view.getContext(),fg)); view.setText(text);
         view.setVisibility(text == null || text.isEmpty() ? View.GONE : View.VISIBLE);
     }
     public static int kind(Contract c) {

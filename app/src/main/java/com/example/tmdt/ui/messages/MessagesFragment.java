@@ -39,6 +39,7 @@ public final class MessagesFragment extends Fragment {
         adapter = new ConversationAdapter(item -> { host.hideKeyboard(); chat.open(item); host.show("chat"); });
         binding.list.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.list.setAdapter(adapter);
+        com.example.tmdt.ui.common.Motion.list(binding.list);
 
         // Ô tìm kiếm: giữ từ khóa trong ViewModel để quay lại màn này vẫn còn.
         binding.search.setText(chat.query());
@@ -76,14 +77,6 @@ public final class MessagesFragment extends Fragment {
             adapter.state(chat.listError(), getString(R.string.chat_retry), chat::retryList, false); return;
         }
         List<Conversation> results = chat.results();
-        if (results.isEmpty()) {
-            if (!chat.hasConversations())
-                adapter.state(getString(R.string.chat_empty), getString(R.string.chat_find_tutor), () -> host.show("home"), false);
-            else if (chat.unreadOnly() && chat.query().trim().isEmpty())
-                adapter.state(getString(R.string.chat_all_read), null, null, false);
-            else adapter.state(getString(R.string.chat_no_match), null, null, false);
-            return;
-        }
         adapter.submit(results, chat.myId());
     }
 

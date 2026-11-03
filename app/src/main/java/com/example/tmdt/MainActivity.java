@@ -69,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
         binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
             @Override public void onFragmentViewCreated(androidx.fragment.app.FragmentManager manager,Fragment fragment,View view,Bundle state){
+                view.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.background(view.getContext()));
+                com.example.tmdt.ui.common.ThemeColors.apply(view);
                 com.example.tmdt.ui.common.Motion.bindControls(view);
             }
         },true);
@@ -94,8 +96,9 @@ public class MainActivity extends AppCompatActivity {
             updateNavigationVisibility();
             return WindowInsetsCompat.CONSUMED;
         });
-        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
-        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
+        boolean lightBars=!com.example.tmdt.ui.common.ThemeColors.dark(this);
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(lightBars);
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(lightBars);
         getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
         getWindow().setNavigationBarContrastEnforced(false);
         NavigationAssets.apply(binding.bottomNavigation);
@@ -106,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         binding.navigationGlass.setOutlineAmbientShadowColor(0x246583AD);
         binding.navigationGlass.setOutlineSpotShadowColor(0x246583AD);
         binding.navigationGlass.setupWith(binding.navigationBlurTarget,4f,false)
-                .setFrameClearDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE))
+                .setFrameClearDrawable(new android.graphics.drawable.ColorDrawable(com.example.tmdt.ui.common.ThemeColors.background(this)))
                 .setBlurRadius(8f);
         binding.screenContainer.getViewTreeObserver().addOnGlobalLayoutListener(navigationLayout);
         binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
@@ -259,6 +262,9 @@ public class MainActivity extends AppCompatActivity {
             default:destination="home";fragment=new HomeFragment();
         }
         screen=destination;
+        // Duplicate data events can arrive before the queued page has been attached.
+        // Its first render uses the latest data; queueing another replacement causes a flash.
+        if(screen.equals(navigatingTo)){renderNavigation();return;}
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
         if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
         if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
@@ -271,6 +277,12 @@ public class MainActivity extends AppCompatActivity {
             }).commit();
         }
         renderNavigation();
+    }
+    public void refreshClassroomData(){
+        String destination=classroom.redirect(screen);
+        if(!screen.equals(destination)){show(destination);return;}
+        Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+        if(current instanceof ScreenFragment)((ScreenFragment)current).refreshData();
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;

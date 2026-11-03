@@ -29,5 +29,9 @@ public final class SimpleAdapter<T, B extends ViewBinding> extends RecyclerView.
     @NonNull @Override public Holder<B> onCreateViewHolder(@NonNull ViewGroup parent, int type) {
         return new Holder<>(inflate.inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
-    @Override public void onBindViewHolder(@NonNull Holder<B> holder, int position) { bind.bind(holder.binding, items.get(position)); }
+    @Override public void onBindViewHolder(@NonNull Holder<B> holder, int position) {
+        bind.bind(holder.binding, items.get(position));
+        com.example.tmdt.ui.common.ThemeColors.apply(holder.itemView);
+        com.example.tmdt.ui.common.Motion.bindControls(holder.itemView);
+    }
 }

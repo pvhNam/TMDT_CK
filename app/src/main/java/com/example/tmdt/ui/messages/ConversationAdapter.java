@@ -8,18 +8,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.tmdt.Conversation;
 import com.example.tmdt.R;
 import com.example.tmdt.databinding.ItemConversationBinding;
-import com.example.tmdt.databinding.ItemMessagesBannerBinding;
 import com.example.tmdt.databinding.ItemMessagesStateBinding;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Danh sách màn 05: các hội thoại, một dòng trạng thái (khi cần) và thẻ "Trao đổi trước buổi học". */
+/** Conversations with loading and error feedback. */
 final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     interface OnOpen { void open(Conversation conversation); }
 
-    private static final int ROW = 0, STATE = 1, BANNER = 2;
+    private static final int ROW = 0, STATE = 1;
     private final OnOpen onOpen;
     private final List<Conversation> rows = new ArrayList<>();
+    private final List<String> renderedKeys = new ArrayList<>();
     private String me = "";
     // Trạng thái hiển thị khi danh sách trống / đang tải / lỗi.
     private String stateText;
@@ -30,31 +30,48 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     ConversationAdapter(OnOpen onOpen) { this.onOpen = onOpen; }
 
     void submit(List<Conversation> items, String myId) {
-        rows.clear(); rows.addAll(items); me = myId == null ? "" : myId; stateText = null;
-        notifyDataSetChanged();
+        boolean hadState=hasState();me=myId==null?"":myId;
+        List<Conversation> next=new ArrayList<>(items);
+        List<String> nextKeys=keys(next,me);
+        androidx.recyclerview.widget.DiffUtil.DiffResult diff=hadState?null:diff(rows,next,renderedKeys,nextKeys);
+        rows.clear();rows.addAll(next);renderedKeys.clear();renderedKeys.addAll(nextKeys);stateText=null;
+        if(diff==null)notifyDataSetChanged();else diff.dispatchUpdatesTo(this);
+    }
+    static List<String> keys(List<Conversation> items,String me){
+        List<String> keys=new ArrayList<>();
+        for(Conversation item:items)keys.add(me+"|"+item.peerId+"|"+item.peerName+"|"+item.lastMessage+"|"+item.lastSenderId+"|"+item.sortTime()+"|"+item.unread);
+        return keys;
+    }
+    static androidx.recyclerview.widget.DiffUtil.DiffResult diff(List<Conversation> rows,List<Conversation> next,List<String> renderedKeys,List<String> nextKeys){
+        return androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){
+            @Override public int getOldListSize(){return rows.size();}
+            @Override public int getNewListSize(){return next.size();}
+            @Override public boolean areItemsTheSame(int oldPosition,int newPosition){return rows.get(oldPosition).id.equals(next.get(newPosition).id);}
+            @Override public boolean areContentsTheSame(int oldPosition,int newPosition){return renderedKeys.get(oldPosition).equals(nextKeys.get(newPosition));}
+        });
     }
     void state(String text, String action, Runnable runnable, boolean loading) {
-        rows.clear(); stateText = text; stateAction = action; stateRunnable = runnable; stateLoading = loading;
+        rows.clear(); renderedKeys.clear(); stateText = text; stateAction = action; stateRunnable = runnable; stateLoading = loading;
         notifyDataSetChanged();
     }
 
     private boolean hasState() { return stateText != null; }
-    @Override public int getItemCount() { return rows.size() + (hasState() ? 1 : 0) + 1; }
+    @Override public int getItemCount() { return rows.size() + (hasState() ? 1 : 0); }
     @Override public int getItemViewType(int position) {
-        if (position == getItemCount() - 1) return BANNER;
         return hasState() ? STATE : ROW;
     }
 
     @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int type) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (type == ROW) return new RowHolder(ItemConversationBinding.inflate(inflater, parent, false));
-        if (type == STATE) return new StateHolder(ItemMessagesStateBinding.inflate(inflater, parent, false));
-        return new RecyclerView.ViewHolder(ItemMessagesBannerBinding.inflate(inflater, parent, false).getRoot()) {};
+        return new StateHolder(ItemMessagesStateBinding.inflate(inflater, parent, false));
     }
 
     @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof RowHolder) ((RowHolder) holder).bind(rows.get(position));
         else if (holder instanceof StateHolder) ((StateHolder) holder).bind();
+        com.example.tmdt.ui.common.ThemeColors.apply(holder.itemView);
+        com.example.tmdt.ui.common.Motion.bindControls(holder.itemView);
     }
 
     final class RowHolder extends RecyclerView.ViewHolder {

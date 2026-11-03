@@ -28,7 +28,7 @@ public final class VnpayPaymentActivity extends AppCompatActivity {
         String url=getIntent().getStringExtra(URL);
         try{Uri uri=Uri.parse(url);if(!VnpaySandbox.enabled()||payment==null||!payment.matches("[A-Za-z0-9_-]{1,180}")||!"https".equals(uri.getScheme())||!"sandbox.vnpayment.vn".equals(uri.getHost())||!"/paymentv2/vpcpay.html".equals(uri.getPath())||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getFragment()!=null)throw new IllegalArgumentException();}
         catch(Exception e){fail("Phiên thanh toán không hợp lệ.");return;}
-        Ui ui=new Ui(this);LinearLayout root=ui.column();root.setBackgroundColor(Color.WHITE);ui.header(root,"Thanh toán VNPay",this::askClose,null);
+        Ui ui=new Ui(this);LinearLayout root=ui.column();root.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.background(this));ui.header(root,"Thanh toán VNPay",this::askClose,null);
         ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);root.addView(progress,new LinearLayout.LayoutParams(-1,ui.dp(3)));
         web=new WebView(this);root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root,(view,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
