@@ -112,7 +112,7 @@ public final class TutorProfileFragment extends Fragment {
         String region = finalTeacher.region == null || finalTeacher.region.trim().isEmpty() ? "Toàn quốc" : finalTeacher.region;
         binding.tvRegion.setText(getString(R.string.tutor_profile_region_label, region));
 
-        binding.tvStatRating.setText("—");
+        if (finalTeacher.userId == null || finalTeacher.userId.isEmpty()) binding.tvStatRating.setText("—");
         long years = finalTeacher.experience;
         binding.tvStatExperience.setText(years + " năm");
         binding.tvStatStudents.setText("—");
@@ -130,8 +130,9 @@ public final class TutorProfileFragment extends Fragment {
         setupOfferings(host, catalog, finalTeacher);
 
         // Đánh giá của học viên
-        binding.llReviews.removeAllViews();
-        binding.tvReviewsSummaryCount.setText(R.string.tutor_profile_no_reviews);
+        // UC26 (Thành viên 4): điểm trung bình, số đánh giá và đánh giá mới nhất từ học viên.
+        com.example.tmdt.ui.exchange.TutorReviewsSummary.bind(this, binding.llReviews, binding.tvReviewsSummaryCount,
+                binding.tvStatRating, finalTeacher.userId, finalTeacher.name);
         setupComments(finalTeacher.id);
 
         // Favorite Button

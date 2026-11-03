@@ -34,7 +34,8 @@ public final class AccountFragment extends AccountFragmentBase {
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowPayments.setOnClickListener(v->go("payments"));
         binding.rowIncome.setOnClickListener(v->go("tutor_income"));
-        binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
+        binding.rowReviews.setOnClickListener(v->host().exchange.openMyReviews());
+        binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
         binding.tutorAction.setOnClickListener(v->{

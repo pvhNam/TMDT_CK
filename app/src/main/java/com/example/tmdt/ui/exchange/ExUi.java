@@ -1,6 +1,7 @@
 package com.example.tmdt.ui.exchange;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.GradientDrawable;
@@ -10,9 +11,11 @@ import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
 import com.example.tmdt.Contract;
+import com.example.tmdt.R;
 import com.example.tmdt.databinding.ViewExHeaderBinding;
 import com.example.tmdt.ui.messages.ChatFormat;
 import com.google.android.material.snackbar.Snackbar;
@@ -20,8 +23,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.function.IntConsumer;
 
-/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23: hợp đồng). */
+/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23 hợp đồng, UC26 đánh giá). */
 public final class ExUi {
     public static final int OK = 0, WAIT = 1, BAD = 2, INFO = 3, NEUTRAL = 4;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -57,11 +61,38 @@ public final class ExUi {
         return c.closed() ? BAD : NEUTRAL;
     }
 
+    /** Hàng sao (UC26); truyền onPick để người dùng chọn số sao. */
+    public static void stars(LinearLayout row, int rating, int sizeDp, @Nullable IntConsumer onPick) {
+        Context context = row.getContext();
+        row.removeAllViews();
+        for (int i = 1; i <= 5; i++) {
+            ImageView star = new ImageView(context);
+            star.setImageResource(R.drawable.ic_star);
+            star.setImageTintList(ColorStateList.valueOf(i <= rating ? 0xFFFFB617 : 0xFFD8DFEA));
+            int size = dp(context, sizeDp);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
+            params.setMarginEnd(dp(context, sizeDp >= 28 ? 10 : 2));
+            final int value = i;
+            if (onPick != null) {
+                star.setContentDescription(value + " sao");
+                star.setBackgroundResource(android.R.drawable.list_selector_background);
+                star.setOnClickListener(v -> onPick.accept(value));
+            } else star.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(star, params);
+        }
+        if (onPick == null) row.setContentDescription(rating + " trên 5 sao");
+    }
+
     public static String date(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE); }
     public static String dateTime(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE_TIME); }
     public static String money(long value) { return String.format(Locale.forLanguageTag("vi-VN"), "%,dđ", value); }
     public static int dp(Context context, float value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }
 
+    /** Bộ đếm ký tự "56/500" dưới ô nhập. */
+    public static void counter(EditText input, TextView counter, int max) {
+        counter.setText(input.length() + "/" + max);
+        afterChange(input, value -> counter.setText(value.length() + "/" + max));
+    }
     public static void afterChange(EditText input, java.util.function.Consumer<String> action) {
         input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
