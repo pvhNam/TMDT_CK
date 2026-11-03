@@ -826,5 +826,41 @@ service cloud.firestore {
       allow delete: if false;
     }
     // Payment attempts and all other undeclared collections are denied to clients.
+
+    // ---------------------------------------------------------------------------------------------
+    // UC26 – Đánh giá hai chiều (màn 09, 10, 46). reviews/{contractId__authorUid}: một lần mỗi bên mỗi hợp đồng,
+    // chỉ khi hợp đồng đã chốt và buổi học đầu tiên đã kết thúc; đánh giá đúng bên kia của hợp đồng.
+    // Đánh giá gia sư công khai; đánh giá học viên chỉ hai bên và quản trị viên xem.
+    // ---------------------------------------------------------------------------------------------
+    match /reviews/{reviewId} {
+      function validReview(d) {
+        let contract = get(/databases/$(database)/documents/contracts/$(d.contract_id)).data;
+        let me = request.auth.uid;
+        let target = me == contract.student_id ? contract.tutor_id : contract.student_id;
+        return reviewId == d.contract_id + '__' + me
+          && d.keys().hasOnly(['contract_id','author_id','author_name','target_id','target_name','target_role',
+                               'rating','tags','comment','subject','created_at'])
+          && me in contract.member_ids
+          && contract.status in ['CHO_KY_QUY', 'HIEU_LUC', 'HOAN_THANH']
+          && request.time > contract.start_at + duration.value(contract.minutes, 'm')
+          && d.author_id == me && d.target_id == target
+          && d.target_role == (target == contract.tutor_id ? 'TUTOR' : 'STUDENT')
+          && d.rating is int && d.rating >= 1 && d.rating <= 5
+          && d.tags is list && d.tags.size() <= 5
+          && d.comment is string && d.comment.size() <= 500
+          && d.author_name is string && d.author_name.size() <= 100
+          && d.target_name is string && d.target_name.size() <= 100
+          && d.subject is string && d.subject.size() <= 120
+          && d.created_at == request.time;
+      }
+      allow read: if resource.data.target_role == 'TUTOR'
+        || (request.auth != null && resource.data.target_id == request.auth.uid)
+        || (request.auth != null && resource.data.author_id == request.auth.uid)
+        || admin();
+      // Kiểm tra "đã đánh giá chưa" bằng mã tài liệu của chính mình khi tài liệu chưa tồn tại.
+      allow get: if resource == null && request.auth != null && reviewId.matches('.*__' + request.auth.uid);
+      allow create: if notBanned() && validReview(request.resource.data);
+      allow update, delete: if false;
+    }
   }
 }
