@@ -19,7 +19,10 @@ public final class TutorDesignAssets {
             Bitmap bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
             bitmap.setDensity(context.getResources().getDisplayMetrics().densityDpi);
             new Canvas(bitmap).drawPicture(svg.renderToPicture(),new RectF(0,0,width,height));
-            return new BitmapDrawable(context.getResources(),bitmap);
+            Drawable drawable=new BitmapDrawable(context.getResources(),bitmap);
+            if(ThemeColors.dark(context)&&("back".equals(name)||"down".equals(name)||"info".equals(name)))
+                drawable.setTint(context.getColor(com.example.tmdt.R.color.app_ink));
+            return drawable;
         }catch(Exception e){throw new IllegalStateException("Cannot load tutor design asset: "+name,e);}
     }
 }

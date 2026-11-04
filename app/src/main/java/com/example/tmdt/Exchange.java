@@ -8,6 +8,8 @@ import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
 import com.example.tmdt.ui.exchange.ContractTemplatesFragment;
 import com.example.tmdt.ui.exchange.ContractsFragment;
+import com.example.tmdt.ui.exchange.ReviewFormFragment;
+import com.example.tmdt.ui.exchange.ReviewsFragment;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -21,18 +23,24 @@ import java.util.Map;
  * và mẫu hợp đồng của quản trị viên. MainActivity chỉ chuyển tiếp sang lớp này (giống {@link Classroom}).
  *
  * Luồng: học viên đặt lịch → gia sư chấp nhận → gia sư gửi hợp đồng (theo mẫu của quản trị viên) → học viên xác nhận.
+ *
+ * UC26 đánh giá hai chiều: sau khi hợp đồng đã chốt và buổi học đầu tiên kết thúc.
  */
 public final class Exchange {
     public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
+    /** UC26 (tiền tố ex_ để không trùng màn "review" của phần lớp nhóm). */
+    public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
     private final MainActivity host;
     public final ContractState contracts;
     public final AgreementState agreements;
+    public final ReviewState reviews;
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
+    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole;
     /** Màn đã mở từng màn của phần này, để nút quay lại trở về đúng chỗ. */
     private final Map<String, String> origins = new HashMap<>();
 
@@ -41,14 +49,19 @@ public final class Exchange {
         ViewModelProvider provider = new ViewModelProvider(host);
         contracts = provider.get(ContractState.class);
         agreements = provider.get(AgreementState.class);
+        reviews = provider.get(ReviewState.class);
         if (state != null) {
             contractId = state.getString("ex.contract");
+            reviewContractId = state.getString("ex.review"); reviewsTarget = state.getString("ex.reviewsTarget");
+            reviewsName = state.getString("ex.reviewsName"); reviewsRole = state.getString("ex.reviewsRole");
             Bundle saved = state.getBundle("ex.origins");
             if (saved != null) for (String key : saved.keySet()) origins.put(key, saved.getString(key));
         }
     }
     void save(Bundle out) {
         out.putString("ex.contract", contractId);
+        out.putString("ex.review", reviewContractId); out.putString("ex.reviewsTarget", reviewsTarget);
+        out.putString("ex.reviewsName", reviewsName); out.putString("ex.reviewsRole", reviewsRole);
         Bundle saved = new Bundle(); for (Map.Entry<String, String> e : origins.entrySet()) saved.putString(e.getKey(), e.getValue());
         out.putBundle("ex.origins", saved);
     }
@@ -58,15 +71,19 @@ public final class Exchange {
     /** Đăng nhập/đăng xuất: bật hoặc tắt các listener của tài khoản. */
     void accountChanged(boolean signedIn) {
         if (signedIn) { contracts.start(); agreements.start(); }
-        else { contracts.stop(); agreements.stop(); contracts.draft = null; contractId = null; }
+        else { contracts.stop(); agreements.stop(); reviews.stopWatch(); contracts.draft = null; contractId = null; }
     }
     static boolean owns(String destination) {
-        return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination);
+        return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination)
+                || REVIEW.equals(destination) || REVIEWS.equals(destination);
     }
     /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
     String redirect(String destination) {
         if (!owns(destination)) return destination;
+        if (REVIEWS.equals(destination) && reviewsTarget != null && Review.TUTOR.equals(reviewsRole)) return destination; // Khách xem được đánh giá gia sư.
         if (!host.account.signedIn()) return "login";
+        if (REVIEWS.equals(destination) && reviewsTarget == null) return "account";
+        if (REVIEW.equals(destination) && reviewContractId == null) return CONTRACTS;
         if (TEMPLATES.equals(destination) && !isAdmin()) return "account";
         if (CONTRACT.equals(destination) && contractId == null && contracts.draft == null) return CONTRACTS;
         return destination;
@@ -77,6 +94,8 @@ public final class Exchange {
             case CONTRACTS: return new ContractsFragment();
             case AGREEMENT: return new AgreementFragment();
             case TEMPLATES: return new ContractTemplatesFragment();
+            case REVIEW: return new ReviewFormFragment();
+            case REVIEWS: return new ReviewsFragment();
             default: return null;
         }
     }
@@ -113,6 +132,28 @@ public final class Exchange {
     public void openContracts() { open(CONTRACTS); }
     public void openAgreement() { open(AGREEMENT); }
     public void openTemplates() { open(TEMPLATES); }
+
+    // UC26 – Đánh giá hai chiều ----------------------------------------------------------------------
+
+    public String reviewContractId() { return reviewContractId; }
+    /** Màn 09 (học viên đánh giá gia sư) hoặc 46 (gia sư đánh giá học viên) cho một hợp đồng đã chốt. */
+    public void openReview(Contract contract) { reviewContractId = contract.id; open(REVIEW); }
+    public String reviewsTarget() { return reviewsTarget; }
+    public String reviewsName() { return reviewsName; }
+    public String reviewsRole() { return reviewsRole; }
+    /** Màn 10: đánh giá về một người (role = TUTOR: đánh giá gia sư, công khai; STUDENT: đánh giá học viên). */
+    public void openReviews(String targetId, String name, String role) {
+        reviewsTarget = targetId; reviewsName = name; reviewsRole = role; open(REVIEWS);
+    }
+    /** "Đánh giá của tôi": gia sư đang ở chế độ gia sư xem đánh giá về mình với vai trò gia sư, còn lại là học viên. */
+    public void openMyReviews() {
+        boolean tutor = isTutor() && host.classroom.tutorMode();
+        openReviews(myId(), myName(), tutor ? Review.TUTOR : Review.STUDENT);
+    }
+    /** Đánh giá được chưa: hợp đồng đã chốt và buổi học đầu tiên đã kết thúc. */
+    public static boolean canReview(Contract c) {
+        return c != null && c.agreed() && System.currentTimeMillis() >= c.startAt + c.minutes * 60_000L;
+    }
     public void openContract(Contract contract) { contractId = contract.id; contracts.draft = null; open(CONTRACT); }
     /** Sau khi gửi: màn 40 chuyển sang xem hợp đồng vừa tạo. */
     public void showCreated(String id) { contractId = id; contracts.draft = null; }

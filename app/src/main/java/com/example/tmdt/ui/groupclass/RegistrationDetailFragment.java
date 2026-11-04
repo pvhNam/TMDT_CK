@@ -57,7 +57,8 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         LinearLayout status = ui.column(); ui.pad(status,16,16); ui.cardSurface(status,Ui.PALE,0);
         status.addView(RegistrationHistoryFragment.pill(ui,item,registration,14),ui.lp(-2,-2)); ui.space(status,10);
         ui.add(status,ui.text(headline(group),20,Ui.INK,true)); ui.space(status,6);
-        ui.add(status,ui.text(explanation(group),15,Ui.MUTED,false)); ui.space(status,16);
+        if(item.cancelled()&&!item.cancelReason.isEmpty()){ui.add(status,ui.text(item.cancelReason,14,Ui.MUTED,false));ui.space(status,10);}
+        ui.space(status,6);
         ui.add(status,steps(group));
         ui.add(body,status); ui.space(body,14);
         if (group == RegistrationHistoryFragment.ACCEPTED && (!item.cancelled() || settled())) { ui.add(body,fee()); ui.space(body,14); }
@@ -112,21 +113,6 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         if (group == RegistrationHistoryFragment.ACCEPTED) return paid() ? "Đã thanh toán khóa học" : refunding() ? "Đang chờ hoàn học phí"
                 : refunded() ? "Đã hoàn học phí" : settled() ? "Đang đối soát thanh toán" : "Đã được duyệt · Chờ thanh toán";
         return GroupClass.OPEN.equals(item.status) ? "Gia sư chưa nhận đăng ký này" : "Đăng ký không được duyệt";
-    }
-    private String explanation(int group) {
-        boolean accepted = group == RegistrationHistoryFragment.ACCEPTED;
-        if (item.cancelled()) return "Gia sư đã hủy lớp. Lý do: "+item.cancelReason+"."+(accepted?" "+feeNote():"");
-        if (group == RegistrationHistoryFragment.WAITING) return "Chưa thu học phí. Gia sư sẽ xem xét đăng ký của bạn trước.";
-        if (accepted) return paid() ? "Xác nhận từng buổi trong mục Thanh toán để ghi nhận tiền dạy." : settled() ? feeNote() : "Hãy thanh toán đủ học phí cả khóa qua VNPay.";
-        return GroupClass.OPEN.equals(item.status) ? "Lớp vẫn đang tuyển sinh, bạn có thể gửi lại đăng ký với mục tiêu khác."
-                : "Lớp đã đóng tuyển sinh trước khi đăng ký được duyệt. Hãy tìm lớp tương tự.";
-    }
-    private String feeNote() {
-        if (paid()) return "Bạn có thể yêu cầu hoàn phần học phí chưa học ngay bên dưới.";
-        if (refunding()) return "Yêu cầu hoàn học phí đang chờ admin xử lý.";
-        if (refunded()) return "Học phí đã được hoàn lại cho bạn.";
-        if (settled()) return "VNPay đang đối soát giao dịch của bạn.";
-        return "Bạn chưa thanh toán nên không mất khoản phí nào.";
     }
     private String classStatus() {
         if (item.cancelled()) return "Đã hủy";

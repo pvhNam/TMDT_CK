@@ -35,16 +35,16 @@ final class RevenuePieView extends View {
         super.onDraw(canvas);float cx=getWidth()/2f,cy=getHeight()/2f,r=Math.min(getWidth(),getHeight())*.43f;
         float stroke=r*.25f;bounds.set(cx-r+stroke/2,cy-r+stroke/2,cx+r-stroke/2,cy+r-stroke/2);
         paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(stroke);paint.setStrokeCap(Paint.Cap.BUTT);
-        paint.setColor(Ui.PALE);canvas.drawOval(bounds,paint);
+        paint.setColor(com.example.tmdt.ui.common.ThemeColors.fill(getContext(),Ui.PALE));canvas.drawOval(bounds,paint);
         float start=-90;
         if(data.received>0)for(int i=0;i<RevenueBreakdown.LABELS.length;i++){
             float sweep=(float)(data.percent(i)*3.6);paint.setColor(COLORS[i]);
             canvas.drawArc(bounds,start,sweep*progress,false,paint);start+=sweep*progress;
         }
         paint.setStyle(Paint.Style.FILL);paint.setTextAlign(Paint.Align.CENTER);
-        paint.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));paint.setColor(Ui.INK);paint.setTextSize(25*density);
+        paint.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.INK));paint.setTextSize(25*density);
         canvas.drawText(data.received==0?"0":"100%",cx,cy+2*density,paint);
-        paint.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));paint.setColor(Ui.MUTED);paint.setTextSize(12*density);
+        paint.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.MUTED));paint.setTextSize(12*density);
         canvas.drawText("Học phí đã nhận",cx,cy+23*density,paint);
     }
 }

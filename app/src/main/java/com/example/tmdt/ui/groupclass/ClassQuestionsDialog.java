@@ -167,9 +167,9 @@ public final class ClassQuestionsDialog extends DialogFragment {
         if (nextKey.equals(renderedContentKey)) return;
         renderedContentKey = nextKey;
         int scroll = binding.classQuestionsScroll.getScrollY();
-        binding.classQuestionsList.removeAllViews();
+        com.example.tmdt.ui.common.StableBindings<ItemClassQuestionBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.classQuestionsList);rows.begin();
         if (available) for (GroupClassQuestion question : state.questions()) {
-            ItemClassQuestionBinding row = ItemClassQuestionBinding.inflate(getLayoutInflater(), binding.classQuestionsList, false);
+            ItemClassQuestionBinding row = rows.item(question.id,()->ItemClassQuestionBinding.inflate(getLayoutInflater(), binding.classQuestionsList, false));
             row.classQuestionAuthor.setText(question.authorName);
             row.classQuestionTutorBadge.setVisibility(question.authorId.equals(state.tutorId()) ? View.VISIBLE : View.GONE);
             row.classQuestionDate.setText(date(question.createdAtMillis));
@@ -191,17 +191,18 @@ public final class ClassQuestionsDialog extends DialogFragment {
                 row.classQuestionLoadMoreReplies.setVisibility(state.hasMoreReplies() ? View.VISIBLE : View.GONE);
                 row.classQuestionLoadMoreReplies.setEnabled(!state.repliesLoading() && !state.busy() && !state.offline());
                 row.classQuestionLoadMoreReplies.setOnClickListener(v -> state.loadMoreReplies());
+                com.example.tmdt.ui.common.StableBindings<ItemClassReplyBinding> replies=com.example.tmdt.ui.common.StableBindings.at(row.classQuestionRepliesList);replies.begin();
                 for (GroupClassQuestion reply : state.replies()) {
-                    ItemClassReplyBinding child = ItemClassReplyBinding.inflate(getLayoutInflater(), row.classQuestionRepliesList, false);
+                    ItemClassReplyBinding child = replies.item(reply.id,()->ItemClassReplyBinding.inflate(getLayoutInflater(), row.classQuestionRepliesList, false));
                     child.classReplyAuthor.setText(reply.authorName);
                     child.classReplyTutorBadge.setVisibility(reply.authorId.equals(state.tutorId()) ? View.VISIBLE : View.GONE);
                     child.classReplyDate.setText(date(reply.createdAtMillis));
                     child.classReplyContent.setText(reply.content);
-                    row.classQuestionRepliesList.addView(child.getRoot());
                 }
+                replies.commit(row.classQuestionRepliesList);
             }
-            binding.classQuestionsList.addView(row.getRoot());
         }
+        rows.commit(binding.classQuestionsList);
         DialogClassQuestionsBinding renderedBinding = binding;
         renderedBinding.classQuestionsScroll.post(() -> {
             if (binding == renderedBinding) renderedBinding.classQuestionsScroll.scrollTo(0, scroll);

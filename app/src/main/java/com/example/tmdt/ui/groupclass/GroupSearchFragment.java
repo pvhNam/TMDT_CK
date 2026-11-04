@@ -111,14 +111,6 @@ public final class GroupSearchFragment extends ScreenFragment {
             if (!normalized(item.title+" "+item.subject+" "+item.level+" "+item.tutorName).contains(query)) continue;
             ui.add(results,card(item,null)); ui.space(results,13); count++;
         }
-        if (count == 0) {
-            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.cardSurface(empty,Ui.PALE,0);
-            empty.addView(ui.icon(R.drawable.ic_users,40,Ui.BLUE)); ui.space(empty,14);
-            TextView title = ui.text("Chưa có lớp phù hợp",18,Ui.INK,true); title.setGravity(Gravity.CENTER); ui.add(empty,title); ui.space(empty,8);
-            TextView hint = ui.text("Thử từ khóa khác hoặc bỏ bớt bộ lọc.",15,Ui.MUTED,false); hint.setGravity(Gravity.CENTER); ui.add(empty,hint); ui.space(empty,16);
-            ui.addAction(empty,ui.action("Xóa bộ lọc",0,Ui.OUTLINE,()->{subject=mode="";seats=false;search.setText("");renderFilters();renderResults();}),44);
-            ui.add(results,empty);
-        }
     }
 
     /** A class card; a suggested one names the student's request it suits. */

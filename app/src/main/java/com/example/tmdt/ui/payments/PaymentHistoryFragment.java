@@ -12,7 +12,6 @@ public final class PaymentHistoryFragment extends PaymentScreen {
         if(!state().admin||state().adminPaymentTab==0){
         if(state().tutor)action(body,"Thu nhập và tài khoản nhận tiền",Ui.OUTLINE,()->host().show("tutor_income"));
         LinearLayout heading=ui.row();ui.weight(heading,ui.text("Lịch sử giao dịch",19,Ui.INK,true));heading.addView(ui.pill(String.valueOf(state().payments.size()),12,Ui.BLUE,Ui.PALE));ui.add(body,heading);ui.space(body,14);
-        if(state().payments.isEmpty())summary(body,"Chưa có giao dịch","","");
         for(PaymentState.Row payment:newest(state().payments.values())){
             LinearLayout card=ui.card(),top=ui.row();
             ui.weight(top,ui.text(payment.text("title").isEmpty()?"Thanh toán học phí":payment.text("title"),17,Ui.INK,true));ui.gap(top,8);top.addView(ui.text("›",25,Ui.BLUE,false));ui.add(card,top);ui.space(card,8);
@@ -26,14 +25,13 @@ public final class PaymentHistoryFragment extends PaymentScreen {
         }
         if(state().admin&&state().adminPaymentTab==1){
             ui.space(body,10);ui.add(body,ui.text("Yêu cầu hoàn tiền",19,Ui.INK,true));ui.space(body,10);
-            if(state().refunds.isEmpty())ui.add(body,ui.note(com.example.tmdt.R.drawable.ic_info,"Chưa có yêu cầu hoàn học phí.",Ui.PALE,Ui.BLUE,Ui.INK));
             for(PaymentState.Row refund:newest(state().refunds.values())){
                 summary(body,refund.text("title"),refund.text("reason")+"\n"+PaymentState.status(refund.text("status")),PaymentState.money(refund.number("amount")));
                 if("PENDING".equals(refund.text("status"))){
                     action(body,"Xác nhận đã chuyển hoàn tiền",Ui.OUTLINE,()->{
-                    state().selectedRefund=refund.id;prompt("Chỉ xác nhận sau khi đã chuyển tiền","Mã giao dịch ngân hàng thực tế",state()::finishRefund);
+                    state().selectedRefund=refund.id;prompt("Xác nhận đã hoàn tiền","Mã giao dịch ngân hàng",state()::finishRefund);
                     });
-                    action(body,"Từ chối yêu cầu hoàn tiền",Ui.OUTLINE,()->{state().selectedRefund=refund.id;prompt("Kết quả đối soát yêu cầu hoàn","Lý do từ chối sau khi trao đổi với học sinh",state()::rejectRefund);});
+                    action(body,"Từ chối yêu cầu hoàn tiền",Ui.OUTLINE,()->{state().selectedRefund=refund.id;prompt("Từ chối hoàn tiền","Lý do từ chối",state()::rejectRefund);});
                 }
             }
         }

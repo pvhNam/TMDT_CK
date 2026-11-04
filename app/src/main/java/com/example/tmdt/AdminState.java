@@ -118,7 +118,7 @@ public final class AdminState extends ViewModel {
             log.put("reason",reason.trim());log.put("created_at",FieldValue.serverTimestamp());tx.set(audit,log);return null;
         }).addOnCompleteListener(task->{
             if(token!=version)return;busy=false;
-            if(task.isSuccessful())notice=ban?"Đã khóa tài khoản. Các thao tác và chi trả mới bị chặn.":"Đã mở khóa tài khoản.";
+            if(task.isSuccessful())notice=ban?"Đã khóa tài khoản.":"Đã mở khóa tài khoản.";
             else error="Không cập nhật được trạng thái. "+message(task.getException());changed();
         });
     }

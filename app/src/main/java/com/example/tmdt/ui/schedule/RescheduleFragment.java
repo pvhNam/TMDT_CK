@@ -39,7 +39,6 @@ public final class RescheduleFragment extends ScreenFragment {
 
         ui.addAction(body,ui.action("Đồng ý đổi lịch",0,Ui.PRIMARY,this::accept),50); ui.space(body,12);
         ui.addAction(body,ui.action("Giữ lịch hiện tại",0,Ui.OUTLINE,this::keep),49); ui.space(body,6);
-        ui.add(body,ui.note(R.drawable.ic_info,"Lịch cũ được giữ khi chưa có xác nhận.",Ui.WHITE,Ui.BLUE,Ui.MUTED));
         return root;
     }
 

@@ -52,7 +52,6 @@ public final class TutorEvidenceFragment extends TutorReviewScreen {
         note.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void afterTextChanged(Editable e){}
             public void onTextChanged(CharSequence s,int st,int before,int count){counter.setText(s.length()+"/500");}});
         }
-        ui.add(body,ui.note(R.drawable.ic_info,"Chỉ bạn và quản trị viên xét duyệt được xem ảnh minh chứng.",Ui.PALE,Ui.BLUE,Ui.MUTED));ui.space(body,18);
         LinearLayout controls=ui.column();controls.setPadding(ui.dp(16),ui.dp(8),ui.dp(16),ui.dp(6));ui.add(root,controls);
         action(controls,supplement?"Gửi lại để xét duyệt":"Tiếp tục",Ui.PRIMARY,()->{
             String error=draft.error();if(!error.isEmpty()){review.error=error;refresh();return;}

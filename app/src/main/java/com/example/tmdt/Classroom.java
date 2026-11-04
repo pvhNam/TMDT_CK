@@ -192,7 +192,7 @@ public final class Classroom {
         announceReplies();announceClasses();announceMatches();
         String error=cloud.takeError();
         if(!error.isEmpty())dialog("Lịch học và lớp nhóm",error);
-        if(LIVE.contains(host.screen))show(host.screen);
+        if(LIVE.contains(host.screen))host.refreshClassroomData();
     }
 
     // Navigation hooks used by MainActivity ------------------------------------------------------

@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="@android:color/white">
+    android:orientation="vertical" android:background="@color/app_surface">
     <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar"
         style="@style/ReferenceToolbar" app:title="@string/email_verification_title" />
     <ScrollView android:id="@+id/account_scroll" android:layout_width="match_parent"
@@ -19,7 +19,7 @@
                     android:textSize="24sp" android:gravity="center" />
                 <TextView style="@style/ReferenceBody" android:text="@string/email_verification_caption" android:gravity="center" />
                 <TextView android:id="@+id/email" style="@style/ReferenceLabel" android:gravity="center"
-                    android:textColor="@color/account_blue" android:layout_marginTop="8dp" android:layout_marginBottom="24dp" />
+                    android:textColor="@color/app_accent" android:layout_marginTop="8dp" android:layout_marginBottom="24dp" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/open_email" style="@style/ReferencePrimary"
                     android:text="@string/email_verification_open" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline"
@@ -28,9 +28,6 @@
                     android:text="@string/email_verification_resend" android:contentDescription="@string/email_verification_resend" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/change_account" style="@style/ReferenceOutline"
                     android:text="@string/email_verification_change" android:contentDescription="@string/email_verification_change" />
-                <TextView style="@style/ReferenceBody" android:text="@string/email_verification_note"
-                    android:layout_marginTop="20dp" android:background="@drawable/bg_account_note"
-                    android:padding="16dp" android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

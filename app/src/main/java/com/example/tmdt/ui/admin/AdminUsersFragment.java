@@ -10,7 +10,6 @@ import com.example.tmdt.ui.common.Ui;
 public final class AdminUsersFragment extends AdminScreen {
     @Override protected View build(){
         LinearLayout root=root("Quản lý tài khoản"),body=ui.page(root);if(!feedback(body))return root;
-        ui.add(body,ui.text("Tìm tài khoản, xem hồ sơ hoặc khóa / mở khóa.",13,Ui.MUTED,false));ui.space(body,12);
         LinearLayout results=ui.column();
         search(body,"Tìm tên, email hoặc số điện thoại",state().query,value->{state().query=value;renderUsers(results);});
         String[] filters={"ALL","STUDENT","TUTOR","BANNED"};
@@ -36,6 +35,6 @@ public final class AdminUsersFragment extends AdminScreen {
         if(count==0){ui.add(body,ui.text(state().loadingUsers?"Đang tải tài khoản…":"Không có tài khoản khớp với bộ lọc.",14,Ui.MUTED,false));ui.space(body,12);
             if(!state().loadingUsers)action(body,"Xóa bộ lọc",Ui.OUTLINE,()->{state().userFilter="ALL";state().query="";refresh();});}
         if(state().moreUsers)action(body,"Tải thêm tài khoản",Ui.OUTLINE,()->state().moreUsers());
-        ui.add(body,ui.text(count+" kết quả · Đã tải "+state().users.size()+" / "+state().totalUsers+" tài khoản"+(state().moreUsers?"\nTải thêm để tìm trong các tài khoản còn lại.":""),12,Ui.MUTED,false));
+        ui.add(body,ui.text(count+" kết quả · "+state().users.size()+" / "+state().totalUsers+" tài khoản",12,Ui.MUTED,false));
     }
 }

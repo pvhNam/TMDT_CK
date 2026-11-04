@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
-    app:cardBackgroundColor="@android:color/white"
+    app:cardBackgroundColor="@color/app_surface"
     app:cardCornerRadius="20dp"
     app:cardElevation="0dp"
-    app:strokeColor="@color/request_manage_border"
+    app:strokeColor="@color/app_border"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -78,6 +79,7 @@
                 style="@style/RequestManageBody"
                 android:layout_width="0dp"
                 android:layout_weight="1" />
+
         </LinearLayout>
 
         <TextView
@@ -93,7 +95,7 @@
             android:layout_height="1dp"
             android:layout_marginTop="18dp"
             android:layout_marginBottom="16dp"
-            android:background="@color/request_manage_border" />
+            android:background="@color/app_border" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/request_applicants"
@@ -121,7 +123,8 @@
                 app:iconGravity="textStart"
                 app:iconPadding="6dp"
                 app:iconSize="16dp"
-                app:iconTint="@color/request_manage_ink" />
+                app:iconTint="@color/request_manage_ink"
+                app:strokeColor="@color/app_border" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/close_request"
@@ -129,7 +132,8 @@
                 android:layout_width="0dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="@string/requests_close" />
+                android:text="@string/requests_close"
+                app:strokeColor="@color/app_border" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/delete_request"
@@ -145,7 +149,10 @@
                 app:iconPadding="0dp"
                 app:iconSize="20dp"
                 app:iconTint="@color/request_manage_red"
-                app:strokeColor="@color/request_manage_border" />
+                app:strokeColor="@color/app_border" />
+
         </LinearLayout>
+
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

@@ -2,7 +2,7 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    app:cardCornerRadius="20dp" app:cardBackgroundColor="@android:color/white" app:cardElevation="0dp">
+    app:cardCornerRadius="20dp" app:cardBackgroundColor="@color/app_surface" app:cardElevation="0dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
         android:orientation="vertical" android:padding="20dp">
         <TextView style="@style/ScreenTitle" android:text="@string/request_search_details_title" android:textSize="22sp" />
@@ -25,10 +25,10 @@
                 <LinearLayout android:id="@+id/request_details_content" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
                     <TextView style="@style/FieldLabel" android:text="@string/request_search_status_open"
-                        android:textColor="#236B42" android:layout_marginBottom="16dp" />
+                        android:textColor="@color/theme_text_236b42" android:layout_marginBottom="16dp" />
                     <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_title_label" />
                     <TextView android:id="@+id/request_detail_title" style="@style/BodyText"
-                        android:textIsSelectable="true" android:textColor="#081F50" />
+                        android:textIsSelectable="true" android:textColor="@color/theme_text_081f50" />
                     <TextView style="@style/FieldLabel" android:text="@string/request_search_subject" />
                     <TextView android:id="@+id/request_detail_subject" style="@style/BodyText" />
                     <TextView style="@style/FieldLabel" android:text="@string/request_search_detail_level_label" />

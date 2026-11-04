@@ -19,6 +19,9 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 /** Shared avatar, following saved account changes and releasing listeners when its view disappears. */
 public final class AvatarView extends FrameLayout {
+    private static final android.util.LruCache<String,String> savedImages=new android.util.LruCache<String,String>(768*1024){
+        @Override protected int sizeOf(String key,String value){return key.length()*2+value.length()*2;}
+    };
     private final ViewAvatarBinding binding;
     private String uid="", name="", viewer=null, encoded="";
     private boolean currentAccount;
@@ -39,7 +42,9 @@ public final class AvatarView extends FrameLayout {
     public void bind(String userId,String displayName){
         if(!currentAccount && uid.equals(userId==null?"":userId) && name.equals(displayName==null?"":displayName))return;
         stop();currentAccount=false;uid=userId==null?"":userId;name=displayName==null?"":displayName;
-        encoded="";viewer=null;draw();if(isAttachedToWindow())refresh();
+        String authenticated=FirebaseAuth.getInstance().getUid();
+        String cached=savedImages.get((authenticated==null?"":authenticated)+"|"+uid);
+        encoded=cached==null?"":cached;viewer=null;draw();if(isAttachedToWindow())refresh();
     }
     public void bindCurrentAccount(){stop();currentAccount=true;viewer=null;if(isAttachedToWindow())refresh();}
     @Override protected void onAttachedToWindow(){
@@ -62,14 +67,19 @@ public final class AvatarView extends FrameLayout {
             draw();return;
         }
         if(authenticated.equals(viewer))return;
-        stop();viewer=authenticated;encoded="";draw();
+        stop();viewer=authenticated;
+        String cached=savedImages.get(authenticated+"|"+uid);encoded=cached==null?"":cached;draw();
         if(uid.isEmpty())return;
         final int version=request;
         listener=FirebaseFirestore.getInstance().collection("profile_avatars").document(uid)
                 .addSnapshotListener((snapshot,error)->{
                     if(version!=request || !isAttachedToWindow())return;
-                    encoded=error==null && snapshot!=null && snapshot.get("anh_dai_dien") instanceof String
-                            ?snapshot.getString("anh_dai_dien"):"";
+                    if(error!=null){
+                        if(error.getCode()==com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED){encoded="";savedImages.remove(authenticated+"|"+uid);}
+                        draw();return;
+                    }
+                    encoded=snapshot!=null && snapshot.get("anh_dai_dien") instanceof String?snapshot.getString("anh_dai_dien"):"";
+                    if(encoded.isEmpty())savedImages.remove(authenticated+"|"+uid);else savedImages.put(authenticated+"|"+uid,encoded);
                     draw();
                 });
     }

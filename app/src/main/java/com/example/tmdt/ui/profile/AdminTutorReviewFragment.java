@@ -13,7 +13,7 @@ public final class AdminTutorReviewFragment extends TutorReviewScreen {
     @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null){detail=state.getBoolean("detail");filter=state.getString("filter","PENDING");}}
     @Override public void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putBoolean("detail",detail);out.putString("filter",filter);}
     @Override protected View build(){
-        LinearLayout root=ui.column();root.setBackgroundColor(Ui.WHITE);
+        LinearLayout root=ui.column();root.setBackgroundColor(0xFFF7F9FD);
         ui.header(root,detail?"Xét duyệt hồ sơ":"Duyệt gia sư",()->{if(detail){detail=false;refresh();}else go("admin_dashboard");},null);
         LinearLayout body=ui.page(root);feedback(body);
         if(!review.admin){ui.add(body,ui.text("Trang này dành cho quản trị viên.",16,Ui.INK,true));return root;}
@@ -27,8 +27,7 @@ public final class AdminTutorReviewFragment extends TutorReviewScreen {
             LinearLayout copy=ui.column();ui.add(copy,ui.text(TutorReviewState.text(item,"ho_ten"),17,Ui.INK,true));ui.space(copy,5);ui.add(copy,ui.text(label(status),13,Ui.MUTED,false));ui.weight(row,copy);row.addView(ui.text("›",26,Ui.BLUE,false));ui.add(card,row);
             card.setTag(uid);ui.clickable(card,()->{review.select(uid);detail=true;refresh();});ui.add(body,card);ui.space(body,12);
         }
-        if(count==0)ui.add(body,ui.note(R.drawable.ic_info,"Chưa có hồ sơ trong mục này.",Ui.PALE,Ui.BLUE,Ui.MUTED));
-        ui.add(body,ui.text("Hiển thị tối đa 100 hồ sơ.",12,Ui.MUTED,false));return root;
+        ui.add(body,ui.text(count+" hồ sơ",12,Ui.MUTED,false));return root;
     }
     private void details(LinearLayout body){
         Map<String,Object> item=review.selected;summary(body,item,review.selectedId);ui.label(body,"Trường / đơn vị");ui.add(body,ui.text(TutorReviewState.text(item,"truong"),15,Ui.INK,false));ui.space(body,14);

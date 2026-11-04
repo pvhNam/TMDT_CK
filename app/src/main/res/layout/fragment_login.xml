@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     tools:context="com.example.tmdt.ui.auth.LoginFragment">
     <com.example.tmdt.ui.common.SoftBlurBackground
         android:layout_width="match_parent"
@@ -107,12 +107,12 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
                     <View android:layout_width="0dp" android:layout_height="1dp"
-                        android:layout_weight="1" android:background="#DCE8FA" />
+                        android:layout_weight="1" android:background="@color/theme_fill_dce8fa" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginHorizontal="16dp" android:text="@string/sign_in_or"
-                        android:textColor="#7083AC" android:textSize="13sp" />
+                        android:textColor="@color/theme_text_7083ac" android:textSize="13sp" />
                     <View android:layout_width="0dp" android:layout_height="1dp"
-                        android:layout_weight="1" android:background="#DCE8FA" />
+                        android:layout_weight="1" android:background="@color/theme_fill_dce8fa" />
                 </LinearLayout>
                 <LinearLayout
                     android:layout_width="match_parent"

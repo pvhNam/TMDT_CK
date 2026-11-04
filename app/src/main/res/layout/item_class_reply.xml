@@ -4,8 +4,8 @@
     android:background="@drawable/bg_pale" android:padding="12dp">
     <TextView android:id="@+id/class_reply_author" style="@style/FieldLabel" android:layout_marginBottom="4dp" />
     <TextView android:id="@+id/class_reply_tutor_badge" style="@style/BodyText" android:text="@string/class_questions_tutor_badge"
-        android:textColor="#236B42" android:textSize="12sp" android:layout_marginBottom="4dp" android:visibility="gone" />
+        android:textColor="@color/theme_text_236b42" android:textSize="12sp" android:layout_marginBottom="4dp" android:visibility="gone" />
     <TextView android:id="@+id/class_reply_date" style="@style/BodyText" android:textSize="12sp" android:layout_marginBottom="6dp" />
-    <TextView android:id="@+id/class_reply_content" style="@style/BodyText" android:textColor="#081F50"
+    <TextView android:id="@+id/class_reply_content" style="@style/BodyText" android:textColor="@color/theme_text_081f50"
         android:layout_marginBottom="0dp" android:textIsSelectable="true" />
 </LinearLayout>

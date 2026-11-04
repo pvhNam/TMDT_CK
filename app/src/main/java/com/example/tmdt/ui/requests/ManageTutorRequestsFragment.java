@@ -68,8 +68,9 @@ public final class ManageTutorRequestsFragment extends Fragment {
         binding.requestsEmpty.setText(closed ? R.string.requests_empty_closed : R.string.requests_empty_open);
         binding.requestsEmptyPanel.setVisibility(!manager.loading() && manager.error().isEmpty() && requests.isEmpty() ? View.VISIBLE : View.GONE);
         int scrollY = binding.requestsScroll.getScrollY();
-        binding.requestsList.removeAllViews();
+        com.example.tmdt.ui.common.StableBindings<ItemTutorRequestBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.requestsList);rows.begin();
         for (TutorRequestRecord request : requests) addRequest(request);
+        rows.commit(binding.requestsList);
         binding.requestsScroll.post(() -> {
             if (binding != null) binding.requestsScroll.scrollTo(0, scrollY);
         });
@@ -82,7 +83,8 @@ public final class ManageTutorRequestsFragment extends Fragment {
     }
 
     private void addRequest(TutorRequestRecord request) {
-        ItemTutorRequestBinding row = ItemTutorRequestBinding.inflate(getLayoutInflater(), binding.requestsList, false);
+        ItemTutorRequestBinding row = com.example.tmdt.ui.common.StableBindings.<ItemTutorRequestBinding>at(binding.requestsList)
+                .item(request.id,()->ItemTutorRequestBinding.inflate(getLayoutInflater(), binding.requestsList, false));
         row.requestTitle.setText(request.title);
         row.requestStatus.setText(request.isOpen() ? R.string.requests_open : R.string.requests_closed);
         row.requestStatus.setTextColor(ContextCompat.getColor(requireContext(), request.isOpen()
@@ -116,7 +118,8 @@ public final class ManageTutorRequestsFragment extends Fragment {
         row.closeRequest.setAlpha(editable ? 1f : .45f);
         row.deleteRequest.setAlpha(editable ? 1f : .45f);
         row.requestApplicants.setAlpha(manager.busy() ? .45f : 1f);
-        binding.requestsList.addView(row.getRoot());
+        com.example.tmdt.ui.common.ThemeColors.apply(row.getRoot());
+        com.example.tmdt.ui.common.Motion.bindControls(row.getRoot());
     }
 
     @Override public void onSaveInstanceState(@NonNull Bundle outState) {

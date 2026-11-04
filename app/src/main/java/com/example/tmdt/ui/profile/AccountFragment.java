@@ -1,8 +1,6 @@
 package com.example.tmdt.ui.profile;
 
-import android.graphics.Outline;
 import android.view.View;
-import android.view.ViewOutlineProvider;
 import android.widget.Toast;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
@@ -20,8 +18,10 @@ public final class AccountFragment extends AccountFragmentBase {
         roundAvatar(binding.avatar.avatarInitials);roundAvatar(binding.avatar.avatarPhoto);
         binding.rowInfo.setOnClickListener(v->{
             boolean open=binding.infoDetails.getVisibility()!=View.VISIBLE;
+            com.example.tmdt.ui.common.Motion.change((android.view.ViewGroup)binding.infoDetails.getParent());
             binding.infoDetails.setVisibility(open?View.VISIBLE:View.GONE);
-            binding.infoChevron.animate().rotation(open?90f:0f).setDuration(150).start();
+            binding.infoChevron.animate().rotation(open?90f:0f)
+                    .setDuration(com.example.tmdt.ui.common.Motion.enabled()?150:0).start();
         });
         View.OnClickListener soon=v->Toast.makeText(requireContext(),"Tính năng sắp ra mắt",Toast.LENGTH_SHORT).show();
         binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
@@ -34,7 +34,8 @@ public final class AccountFragment extends AccountFragmentBase {
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowPayments.setOnClickListener(v->go("payments"));
         binding.rowIncome.setOnClickListener(v->go("tutor_income"));
-        binding.rowReviews.setOnClickListener(soon);binding.rowNotifications.setOnClickListener(soon);
+        binding.rowReviews.setOnClickListener(v->host().exchange.openMyReviews());
+        binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
         binding.tutorAction.setOnClickListener(v->{
@@ -49,17 +50,12 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.reset.setOnClickListener(v->{if(state.profile()!=null)state.resetPassword(state.profile().email);});
         binding.retry.setOnClickListener(v->state.loadProfile(false));
         binding.signOut.setOnClickListener(v->new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.sign_out).setMessage("Bạn có thể đăng nhập lại để xem thông tin cá nhân.")
+                .setTitle(R.string.sign_out)
                 .setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.sign_out,(dialog,which)->state.signOut()).show());
     }
-    /** The reference design shows a rounded square avatar instead of a circle. */
+    /** Profile photos use the same circular outline as all shared avatars. */
     private void roundAvatar(View v){
-        final float radius=16*getResources().getDisplayMetrics().density;
-        v.setBackgroundResource(R.drawable.bg_pf_avatar);
-        v.setOutlineProvider(new ViewOutlineProvider(){
-            @Override public void getOutline(View view,Outline outline){outline.setRoundRect(0,0,view.getWidth(),view.getHeight(),radius);}
-        });
-        v.setClipToOutline(true);
+        v.setBackgroundResource(R.drawable.bg_avatar);AvatarRenderer.circle(v);
     }
     @Override protected void renderState(){
         UserProfile profile=state.profile();

@@ -27,7 +27,7 @@ public final class ReviewTutorFragment extends AccountFragmentBase {
         binding.steps.labelInfo.setTextColor(requireContext().getColor(R.color.tutor_blue));
         binding.steps.labelReview.setTextColor(requireContext().getColor(R.color.tutor_blue));
         binding.steps.labelReview.setTypeface(binding.steps.labelReview.getTypeface(),android.graphics.Typeface.BOLD);
-        binding.reviewNote.setCompoundDrawablesRelativeWithIntrinsicBounds(TutorDesignAssets.icon(requireContext(),"review_info"),null,null,null);
+        binding.reviewNote.setVisibility(View.GONE);
         TutorRegistration value=state.tutorRegistration();
         if(value!=null){
             binding.name.setText(value.name);binding.subjects.setText(value.subjectName+" · "+value.levelLabel());

@@ -20,6 +20,10 @@ import com.example.tmdt.Tutor;
 
 /** Screen 19 · Trang chủ gia sư: teaching overview, new requests and today's lessons. */
 public final class TutorHomeFragment extends ScreenFragment {
+    @Override protected Object dataSnapshot(){
+        com.example.tmdt.AgreementState agreement=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
+        return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,agreement.agreementLoaded(),agreement.signed(),agreement.outdated());
+    }
     private boolean allRequests;
     private LinearLayout requests;
     private TextView requestsToggle;
@@ -30,7 +34,7 @@ public final class TutorHomeFragment extends ScreenFragment {
     @Override public void onViewCreated(@androidx.annotation.NonNull View view, android.os.Bundle state){
         super.onViewCreated(view,state);
         // UC23: thẻ nhắc ký hợp đồng cộng tác cập nhật khi dữ liệu hợp đồng tải xong.
-        ((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements.changes().observe(getViewLifecycleOwner(),ignored->refresh());
+        ((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements.changes().observe(getViewLifecycleOwner(),ignored->refreshData());
     }
 
     @Override protected View build() {
@@ -85,7 +89,6 @@ public final class TutorHomeFragment extends ScreenFragment {
         sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session)); ui.space(body,10); }
-        if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
         return root;
     }
 
@@ -148,7 +151,6 @@ public final class TutorHomeFragment extends ScreenFragment {
                 ui.space(requests,10); shown++;
             }
         }
-        if (shown == 0) { ui.add(requests,ui.note(R.drawable.ic_info,"Chưa có yêu cầu mới.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(requests,10); }
     }
 
     private View requestCard(String userId, String name, String title, String when, String status, String action, Runnable click) {

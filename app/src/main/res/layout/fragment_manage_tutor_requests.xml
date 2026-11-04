@@ -132,7 +132,7 @@
                 app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/request_manage_border"
+                app:strokeColor="@color/app_border"
                 app:strokeWidth="1dp">
 
                 <LinearLayout

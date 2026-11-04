@@ -57,14 +57,6 @@ public final class ContractsFragment extends Fragment {
         if (!contracts.loadError().isEmpty()) { ListScreen.state(binding, contracts.loadError(), getString(R.string.chat_retry), contracts::retry); return; }
         List<Contract> items = new ArrayList<>();
         for (Contract c : contracts.contracts()) if (c.closed() == (tab == 1)) items.add(c);
-        if (items.isEmpty()) {
-            boolean tutor = ((MainActivity) requireActivity()).exchange.isTutor();
-            ListScreen.state(binding, tab == 1 ? "Không có hợp đồng đã đóng."
-                            : tutor ? "Chưa có hợp đồng nào. Sau khi bạn chấp nhận một yêu cầu đặt lịch, hãy gửi hợp đồng dạy cho học viên từ thông báo hoặc chi tiết buổi dạy."
-                            : "Chưa có hợp đồng nào. Đặt lịch học với gia sư; sau khi gia sư chấp nhận, hợp đồng dạy sẽ được gửi tới đây để bạn xác nhận.",
-                    tab == 0 && !tutor ? "Tìm gia sư" : null, () -> ((MainActivity) requireActivity()).show("home"));
-            return;
-        }
         ListScreen.state(binding, null, null, null);
         adapter.submit(items);
     }

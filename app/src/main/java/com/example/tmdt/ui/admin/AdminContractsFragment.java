@@ -16,16 +16,14 @@ public final class AdminContractsFragment extends AdminScreen {
             if(tutor==null)tutor=state().users.get(state().selectedTutor);
             LinearLayout identity=ui.row();identity.addView(ui.avatar(state().selectedTutor,tutor==null?"Gia sư":tutor.text("ho_ten"),44));ui.gap(identity,10);
             ui.weight(identity,ui.text(tutor==null?"Gia sư":tutor.text("ho_ten"),20,Ui.INK,true));ui.add(body,identity);ui.space(body,10);
-            ui.add(body,ui.text("Các hợp đồng đã được gia sư và học sinh ký xác nhận.",14,Ui.MUTED,false));ui.space(body,16);
             ui.add(body,ui.link("‹  Chọn gia sư khác",14,()->{scrollToTop();state().selectTutor("");refresh();}));ui.space(body,16);
             for(PaymentState.Row c:state().tutorContracts.values())contractCard(body,c);
             if(state().loadingTutorContracts)ui.add(body,ui.text("Đang tải hợp đồng…",14,Ui.BLUE,false));
-            else if(state().tutorContracts.isEmpty()&&state().error.isEmpty())ui.add(body,ui.note(R.drawable.ic_file,"Gia sư chưa có hợp đồng được cả hai bên ký.",Ui.PALE,Ui.BLUE,Ui.INK));
             if(state().moreTutorContracts)action(body,"Tải thêm hợp đồng đã ký",Ui.OUTLINE,()->state().moreTutorContracts());
             return root;
         }
         ui.section(body,"Hợp đồng theo gia sư",22);ui.space(body,6);
-        ui.add(body,ui.text("Chọn gia sư để xem các hợp đồng đã ký.",14,Ui.MUTED,false));ui.space(body,16);
+        ui.space(body,10);
         LinearLayout results=ui.column();
         search(body,"Tìm tên, email hoặc số điện thoại gia sư",state().tutorQuery,value->{state().tutorQuery=value;renderTutors(results);});
         ui.add(body,results);renderTutors(results);return root;
@@ -42,6 +40,6 @@ public final class AdminContractsFragment extends AdminScreen {
         }
         if(count==0)ui.add(body,ui.text(state().loadingTutors?"Đang tải gia sư…":"Chưa có gia sư phù hợp trong danh sách đã tải.",14,Ui.MUTED,false));
         if(state().moreTutors)action(body,"Tải thêm gia sư",Ui.OUTLINE,()->state().moreTutors());
-        ui.space(body,8);ui.add(body,ui.text(count+" gia sư trong danh sách đã tải"+(state().moreTutors?" · Tải thêm để tìm tiếp.":""),12,Ui.MUTED,false));
+        ui.space(body,8);ui.add(body,ui.text(count+" gia sư",12,Ui.MUTED,false));
     }
 }

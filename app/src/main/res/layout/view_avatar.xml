@@ -11,7 +11,7 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:background="@drawable/bg_avatar"
-        android:textColor="#0866F5"
+        android:textColor="@color/theme_text_0866f5"
         android:textSize="36sp"
         android:fontFamily="sans-serif-medium" />
     <ImageView

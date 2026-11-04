@@ -57,7 +57,6 @@ public final class TrialFragment extends ScreenFragment {
         LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(9),ui.dp(13),ui.dp(9)); ui.cardSurface(price,Ui.PALE,0);
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,18); price.addView(ui.text(Tutor.money(Lesson.TRIAL_PRICE),21,Ui.INK,true));
         ui.add(body,price); ui.space(body,6);
-        ui.add(body,ui.note(R.drawable.ic_info,"Buổi học thử cần được gia sư xác nhận.",Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,6);
         ui.addAction(body,ui.action("Gửi yêu cầu học thử",R.drawable.ic_send,Ui.PRIMARY,this::submit),51);
         render();
         return root;

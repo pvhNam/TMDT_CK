@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white">
+    android:background="@color/app_surface">
 
     <!-- Top Navigation Toolbar -->
     <LinearLayout
@@ -25,7 +25,7 @@
             android:src="@drawable/ic_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
-            app:tint="#06164D" />
+            app:tint="@color/theme_text_06164d" />
 
         <TextView
             android:id="@+id/tv_title"
@@ -34,7 +34,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="@string/tutor_profile_title"
-            android:textColor="#06164D"
+            android:textColor="@color/theme_text_06164d"
             android:textSize="18sp"
             android:fontFamily="sans-serif-medium" />
 
@@ -68,7 +68,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/tutor_profile_not_found"
-            android:textColor="#46638C"
+            android:textColor="@color/theme_text_46638c"
             android:textSize="16sp"
             android:gravity="center"
             android:lineSpacingExtra="4dp" />
@@ -111,7 +111,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="@dimen/soft_card_radius"
                     app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="@color/theme_fill_ffffff"
                     app:strokeColor="@color/soft_border"
                     app:strokeWidth="1dp">
 
@@ -139,7 +139,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="19sp"
-                                android:textColor="#06164D"
+                                android:textColor="@color/theme_text_06164d"
                                 android:fontFamily="sans-serif-medium"
                                 tools:text="Nguyễn Minh Anh" />
 
@@ -148,7 +148,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/tutor_profile_verified_badge"
-                                android:textColor="#009D70"
+                                android:textColor="@color/theme_text_009d70"
                                 android:textSize="12sp"
                                 android:fontFamily="sans-serif-medium"
                                 android:background="@drawable/bg_verified_pill"
@@ -163,7 +163,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="13sp"
-                                android:textColor="#46638C"
+                                android:textColor="@color/theme_text_46638c"
                                 android:layout_marginTop="6dp"
                                 tools:text="Đại học Sư phạm · Toán học" />
 
@@ -172,7 +172,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="13sp"
-                                android:textColor="#46638C"
+                                android:textColor="@color/theme_text_46638c"
                                 android:layout_marginTop="3dp"
                                 tools:text="Khu vực: TP. Hồ Chí Minh" />
                         </LinearLayout>
@@ -213,7 +213,7 @@
                             android:layout_height="wrap_content"
                             android:text="—"
                             android:textSize="17sp"
-                            android:textColor="#06164D"
+                            android:textColor="@color/theme_text_06164d"
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="4dp" />
 
@@ -222,7 +222,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_stat_rating"
                             android:textSize="12sp"
-                            android:textColor="#46638C"
+                            android:textColor="@color/theme_text_46638c"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
@@ -244,7 +244,7 @@
                             android:layout_height="22dp"
                             android:src="@drawable/ic_cap"
                             android:contentDescription="@null"
-                            app:tint="#006BFF" />
+                            app:tint="@color/theme_text_006bff" />
 
                         <TextView
                             android:id="@+id/tv_stat_experience"
@@ -252,7 +252,7 @@
                             android:layout_height="wrap_content"
                             android:text=""
                             android:textSize="17sp"
-                            android:textColor="#06164D"
+                            android:textColor="@color/theme_text_06164d"
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="4dp" />
 
@@ -261,7 +261,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_stat_experience"
                             android:textSize="12sp"
-                            android:textColor="#46638C"
+                            android:textColor="@color/theme_text_46638c"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
@@ -283,7 +283,7 @@
                             android:layout_height="20dp"
                             android:src="@drawable/ic_users"
                             android:contentDescription="@null"
-                            app:tint="#006BFF" />
+                            app:tint="@color/theme_text_006bff" />
 
                         <TextView
                             android:id="@+id/tv_stat_students"
@@ -291,7 +291,7 @@
                             android:layout_height="wrap_content"
                             android:text="—"
                             android:textSize="17sp"
-                            android:textColor="#06164D"
+                            android:textColor="@color/theme_text_06164d"
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="4dp" />
 
@@ -300,7 +300,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_stat_students"
                             android:textSize="12sp"
-                            android:textColor="#46638C"
+                            android:textColor="@color/theme_text_46638c"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -317,7 +317,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="@dimen/soft_field_radius"
                     app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="@color/theme_fill_ffffff"
                     app:strokeColor="@color/soft_border"
                     app:strokeWidth="1dp">
 
@@ -327,7 +327,7 @@
                         android:layout_height="wrap_content"
                         android:padding="16dp"
                         android:textSize="15sp"
-                        android:textColor="#46638C"
+                        android:textColor="@color/theme_text_46638c"
                         android:lineSpacingExtra="4dp"
                         tools:text="Hướng dẫn dễ hiểu, bám sát mục tiêu và năng lực của học viên." />
                 </com.google.android.material.card.MaterialCardView>
@@ -366,7 +366,7 @@
                                 android:layout_width="22dp"
                                 android:layout_height="22dp"
                                 android:src="@drawable/ic_laptop"
-                                app:tint="#006BFF"
+                                app:tint="@color/theme_text_006bff"
                                 android:contentDescription="@null" />
 
                             <TextView
@@ -375,7 +375,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/tutor_profile_mode_supported"
                                 android:textSize="11sp"
-                                android:textColor="#009D70"
+                                android:textColor="@color/theme_text_009d70"
                                 android:background="@drawable/bg_verified_pill"
                                 android:paddingStart="7dp"
                                 android:paddingEnd="7dp"
@@ -390,7 +390,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_mode_online"
                             android:textSize="15sp"
-                            android:textColor="#06164D"
+                            android:textColor="@color/theme_text_06164d"
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="8dp" />
 
@@ -399,7 +399,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_mode_online_desc"
                             android:textSize="12sp"
-                            android:textColor="#46638C"
+                            android:textColor="@color/theme_text_46638c"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
@@ -425,7 +425,7 @@
                                 android:layout_width="22dp"
                                 android:layout_height="22dp"
                                 android:src="@drawable/ic_home"
-                                app:tint="#006BFF"
+                                app:tint="@color/theme_text_006bff"
                                 android:contentDescription="@null" />
 
                             <TextView
@@ -434,7 +434,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/tutor_profile_mode_supported"
                                 android:textSize="11sp"
-                                android:textColor="#009D70"
+                                android:textColor="@color/theme_text_009d70"
                                 android:background="@drawable/bg_verified_pill"
                                 android:paddingStart="7dp"
                                 android:paddingEnd="7dp"
@@ -449,7 +449,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_mode_home"
                             android:textSize="15sp"
-                            android:textColor="#06164D"
+                            android:textColor="@color/theme_text_06164d"
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="8dp" />
 
@@ -458,7 +458,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/tutor_profile_mode_home_desc"
                             android:textSize="12sp"
-                            android:textColor="#46638C"
+                            android:textColor="@color/theme_text_46638c"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -481,7 +481,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/tutor_profile_no_offerings"
-                    android:textColor="#46638C"
+                    android:textColor="@color/theme_text_46638c"
                     android:textSize="14sp"
                     android:padding="12dp"
                     android:visibility="gone" />
@@ -498,7 +498,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/tutor_profile_no_reviews"
-                    android:textColor="#46638C"
+                    android:textColor="@color/theme_text_46638c"
                     android:textSize="14sp"
                     android:padding="16dp"
                     android:background="@drawable/bg_account_note"
@@ -525,7 +525,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:orientation="horizontal"
-            android:background="#FFFFFF"
+            android:background="@color/theme_fill_ffffff"
             android:elevation="8dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -539,10 +539,10 @@
                 android:layout_height="50dp"
                 android:layout_weight="1"
                 android:text="@string/tutor_profile_action_message"
-                android:textColor="#006BFF"
+                android:textColor="@color/theme_text_006bff"
                 android:textSize="15sp"
                 app:icon="@drawable/ic_chat"
-                app:iconTint="#006BFF"
+                app:iconTint="@color/theme_text_006bff"
                 app:iconSize="20dp"
                 app:strokeColor="#006BFF"
                 app:strokeWidth="1.5dp"

@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/pull_refresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.example.tmdt.ui.home.HomeFragment">
+    <ScrollView android:id="@+id/home_scroll" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -65,16 +67,16 @@
                 android:insetBottom="0dp"
                 android:contentDescription="@string/search_button"
                 android:tooltipText="@string/search_button"
-                app:backgroundTint="#F5F8FF"
+                app:backgroundTint="@color/theme_fill_f5f8ff"
                 app:cornerRadius="18dp"
-                app:strokeColor="#E1EAFA"
+                app:strokeColor="@color/theme_border_e1eafa"
                 app:strokeWidth="1dp"
                 app:icon="@drawable/search"
                 app:iconSize="26dp"
                 app:iconTint="@null"
                 app:iconPadding="0dp"
                 app:iconGravity="textStart"
-                app:rippleColor="#DCEBFF" />
+                app:rippleColor="@color/theme_fill_dcebff" />
         </LinearLayout>
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -87,31 +89,6 @@
                 app:singleLine="true"
                 app:singleSelection="true" />
         </HorizontalScrollView>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_pale"
-            android:padding="20dp"
-            android:layout_marginTop="16dp"
-            android:gravity="center_vertical">
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    style="@style/SectionTitle"
-                    android:text="@string/banner_heading" />
-                <TextView
-                    style="@style/BodyText"
-                    android:text="@string/banner_caption" />
-            </LinearLayout>
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/ic_cap"
-                android:importantForAccessibility="no" />
-        </LinearLayout>
         <LinearLayout
             android:id="@+id/group_classes"
             android:layout_width="match_parent"
@@ -129,7 +106,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_users"
-                app:tint="#0866F5"
+                app:tint="@color/theme_text_0866f5"
                 android:importantForAccessibility="no" />
             <LinearLayout
                 android:layout_width="0dp"
@@ -145,14 +122,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textSize="13sp"
-                    android:textColor="#4D6287"
+                    android:textColor="@color/theme_text_4d6287"
                     android:text="@string/group_classes_caption" />
             </LinearLayout>
             <ImageView
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:src="@drawable/ic_right"
-                app:tint="#081F50"
+                app:tint="@color/theme_text_081f50"
                 android:importantForAccessibility="no" />
         </LinearLayout>
         <com.google.android.material.button.MaterialButton
@@ -210,3 +187,4 @@
             android:orientation="vertical" />
     </LinearLayout>
 </ScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -24,19 +24,19 @@ public final class FavoritesFragment extends AccountFragmentBase {
     @Override protected void renderState(){render();}
     private void render(){
         if(binding==null||catalog==null)return;
-        binding.list.removeAllViews();
         if(catalog.loading()){binding.count.setText("Đang tải…");binding.empty.setVisibility(View.GONE);return;}
+        com.example.tmdt.ui.common.StableBindings<ItemFavoriteBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.list);rows.begin();
         List<CatalogState.Teacher> shown=new ArrayList<>();
         for(String id:FavoriteTutors.ids(requireContext())){
             CatalogState.Teacher teacher=catalog.teacher(id);
             if(teacher!=null&&!teacher.offerings.isEmpty())shown.add(teacher);
         }
         binding.count.setText(shown.size()+" gia sư đã lưu");
-        binding.empty.setVisibility(shown.isEmpty()?View.VISIBLE:View.GONE);
+        binding.empty.setVisibility(View.GONE);
         for(CatalogState.Teacher teacher:shown){
             CatalogState.Offering cheapest=teacher.offerings.get(0);
             for(CatalogState.Offering offering:teacher.offerings)if(offering.price<cheapest.price)cheapest=offering;
-            ItemFavoriteBinding item=ItemFavoriteBinding.inflate(getLayoutInflater(),binding.list,false);
+            ItemFavoriteBinding item=rows.item(teacher.id,()->ItemFavoriteBinding.inflate(getLayoutInflater(),binding.list,false));
             item.name.setText(teacher.name);item.avatar.bind(teacher.id,teacher.name);
             String subject=catalog.subjects().get(cheapest.subjectId);
             item.course.setText((subject==null?"":subject+" · ")+CatalogState.level(cheapest.level));
@@ -44,8 +44,10 @@ public final class FavoritesFragment extends AccountFragmentBase {
             item.heart.setOnClickListener(v->{FavoriteTutors.toggle(requireContext(),teacher.id);render();});
             item.viewProfile.setOnClickListener(v->host().classroom.openTutor(teacher.id,teacher.name,"favorites"));
             item.getRoot().setOnClickListener(v->host().classroom.openTutor(teacher.id,teacher.name,"favorites"));
-            binding.list.addView(item.getRoot());
+            com.example.tmdt.ui.common.ThemeColors.apply(item.getRoot());
+            com.example.tmdt.ui.common.Motion.bindControls(item.getRoot());
         }
+        rows.commit(binding.list);
     }
     @Override public void onDestroyView(){super.onDestroyView();binding=null;}
 }
