@@ -1,30 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp" app:cardCornerRadius="16dp"
-    app:cardBackgroundColor="@color/app_surface" app:strokeColor="@color/theme_border_dde4ef" app:strokeWidth="1dp">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="16dp">
-        <TextView android:id="@+id/request_status" style="@style/FieldLabel"
-            android:textColor="@color/theme_text_236b42" android:textSize="13sp" />
-        <TextView android:id="@+id/request_title" style="@style/ScreenTitle" android:textSize="20sp" />
-        <TextView android:id="@+id/request_subject_level" style="@style/BodyText" android:layout_marginBottom="8dp" />
-        <TextView android:id="@+id/request_budget" style="@style/FieldLabel" />
-        <TextView android:id="@+id/request_schedule" style="@style/BodyText" android:layout_marginBottom="8dp" />
-        <TextView android:id="@+id/request_description" style="@style/BodyText"
-            android:maxLines="3" android:ellipsize="end" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/request_applicants"
-            style="@style/PrimaryButton" android:text="@string/requests_applicants" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-            <com.google.android.material.button.MaterialButton android:id="@+id/edit_request"
-                style="@style/SecondaryButton" android:layout_width="0dp" android:layout_weight="1"
-                android:layout_marginEnd="8dp" android:text="@string/requests_edit" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/close_request"
-                style="@style/SecondaryButton" android:layout_width="0dp" android:layout_weight="1"
-                android:text="@string/requests_close" />
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    app:cardBackgroundColor="@color/app_surface"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/app_border"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="18dp">
+
+        <TextView
+            android:id="@+id/request_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_request_manage_pill"
+            android:fontFamily="sans-serif-medium"
+            android:paddingStart="10dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="5dp"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/request_title"
+            style="@style/ScreenTitle"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:accessibilityHeading="true"
+            android:lineSpacingExtra="2dp"
+            android:textColor="@color/request_manage_ink"
+            android:textSize="19sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/request_subject_level"
+            style="@style/RequestManageBody"
+            android:layout_marginBottom="16dp"
+            android:textSize="13sp" />
+
+        <TextView
+            style="@style/RequestManageLabel"
+            android:text="@string/requests_budget_label" />
+
+        <TextView
+            android:id="@+id/request_budget"
+            style="@style/FieldLabel"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="14dp"
+            android:textColor="@color/request_manage_blue"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="8dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_calendar"
+                app:tint="@color/request_manage_muted" />
+
+            <TextView
+                android:id="@+id/request_schedule"
+                style="@style/RequestManageBody"
+                android:layout_width="0dp"
+                android:layout_weight="1" />
+
         </LinearLayout>
-        <com.google.android.material.button.MaterialButton android:id="@+id/delete_request"
-            style="@style/TextButton" android:text="@string/requests_delete" android:textColor="#B3261E" />
+
+        <TextView
+            android:id="@+id/request_description"
+            style="@style/RequestManageBody"
+            android:layout_marginTop="10dp"
+            android:ellipsize="end"
+            android:maxLines="3"
+            android:textSize="13sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/app_border" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/request_applicants"
+            style="@style/RequestManagePrimary"
+            android:text="@string/requests_applicants"
+            app:icon="@drawable/ic_users"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconSize="18dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/edit_request"
+                style="@style/RequestManageAction"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="@string/requests_edit"
+                app:icon="@drawable/ic_edit"
+                app:iconGravity="textStart"
+                app:iconPadding="6dp"
+                app:iconSize="16dp"
+                app:iconTint="@color/request_manage_ink"
+                app:strokeColor="@color/app_border" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/close_request"
+                style="@style/RequestManageAction"
+                android:layout_width="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/requests_close"
+                app:strokeColor="@color/app_border" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/delete_request"
+                style="@style/RequestManageAction"
+                android:layout_width="48dp"
+                android:layout_marginStart="8dp"
+                android:minWidth="48dp"
+                android:contentDescription="@string/requests_delete"
+                android:tooltipText="@string/requests_delete"
+                android:padding="12dp"
+                app:icon="@drawable/ic_trash"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp"
+                app:iconTint="@color/request_manage_red"
+                app:strokeColor="@color/app_border" />
+
+        </LinearLayout>
+
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

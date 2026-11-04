@@ -42,4 +42,16 @@
     <string name="requests_reload">Tải lại tin</string>
     <string name="requests_reload_title">Tải lại nội dung tin?</string>
     <string name="requests_reload_confirm">Các thay đổi chưa lưu trong bản nháp sẽ được bỏ để mở nội dung mới nhất đã tải của tin. Bạn muốn tiếp tục?</string>
+    <string name="requests_dashboard_title">Tin tìm gia sư của bạn</string>
+    <string name="requests_create">Đăng tin tìm gia sư</string>
+    <string name="requests_budget_label">NGÂN SÁCH DỰ KIẾN</string>
+    <string name="requests_tab_count">%1$s (%2$d)</string>
+    <string name="requests_list_open">Tin đang mở</string>
+    <string name="requests_list_closed">Tin đã đóng</string>
+    <string name="requests_caption_open">Theo dõi ứng tuyển và cập nhật nhu cầu học.</string>
+    <string name="requests_caption_closed">Xem lại tin và những hồ sơ đã ứng tuyển.</string>
+    <string name="requests_empty_open_title">Bắt đầu tìm gia sư phù hợp</string>
+    <string name="requests_empty_closed_title">Chưa có tin đã đóng</string>
+    <string name="requests_card_budget">%1$s / buổi</string>
+    <string name="requests_card_delete">Xóa tin: %1$s</string>
 </resources>
