@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="request_manage_background">#F5F7FC</color>
+    <color name="request_manage_ink">#142B50</color>
+    <color name="request_manage_muted">#66758D</color>
+    <color name="request_manage_blue">#0866F5</color>
+    <color name="request_manage_border">#E3E9F2</color>
+    <color name="request_manage_pale">#EAF2FF</color>
+    <color name="request_manage_green">#18794E</color>
+    <color name="request_manage_green_pale">#E8F5EE</color>
+    <color name="request_manage_closed">#626F83</color>
+    <color name="request_manage_closed_pale">#EDF0F5</color>
+    <color name="request_manage_red">#B3261E</color>
+
+    <style name="RequestManageLabel" parent="FieldLabel">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/request_manage_muted</item>
+        <item name="android:layout_marginBottom">0dp</item>
+    </style>
+
+    <style name="RequestManageBody" parent="BodyText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/request_manage_muted</item>
+        <item name="android:layout_marginBottom">0dp</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+    </style>
+
+    <style name="RequestManageAction" parent="SecondaryButton">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/request_manage_ink</item>
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">@color/request_manage_border</item>
+        <item name="backgroundTint">@android:color/white</item>
+    </style>
+
+    <style name="RequestManagePrimary" parent="PrimaryButton">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="backgroundTint">@color/request_manage_blue</item>
+    </style>
+
+    <style name="RequestManageTabText" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
