@@ -39,8 +39,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Shared development key: every team member's debug APK has the same Firebase SHA.
+    // This key is intentionally distributed with the project; release uses its own signing setup.
+    signingConfigs {
+        create("teamDebug") {
+            storeFile = rootProject.file("signing/team-debug.keystore")
+            storeType = "JKS"
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
+            signingConfig = signingConfigs.getByName("teamDebug")
             buildConfigField("boolean", "VNPAY_CLIENT_SANDBOX", clientSandbox.toString())
             buildConfigField("String", "VNPAY_TMN_CODE", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_TMN_CODE", "") else ""))
             buildConfigField("String", "VNPAY_HASH_SECRET", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_HASH_SECRET", "") else ""))

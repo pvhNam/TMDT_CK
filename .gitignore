@@ -16,6 +16,13 @@
 local.properties
 /vnpay.properties
 
+# Only the dedicated shared development key is distributed with this project.
+*.keystore
+*.jks
+*.p12
+*.pfx
+!/signing/team-debug.keystore
+
 # Local Firebase Emulator output
 /firebase-debug.log
 /firestore-debug.log
