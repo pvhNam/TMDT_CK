@@ -27,7 +27,7 @@ public final class Lesson {
     /** The student's answer to the last proposal, kept after the proposal itself is cleared so the tutor can see it. */
     public static final String REPLY_ACCEPTED = "DONG_Y", REPLY_KEPT = "GIU_LICH";
     public String reply = "";
-    public int proposedHour = -1;
+    public int proposedHour = -1, proposedMinute;
 
     public Lesson(String id, String tutorId, String tutorName, String studentId, String studentName, String title, String date, int hour,
                   int minutes, String mode, String goal, String address, boolean trial, int price, String status) {
@@ -68,8 +68,8 @@ public final class Lesson {
     }
     public boolean needsConfirmation() { return confirmed() && ended() && !finished; }
 
-    public boolean overlaps(String otherDate, int otherHour, int otherMinutes) {
-        int begin = hour*60+minute, finish = begin+minutes, otherBegin = otherHour*60;
+    public boolean overlaps(String otherDate, int otherHour, int otherMinute, int otherMinutes) {
+        int begin = hour*60+minute, finish = begin+minutes, otherBegin = otherHour*60+otherMinute;
         return date.equals(otherDate) && begin < otherBegin+otherMinutes && otherBegin < finish;
     }
 
@@ -79,7 +79,7 @@ public final class Lesson {
     public static String range(int hour, int minute, int minutes) {
         LocalTime start = LocalTime.of(hour,minute); return start.format(TIME)+"–"+start.plusMinutes(minutes).format(TIME);
     }
-    public String proposalLabel() { return LocalDate.parse(proposedDate).format(DATE)+" · "+range(proposedHour,minutes); }
+    public String proposalLabel() { return LocalDate.parse(proposedDate).format(DATE)+" · "+range(proposedHour,proposedMinute,minutes); }
     public int total() { return price; }
     public String statusLabel() {
         if (CANCELLED.equals(status)) return "Đã hủy";
@@ -95,7 +95,7 @@ public final class Lesson {
         data.put("tieu_de",title); data.put("bat_dau",instant(date,hour,minute)); data.put("thoi_luong",minutes); data.put("hinh_thuc",mode);
         data.put("dia_chi",address); data.put("muc_tieu",goal); data.put("hoc_thu",trial); data.put("hoc_phi",price); data.put("trang_thai",status);
         data.put("da_hoan_thanh",finished); data.put("noi_dung",content); data.put("ly_do_huy",cancelReason);
-        data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour):null); data.put("doi_lich_ly_do",proposalReason);
+        data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour,proposedMinute):null); data.put("doi_lich_ly_do",proposalReason);
         data.put("doi_lich_phan_hoi",reply);
         data.put("link_phong_hoc",roomLink);
         return data;
@@ -114,7 +114,7 @@ public final class Lesson {
         lesson.content = text(data,"noi_dung"); lesson.cancelReason = text(data,"ly_do_huy");
         LocalDateTime proposed = time(data.get("doi_lich_bat_dau"));
         if (proposed != null) {
-            lesson.proposedDate = proposed.toLocalDate().toString(); lesson.proposedHour = proposed.getHour();
+            lesson.proposedDate = proposed.toLocalDate().toString(); lesson.proposedHour = proposed.getHour(); lesson.proposedMinute = proposed.getMinute();
             lesson.proposalReason = text(data,"doi_lich_ly_do");
         }
         return lesson;

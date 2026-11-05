@@ -18,7 +18,7 @@ import com.example.tmdt.Tutor;
 public final class TrialFragment extends ScreenFragment {
     private Tutor tutor;
     private LocalDate date;
-    private int hour = 19, minutes = 30;
+    private int hour = 19, minute, minutes = 30;
     private TextView dateValue;
     private EditText goal;
 
@@ -27,7 +27,7 @@ public final class TrialFragment extends ScreenFragment {
         if (date == null) {
             // Suggest the first day that is free at the default hour.
             date = LocalDate.now().plusDays(1);
-            while (classroom.store.conflict(tutor.id,classroom.me(),date.toString(),hour,minutes,"") != null) date = date.plusDays(1);
+            while (classroom.store.conflict(tutor.id,classroom.me(),date.toString(),hour,minute,minutes,"") != null) date = date.plusDays(1);
         }
         LinearLayout root = ui.column(); ui.header(root,"Đặt buổi học thử",classroom::back,null);
         LinearLayout body = ui.page(root);
@@ -47,8 +47,8 @@ public final class TrialFragment extends ScreenFragment {
 
         ui.label(body,"Chọn ngày học"); dateValue = ui.value("");
         ui.add(body,ui.picker(R.drawable.ic_calendar,dateValue,this::pickDate)); ui.space(body,14);
-        TimeRange time = new TimeRange(ui,7,23,30,45,15,hour,minutes,(h,mi,m)->{hour=h;minutes=m;});
-        hour = time.hour(); minutes = time.minutes();
+        TimeRange time = new TimeRange(ui,7,23,30,45,15,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;});
+        hour = time.hour(); minute = time.minute(); minutes = time.minutes();
         ui.add(body,time.view("Chọn giờ học thử")); ui.space(body,14);
         ui.label(body,"Mục tiêu buổi học thử"); goal = ui.entry("Bạn muốn trao đổi điều gì?",false);
         goal.setText("Làm quen phương pháp giảng dạy"); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
@@ -71,11 +71,11 @@ public final class TrialFragment extends ScreenFragment {
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000); dialog.show();
     }
     private void submit() {
-        if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
+        if (!date.atTime(hour,minute).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
         String objective = goal.getText().toString().trim();
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu buổi học thử"); goal.requestFocus(); return; }
         String used = classroom.store.trialError(tutor.id,classroom.me());
         if (used != null) { classroom.dialog("Đã có buổi học thử",used); return; }
-        classroom.saveRequest(classroom.request(tutor,"Học thử "+tutor.subject,date,hour,minutes,"Trực tuyến",objective,"",true,Lesson.TRIAL_PRICE));
+        classroom.saveRequest(classroom.request(tutor,"Học thử "+tutor.subject,date,hour,minute,minutes,"Trực tuyến",objective,"",true,Lesson.TRIAL_PRICE));
     }
 }

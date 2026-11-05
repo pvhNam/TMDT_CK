@@ -45,14 +45,14 @@ public final class Store {
     // Lessons ---------------------------------------------------------------------------------
 
     /** Returns a message when the slot overlaps the student's own lessons and classes or the tutor's confirmed lessons and classes. */
-    public String conflict(String tutorId, String student, String date, int hour, int minutes, String ignoreId) {
+    public String conflict(String tutorId, String student, String date, int hour, int minute, int minutes, String ignoreId) {
         for (Lesson other : lessons) {
-            if (other.id.equals(ignoreId) || !other.active() || !other.overlaps(date,hour,minutes)) continue;
+            if (other.id.equals(ignoreId) || !other.active() || !other.overlaps(date,hour,minute,minutes)) continue;
             if (other.studentId.equals(student)) return "Bạn đã có buổi học hoặc yêu cầu trong khung giờ này. Hãy chọn giờ khác.";
             if (other.tutorId.equals(tutorId) && other.confirmed()) return "Gia sư đã có lịch dạy trong khung giờ này. Hãy chọn giờ khác.";
         }
         for (GroupClass item : classes) {
-            if (!item.active() || !item.meetsAt(date,hour*60,minutes)) continue;
+            if (!item.active() || !item.meetsAt(date,hour*60+minute,minutes)) continue;
             if (item.attends(student)) return "Khung giờ này trùng với lớp nhóm \""+item.title+"\" của bạn. Hãy chọn giờ khác.";
             if (item.tutorId.equals(tutorId)) return "Gia sư đã có lịch dạy lớp nhóm trong khung giờ này. Hãy chọn giờ khác.";
         }
@@ -66,7 +66,7 @@ public final class Store {
         if (lesson.hour*60+lesson.minute+lesson.minutes > Lesson.DAY) return "Buổi học cần kết thúc trong ngày.";
         if (lesson.price > Lesson.MAX_PRICE) return "Học phí một buổi vượt quá "+Tutor.money(Lesson.MAX_PRICE)+". Hãy chọn thời lượng ngắn hơn.";
         if (lesson.trial) { String used = trialError(lesson.tutorId,lesson.studentId); if (used != null) return used; }
-        String clash = conflict(lesson.tutorId,lesson.studentId,lesson.date,lesson.hour,lesson.minutes,"");
+        String clash = conflict(lesson.tutorId,lesson.studentId,lesson.date,lesson.hour,lesson.minute,lesson.minutes,"");
         if (clash != null) return clash;
         lessons.add(lesson); remote.save(lesson); return null;
     }
@@ -75,7 +75,7 @@ public final class Store {
         if (!lesson.pending()) return "Yêu cầu này đã được xử lý.";
         if (lesson.started()) return "Thời gian học đã qua, không thể chấp nhận.";
         for (Lesson other : lessons)
-            if (other != lesson && other.tutorId.equals(lesson.tutorId) && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minutes))
+            if (other != lesson && other.tutorId.equals(lesson.tutorId) && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minute,lesson.minutes))
                 return "Khung giờ này trùng với một buổi dạy đã xác nhận.";
         for (GroupClass item : classes)
             if (item.tutorId.equals(lesson.tutorId) && item.active() && item.meetsAt(lesson.date,lesson.hour*60+lesson.minute,lesson.minutes))
@@ -87,30 +87,30 @@ public final class Store {
         lesson.status = Lesson.REJECTED; remote.save(lesson); return null;
     }
 
-    public String propose(Lesson lesson, LocalDate date, int hour, String reason) {
+    public String propose(Lesson lesson, LocalDate date, int hour, int minute, String reason) {
         if (!lesson.confirmed() || lesson.started()) return "Chỉ đề nghị đổi lịch cho buổi học đã xác nhận và chưa diễn ra.";
         if (lesson.proposal()) return "Buổi học này đang chờ học viên phản hồi một đề nghị khác.";
-        if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất cần ở trong tương lai.";
-        if (date.toString().equals(lesson.date) && hour == lesson.hour) return "Thời gian đề xuất đang trùng với lịch hiện tại.";
-        if (hour*60+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
-        String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, lesson.minutes, lesson.id);
+        if (!date.atTime(hour,minute).isAfter(LocalDateTime.now())) return "Thời gian đề xuất cần ở trong tương lai.";
+        if (date.toString().equals(lesson.date) && hour == lesson.hour && minute == lesson.minute) return "Thời gian đề xuất đang trùng với lịch hiện tại.";
+        if (hour*60+minute+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
+        String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, minute, lesson.minutes, lesson.id);
         if (clash != null) return clash;
-        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposalReason = reason; lesson.reply = ""; remote.save(lesson); return null;
+        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposedMinute = minute; lesson.proposalReason = reason; lesson.reply = ""; remote.save(lesson); return null;
     }
     /** The lesson only moves after the student agrees and the proposed slot is still free. */
     public String acceptProposal(Lesson lesson) {
         if (!lesson.proposal()) return "Đề nghị đổi lịch không còn hiệu lực.";
-        if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
-        String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.minutes, lesson.id);
+        if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,lesson.proposedMinute).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
+        String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.proposedMinute, lesson.minutes, lesson.id);
         if (clash != null) return "Khung giờ đề xuất không còn trống. Lịch hiện tại được giữ nguyên.";
-        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = 0; lesson.reply = Lesson.REPLY_ACCEPTED; clearProposal(lesson); return null;
+        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = lesson.proposedMinute; lesson.reply = Lesson.REPLY_ACCEPTED; clearProposal(lesson); return null;
     }
     /** The student keeps the current slot; the answer stays on the lesson so the tutor learns about it. */
     public String keepSchedule(Lesson lesson) {
         if (!lesson.proposal()) return "Đề nghị đổi lịch không còn hiệu lực.";
         lesson.reply = Lesson.REPLY_KEPT; clearProposal(lesson); return null;
     }
-    public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = ""; remote.save(lesson); }
+    public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposedMinute = 0; lesson.proposalReason = ""; remote.save(lesson); }
     public String setRoomLink(Lesson lesson, String link) {
         if (!lesson.confirmed() || lesson.ended()) return "Chỉ gắn link cho buổi học đã xác nhận và chưa kết thúc.";
         if (!lesson.online()) return "Buổi học tại nhà không cần link phòng học.";
@@ -134,7 +134,7 @@ public final class Store {
     public String cancel(Lesson lesson, String reason) {
         if (!lesson.active()) return "Buổi học này không còn ở trạng thái có thể hủy.";
         if (lesson.started()) return "Buổi học đã bắt đầu hoặc đã diễn ra nên không thể hủy.";
-        lesson.status = Lesson.CANCELLED; lesson.cancelReason = reason; lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = "";
+        lesson.status = Lesson.CANCELLED; lesson.cancelReason = reason; lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposedMinute = 0; lesson.proposalReason ="";
         remote.save(lesson); return null;
     }
 
