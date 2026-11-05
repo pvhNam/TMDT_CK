@@ -5,7 +5,9 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
@@ -16,6 +18,9 @@ import com.example.tmdt.Tutor;
 
 /** Gợi ý ghép nhóm: students who posted tutor requests for the same subject and level, so the tutor opens one class for them. */
 public final class GroupMatchFragment extends ScreenFragment {
+    /** Students shown before "Xem thêm"; groups opened by the tutor stay open when new data arrives. */
+    private static final int SHOWN = 3;
+    private final Set<String> expanded = new HashSet<>();
 
     @Override protected View build() {
         LinearLayout root = ui.column(); ui.header(root,"Gợi ý ghép nhóm",classroom::back,null);
@@ -49,13 +54,24 @@ public final class GroupMatchFragment extends ScreenFragment {
         ui.add(card,ui.fact(R.drawable.ic_calendar,schedule.isEmpty()?"Lịch mỗi bạn một khác, xem bên dưới":"Hay rảnh: "+schedule,18,15,Ui.INK,false));
         ui.space(card,10); ui.line(card); ui.space(card,10);
 
-        for (int i = 0; i < group.requests.size(); i++) {
-            if (i > 0) ui.space(card,12);
-            ui.add(card,student(group.requests.get(i)));
-        }
+        LinearLayout people = ui.column(); ui.add(card,people); students(people,group);
         ui.space(card,14);
         ui.addAction(card,ui.action("Mở lớp nhóm",0,Ui.PRIMARY,()->classroom.openDraft(group)),44);
         return card;
+    }
+
+    private void students(LinearLayout people, GroupMatch.Group group) {
+        people.removeAllViews();
+        String key = group.subject+"|"+group.level+"|"+group.requests.get(0).id;
+        boolean open = expanded.contains(key); int hidden = group.size()-SHOWN;
+        int shown = open || hidden <= 0 ? group.size() : SHOWN;
+        for (int i = 0; i < shown; i++) { if (i > 0) ui.space(people,12); ui.add(people,student(group.requests.get(i))); }
+        if (hidden <= 0) return;
+        TextView more = ui.link(open?"Thu gọn ⌃":"Xem thêm "+hidden+" học viên ⌄",14,()->{
+            if (!expanded.remove(key)) expanded.add(key);
+            com.example.tmdt.ui.common.Motion.change((android.view.ViewGroup) people.getParent()); students(people,group);
+        });
+        more.setGravity(Gravity.CENTER); ui.add(people,more);
     }
 
     private View student(GroupMatch.Request request) {
