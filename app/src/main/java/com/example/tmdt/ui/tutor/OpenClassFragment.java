@@ -22,7 +22,6 @@ import com.example.tmdt.Tutor;
 
 /** Screen 34 · Mở lớp nhóm (UC16), also used to edit an open class (UC17). */
 public final class OpenClassFragment extends ScreenFragment {
-    private static final String[] SUBJECTS = {"Toán","Tiếng Anh","Vật lý","Hóa học"};
     private static final String[] MODES = {"Trực tuyến","Tại nhà"};
     private static final String[] WEEKDAYS = {"T2","T3","T4","T5","T6","T7","CN"};
     private static final int FIRST_HOUR = 7, LAST_END = 23;
@@ -35,8 +34,8 @@ public final class OpenClassFragment extends ScreenFragment {
     private int[] days = {6};
     private LocalDate start;
     private EditText name, price, address, description;
-    private TextView capacityValue, sessionsValue, startHint, counter;
-    private LinearLayout subjects, modes, addressField, weekdays, dates;
+    private TextView subjectValue, capacityValue, sessionsValue, startHint, counter;
+    private LinearLayout modes, addressField, weekdays, dates;
     private TimeRange time;
 
     /** A new class starts from the defaults or from a group of students; an edited one (UC17) from its saved values. */
@@ -67,7 +66,8 @@ public final class OpenClassFragment extends ScreenFragment {
         LinearLayout info = group(body,"Thông tin lớp");
         ui.label(info,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
         name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(60)}); ui.add(info,name); ui.space(info,12);
-        ui.label(info,"Môn học *"); subjects = ui.row(); ui.add(info,subjects); ui.space(info,12);
+        ui.label(info,"Môn học *"); subjectValue = ui.value(subject);
+        ui.add(info,ui.picker(R.drawable.ic_field_note,subjectValue,this::pickSubject)); ui.space(info,12);
         ui.label(info,"Mô tả lớp *"); description = ui.entry("Nội dung, đối tượng và cách học của lớp",true);
         description.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)}); ui.add(info,description);
         counter = ui.text("",12,Ui.MUTED,false); counter.setGravity(Gravity.END); counter.setPadding(0,ui.dp(4),0,0); ui.add(info,counter);
@@ -128,12 +128,19 @@ public final class OpenClassFragment extends ScreenFragment {
         return root;
     }
 
+    /** Every subject in the admin's list, after the four usual ones; the class's own subject is always offered. */
+    private void pickSubject() {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>(java.util.Arrays.asList(GroupMatch.SUBJECTS));
+        for (String value : classroom.subjects()) names.add(GroupMatch.subject(value));
+        names.add(subject); names.remove("");
+        String[] items = names.toArray(new String[0]);
+        classroom.ui.dialog().setTitle("Chọn môn học")
+                .setSingleChoiceItems(items,java.util.Arrays.asList(items).indexOf(subject),(dialog,which)->{subject=items[which];render();dialog.dismiss();})
+                .setNegativeButton("Đóng",null).show();
+    }
+
     private void render() {
-        subjects.removeAllViews();
-        for (int i = 0; i < SUBJECTS.length; i++) {
-            String value = SUBJECTS[i]; if (i > 0) ui.gap(subjects,6);
-            TextView chip = ui.choice(value,value.equals(subject),()->{subject=value;render();}); chip.setTextSize(14); ui.weight(subjects,chip);
-        }
+        subjectValue.setText(subject);
         modes.removeAllViews();
         ui.weight(modes,ui.option(MODES[0],R.drawable.ic_laptop,mode.equals(MODES[0]),()->{mode=MODES[0];render();})); ui.gap(modes,10);
         ui.weight(modes,ui.option(MODES[1],R.drawable.ic_home_soft,mode.equals(MODES[1]),()->{mode=MODES[1];render();}));
