@@ -231,6 +231,20 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
+            <!-- UC27: báo cáo vi phạm đã gửi (màn 48), gửi báo cáo mới (màn 47) -->
+            <LinearLayout android:id="@+id/row_reports" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_alert" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Báo cáo vi phạm của tôi" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
+            <!-- UC29: quản trị viên xử lý báo cáo vi phạm -->
+            <LinearLayout android:id="@+id/row_report_admin" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
+                <TextView android:id="@+id/report_admin_label" style="@style/ProfileRowLabel" android:text="Xử lý báo cáo vi phạm" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/report_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
             <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
