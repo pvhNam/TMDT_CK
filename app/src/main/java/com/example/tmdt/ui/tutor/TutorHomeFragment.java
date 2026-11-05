@@ -15,6 +15,7 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Lesson;
 import com.example.tmdt.Tutor;
 
@@ -80,7 +81,8 @@ public final class TutorHomeFragment extends ScreenFragment {
         View searchRequests=ui.action(getString(R.string.request_search_title),R.drawable.ic_field_note,Ui.PRIMARY,
                 ()->((com.example.tmdt.MainActivity)requireActivity()).openRequestSearch("tutorHome"));
         searchRequests.setId(R.id.search_tutor_requests);
-        ui.addAction(body,searchRequests,50);ui.space(body,18);
+        ui.addAction(body,searchRequests,50);ui.space(body,10);
+        classroom.watchRequests(); ui.add(body,matchLink());ui.space(body,18);
         replies(body);
 
         requestsToggle=sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;animateRequests(pending);});
@@ -90,6 +92,20 @@ public final class TutorHomeFragment extends ScreenFragment {
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session)); ui.space(body,10); }
         return root;
+    }
+
+    /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */
+    private View matchLink() {
+        int groups = GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE)); ui.gap(row,12);
+        LinearLayout text = ui.column(); ui.add(text,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true)); ui.space(text,2);
+        ui.add(text,ui.text(groups>0?groups+" nhóm học viên cùng nhu cầu":"Học viên cùng môn và cấp học",13,Ui.MUTED,false));
+        ui.weight(row,text);
+        if (groups > 0) { row.addView(ui.pill(String.valueOf(groups),13,Ui.WHITE,Ui.BLUE),ui.lp(-2,-2)); ui.gap(row,6); }
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Gợi ý ghép nhóm"); ui.clickable(row,()->classroom.show("matches")); return row;
     }
 
     /** Answers to reschedule proposals not dismissed yet; tapping one opens that day of the teaching schedule. */

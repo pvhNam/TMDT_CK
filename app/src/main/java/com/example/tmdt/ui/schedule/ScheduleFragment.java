@@ -28,7 +28,8 @@ import com.example.tmdt.Lesson;
 public final class ScheduleFragment extends ScreenFragment {
     private final ScheduleCards<View> cards=new ScheduleCards<>();
     private LinearLayout body,list;
-    private TextView history,tutorSwitch;
+    private LinearLayout history;
+    private TextView tutorSwitch;
     private TabLayout tabs;
     private ScrollView scroll;
     private int renderedTab=-1;
@@ -42,8 +43,7 @@ public final class ScheduleFragment extends ScreenFragment {
         for(String label:new String[]{"Sắp tới","Chờ xác nhận","Đã học"})tabs.addTab(tabs.newTab().setText(label),false);
         tabs.getTabAt(classroom.scheduleTab).select();ui.add(root,tabs);ui.line(root);
         body=ui.page(root);scroll=(ScrollView)body.getParent();ui.space(body,6);
-        history=ui.link("Xem lịch sử đăng ký lớp học  ›",15,classroom::openRegistrations);
-        history.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);ui.add(body,history);
+        history=ui.column();ui.add(body,history);ui.space(body,12);
         list=ui.column();ui.add(body,list);
         tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){
             @Override public void onTabSelected(TabLayout.Tab tab){
@@ -64,6 +64,7 @@ public final class ScheduleFragment extends ScreenFragment {
 
     private void render(){
         tutorSwitch.setVisibility(classroom.isTutor()?View.VISIBLE:View.GONE);
+        history.removeAllViews();history.addView(registrationsLink());
         int tab=classroom.scheduleTab;
         List<Entry> visible=new ArrayList<>();
         for(Lesson lesson:classroom.lessons) {
@@ -119,7 +120,6 @@ public final class ScheduleFragment extends ScreenFragment {
         if(!changed)for(int i=0;i<next.size();i++)if(list.getChildAt(i)!=next.get(i)){changed=true;break;}
         if(!changed)return;
         if(renderedTab!=-1)Motion.change(body);
-        history.setVisibility(tab==1?View.VISIBLE:View.GONE);
         Set<View> retained=new HashSet<>(next);
         for(int i=list.getChildCount()-1;i>=0;i--)if(!retained.contains(list.getChildAt(i)))list.removeViewAt(i);
         for(int i=0;i<next.size();i++){
@@ -128,6 +128,23 @@ public final class ScheduleFragment extends ScreenFragment {
             LinearLayout.LayoutParams params=ui.lp(-1,-2);params.bottomMargin=ui.dp(11);list.addView(card,i,params);
         }
         renderedTab=tab;
+    }
+
+    /** Shortcut to Lịch sử đăng ký lớp học with the number of registrations still waiting. */
+    private View registrationsLink() {
+        int sent = 0, waiting = 0;
+        for (GroupClass item : classroom.store.classes)
+            for (GroupClass.Registration registration : item.registrations)
+                if (registration.studentId.equals(classroom.me())) { sent++; if (registration.pending()) waiting++; }
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE)); ui.gap(row,12);
+        LinearLayout text = ui.column(); ui.add(text,ui.text("Lớp đã đăng ký",16,Ui.INK,true)); ui.space(text,2);
+        ui.add(text,ui.text(sent==0?"Xem trạng thái các lớp bạn đăng ký":sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
+        ui.weight(row,text);
+        if (waiting > 0) { row.addView(ui.pill(String.valueOf(waiting),13,Ui.WHITE,Ui.ORANGE),ui.lp(-2,-2)); ui.gap(row,6); }
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Lớp đã đăng ký"); ui.clickable(row,classroom::openRegistrations); return row;
     }
 
     private View lessonCard(Lesson lesson) {

@@ -205,7 +205,7 @@ public final class Classroom {
         if(TUTOR.contains(destination)&&!tutorMode())return root();
         if(tutorMode()&&"home".equals(destination))return "tutorHome";
         if(tutorMode()&&"schedule".equals(destination))return "teaching";
-        if(tutorMode()&&("classes".equals(destination)||"matches".equals(destination)))cloud.watchRequests(false);
+        if("tutorHome".equals(destination)||"classes".equals(destination)||"matches".equals(destination))watchRequests();
         return missingSelection(destination)?root():destination;
     }
     /** Screens of a lesson, class or tutor that no longer exists fall back to the start screen. */
@@ -270,7 +270,8 @@ public final class Classroom {
             case "confirm":case "cancel":case "reschedule":return "lesson";
             case "join":case "full":return "groups";
             case "openClass":return openClassOrigin;
-            case "review":case "matches":return "classes";
+            case "review":return "classes";
+            case "matches":return "tutorHome";
             case "cancelClass":return "review";
             case "registrations":return registrationsOrigin;
             case "registration":return "registrations";
@@ -320,6 +321,8 @@ public final class Classroom {
     }
     /** Opens the new class form filled in for a group of students who posted the same need. */
     public void openDraft(GroupMatch.Group group){classId="";classDraft=group;openClassOrigin="matches";show("openClass");}
+    /** Open tutor requests for the group suggestions, read once the account is known to be a verified tutor. */
+    public void watchRequests(){if(tutorMode())cloud.watchRequests(false);}
     public void retryRequests(){cloud.watchRequests(true);show(host.screen);}
     /** Lịch sử đăng ký lớp học, opened from the class search or the schedule. */
     public void openRegistrations(){
@@ -394,8 +397,9 @@ public final class Classroom {
         bar.show();
     }
     /** A booking or trial request from the signed-in student to the tutor chosen on the home screen. */
-    public Lesson request(Tutor tutor,String title,LocalDate date,int hour,int minutes,String mode,String goal,String address,boolean trial,int price){
-        return new Lesson(store.newId("lessons"),tutor.id,tutor.name,me(),myName(),title,date.toString(),hour,minutes,mode,goal,address,trial,price,Lesson.PENDING);
+    public Lesson request(Tutor tutor,String title,LocalDate date,int hour,int minute,int minutes,String mode,String goal,String address,boolean trial,int price){
+        Lesson lesson=new Lesson(store.newId("lessons"),tutor.id,tutor.name,me(),myName(),title,date.toString(),hour,minutes,mode,goal,address,trial,price,Lesson.PENDING);
+        lesson.minute=minute;return lesson;
     }
     /** Saves a new booking or trial request unless a rule refuses it, then shows it under "Chờ xác nhận". */
     public boolean saveRequest(Lesson lesson){
