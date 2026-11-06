@@ -77,7 +77,8 @@ public final class ThemeColors {
             if(button.getIconTint()!=null)button.setIconTint(colors(context,button.getIconTint(),false));}
         if(view instanceof com.google.android.material.card.MaterialCardView){com.google.android.material.card.MaterialCardView card=(com.google.android.material.card.MaterialCardView)view;card.setCardBackgroundColor(colors(context,card.getCardBackgroundColor(),true));}
         if(view instanceof com.google.android.material.tabs.TabLayout){com.google.android.material.tabs.TabLayout tabs=(com.google.android.material.tabs.TabLayout)view;
-            tabs.setTabTextColors(context.getColor(R.color.app_muted),context.getColor(R.color.app_accent));tabs.setSelectedTabIndicatorColor(context.getColor(R.color.app_accent));}
+            tabs.setTabTextColors(context.getColor(R.color.app_muted),context.getColor(R.color.app_accent));
+            tabs.setSelectedTabIndicatorColor(context.getColor(tabs.getId()==R.id.section_tabs?R.color.app_surface:R.color.app_accent));}
         if(view instanceof com.google.android.material.textfield.TextInputLayout){com.google.android.material.textfield.TextInputLayout input=(com.google.android.material.textfield.TextInputLayout)view;
             input.setDefaultHintTextColor(ColorStateList.valueOf(context.getColor(R.color.app_muted)));
             input.setErrorTextColor(ColorStateList.valueOf(context.getColor(R.color.app_error)));}

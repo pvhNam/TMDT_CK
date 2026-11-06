@@ -39,7 +39,7 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     }
     static List<String> keys(List<Conversation> items,String me){
         List<String> keys=new ArrayList<>();
-        for(Conversation item:items)keys.add(me+"|"+item.peerId+"|"+item.peerName+"|"+item.lastMessage+"|"+item.lastSenderId+"|"+item.sortTime()+"|"+item.unread);
+        for(Conversation item:items)keys.add(me+"|"+item.peerId+"|"+item.peerName+"|"+item.peerRole+"|"+item.lastMessage+"|"+item.lastSenderId+"|"+item.sortTime()+"|"+item.unread);
         return keys;
     }
     static androidx.recyclerview.widget.DiffUtil.DiffResult diff(List<Conversation> rows,List<Conversation> next,List<String> renderedKeys,List<String> nextKeys){
@@ -51,8 +51,9 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         });
     }
     void state(String text, String action, Runnable runnable, boolean loading) {
+        boolean same=hasState()&&java.util.Objects.equals(stateText,text)&&java.util.Objects.equals(stateAction,action)&&stateLoading==loading;
         rows.clear(); renderedKeys.clear(); stateText = text; stateAction = action; stateRunnable = runnable; stateLoading = loading;
-        notifyDataSetChanged();
+        if(!same)notifyDataSetChanged();
     }
 
     private boolean hasState() { return stateText != null; }
@@ -80,6 +81,8 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         void bind(Conversation item) {
             ChatFormat.avatar(b.avatarPhoto, b.avatarInitials, item.peerId, item.peerName);
             b.name.setText(item.peerName);
+            String role="TUTOR".equals(item.peerRole)?"Gia sư":"STUDENT".equals(item.peerRole)?"Học viên":"";
+            b.role.setText(role);b.role.setVisibility(role.isEmpty()?View.GONE:View.VISIBLE);
             b.time.setText(ChatFormat.listTime(item.sortTime()));
             String preview = item.lastMessage.isEmpty()
                     ? b.getRoot().getContext().getString(R.string.chat_new_conversation)
@@ -89,6 +92,10 @@ final class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             b.badge.setVisibility(unread ? View.VISIBLE : View.GONE);
             b.badge.setText(item.unread > 99 ? "99+" : String.valueOf(item.unread));
             b.preview.setTextColor(b.getRoot().getContext().getColor(unread ? R.color.chat_ink : R.color.chat_muted));
+            b.preview.setTypeface(null,unread?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);
+            b.time.setTextColor(b.getRoot().getContext().getColor(unread?R.color.app_accent:R.color.chat_muted));
+            b.getRoot().setStrokeColor(b.getRoot().getContext().getColor(unread?R.color.app_accent:R.color.chat_border));
+            b.getRoot().setCardBackgroundColor(b.getRoot().getContext().getColor(unread?R.color.chat_pale:R.color.app_surface));
             b.getRoot().setContentDescription(item.peerName + ". " + preview + (unread ? ". " + item.unread + " tin chưa đọc" : ""));
             b.getRoot().setOnClickListener(v -> onOpen.open(item));
         }

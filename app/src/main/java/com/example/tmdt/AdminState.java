@@ -15,6 +15,7 @@ public final class AdminState extends ViewModel {
     public boolean loadingTutors,loadingTutorContracts,moreTutors,moreTutorContracts,revenueAnimated;
     public String selectedUser="",selectedContract="",userFilter="ALL",query="",error="",notice="";
     public boolean active,busy,loadingUsers,loadingContracts,moreUsers,moreContracts;
+    public ReportPeriod revenuePeriod=ReportPeriod.month(ReportPeriod.currentMonth());
     public long totalUsers,totalTutors,totalStudents;
     private final FirebaseFirestore db=FirebaseFirestore.getInstance();
     private String owner="";
@@ -32,6 +33,7 @@ public final class AdminState extends ViewModel {
         users.clear();contracts.clear();if(!restoreSelection){selectedUser="";selectedContract="";}error="";notice="";busy=false;
         tutors.clear();tutorContracts.clear();if(!restoreSelection){selectedTutor="";userOrigin="admin_users";contractOrigin="admin_contracts";}
         tutorLimit=tutorContractLimit=50;revenueAnimated=false;
+        if(!restoreSelection)revenuePeriod=ReportPeriod.month(ReportPeriod.currentMonth());
         totalUsers=totalTutors=totalStudents=0;userLimit=contractLimit=50;countedUsers=-1;
         if(active){listenUsers();listenContracts();listenTutors();if(!selectedTutor.isEmpty())listenTutorContracts();}changed();
     }

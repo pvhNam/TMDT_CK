@@ -3,28 +3,62 @@ package com.example.tmdt.ui.admin;
 import android.view.View;
 import android.widget.LinearLayout;
 import com.example.tmdt.*;
+import com.example.tmdt.ui.common.StableViews;
 import com.example.tmdt.ui.common.Ui;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 /** One predictable entry point for collections, earnings and monthly payouts. */
 public final class AdminFinanceFragment extends AdminScreen {
+    private LinearLayout body;
     @Override protected View build(){
-        LinearLayout root=root("Tài chính"),body=ui.page(root);if(!feedback(body))return root;
-        ui.add(body,ui.text("Học phí và chi trả",23,Ui.INK,true));ui.space(body,6);
-        ui.space(body,16);
-        RevenueBreakdown receipts=new RevenueBreakdown(money().payments.values());long paid=0,ready=0;int waiting=0,refunds=0;
-        for(PaymentState.Row p:money().payouts.values()){
-            if("PAID".equals(p.text("status")))paid+=p.number("amount");
-            if("READY".equals(p.text("status"))){ready+=p.number("amount");waiting++;}
-        }
-        for(PaymentState.Row r:money().refunds.values())if("PENDING".equals(r.text("status")))refunds++;
-        card(body,"Học phí đã nhận",PaymentState.money(receipts.received),"Toàn thời gian · Đã hoàn: "+PaymentState.money(receipts.refunded),()->open("payments"));
-        LinearLayout stats=ui.row();ui.weight(stats,statistic("Đã trả gia sư",PaymentState.money(paid),null));ui.gap(stats,10);
-        ui.weight(stats,statistic("Bảng lương chờ chi",PaymentState.money(ready),null));ui.add(body,stats);ui.space(body,20);
-        ui.section(body,"Quản lý",17);ui.space(body,10);
-        destination(body,R.drawable.ic_coin,"Học phí đã nhận","",()->open("payments"));
-        destination(body,R.drawable.ic_wallet,"Hoàn học phí",refunds>0?refunds+" chờ":"",this::openRefunds);
-        destination(body,R.drawable.ic_users,"Thu nhập gia sư","",()->open("admin_income"));
-        destination(body,R.drawable.ic_wallet,"Bảng lương & chi trả",waiting>0?waiting+" chờ":"",this::openPayroll);
-        if(!money().error.isEmpty()){ui.space(body,12);ui.add(body,ui.note(R.drawable.ic_info,money().error,0xFFFFF0F0,Ui.RED,Ui.RED));}return root;
+        LinearLayout root=root("Tài chính");body=ui.page(root);render();return root;
     }
+    @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
+    private void render(){
+        StableViews rows=StableViews.at(body);rows.begin();if(!feedback(rows)){rows.commit();return;}
+        rows.add("revenue-heading",true,()->ui.text("Doanh thu học phí",19,Ui.INK,true),ui.dp(12));
+        ReportPeriod period=state().revenuePeriod;
+        rows.add("period",period,()->AdminPeriodFilter.create(ui,period,value->{state().revenuePeriod=value;state().changed();}),ui.dp(12));
+        RevenueBreakdown receipts=new RevenueBreakdown(money().payments.values(),period);
+        rows.add("revenue",Arrays.asList(period,receipts.signature()),()->AdminRevenueCard.create(ui,receipts,false,false),ui.dp(20));
+        rows.add("payroll-heading",true,()->ui.text("Lương gia sư",18,Ui.INK,true),ui.dp(12));
+        rows.add("payroll-period",money().payrollPeriod,()->AdminMonthPicker.create(ui,money().payrollPeriod,value->{money().payrollPeriod=value;money().changed();}),ui.dp(12));
+        MonthlyPayroll payroll=new MonthlyPayroll(money().payrollPeriod,money().earnings,money().payouts);
+        rows.add("payroll",Arrays.asList(payroll.period,payroll.total,payroll.waitingAmount,payroll.paidAmount,payroll.unpreparedAmount,payroll.tutors),()->{
+            LinearLayout card=ui.card(),top=ui.row();ui.weight(top,ui.text("Quỹ lương trong tháng",14,Ui.MUTED,false));top.addView(ui.pill(payroll.tutors+" gia sư",11,Ui.BLUE,Ui.PALE));ui.add(card,top);ui.space(card,10);
+            ui.add(card,ui.text(PaymentState.money(payroll.total),25,Ui.INK,true));ui.space(card,8);
+            ui.add(card,ui.text("Ngày chi trả: "+Instant.ofEpochMilli(payroll.dueAt).atZone(ReportPeriod.ZONE).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),12,Ui.MUTED,false));ui.space(card,14);ui.line(card);ui.space(card,12);
+            LinearLayout stats=ui.row();ui.weight(stats,metric("Chờ chi",payroll.waitingAmount,Ui.ORANGE));ui.gap(stats,10);
+            ui.weight(stats,metric("Đã chi",payroll.paidAmount,Ui.GREEN));ui.add(card,stats);
+            if(payroll.unpreparedAmount>0){ui.space(card,12);ui.add(card,ui.text("Chưa lập bảng: "+PaymentState.money(payroll.unpreparedAmount),13,Ui.MUTED,false));}
+            ui.space(card,16);ui.addAction(card,ui.action("Xem bảng lương",0,Ui.PRIMARY,()->open("admin_payroll")),48);return card;
+        },ui.dp(20));
+        long available=0,reserved=0;int pendingWithdrawals=0;
+        for(PaymentState.Row wallet:money().wallets.values()){available+=TutorWallet.available(wallet);reserved+=TutorWallet.reserved(wallet);}
+        for(PaymentState.Row withdrawal:money().withdrawals.values())if(TutorWallet.withdrawing(withdrawal.text("status")))pendingWithdrawals++;
+        final long walletAvailable=available,walletReserved=reserved;final int requests=pendingWithdrawals;
+        rows.add("wallet-heading",true,()->ui.text("Ví gia sư",18,Ui.INK,true),ui.dp(12));
+        rows.add("wallets",Arrays.asList(available,reserved,pendingWithdrawals,money().walletLoaded),()->{
+            LinearLayout card=ui.card(),stats=ui.row();ui.weight(stats,metric("Số dư khả dụng",walletAvailable,Ui.INK));ui.gap(stats,10);ui.weight(stats,metric("Tiền đang rút",walletReserved,Ui.INK));ui.add(card,stats);
+            ui.space(card,14);ui.addAction(card,ui.action("Duyệt rút tiền"+(requests>0?" ("+requests+")":""),0,Ui.PRIMARY,()->{money().withdrawalFilter=0;open("admin_withdrawals");}),48);return card;
+        },ui.dp(20));
+        int refunds=0;
+        for(PaymentState.Row r:money().refunds.values())if("PENDING".equals(r.text("status")))refunds++;
+        final int pendingRefunds=refunds;
+        rows.add("management",refunds,()->{
+            LinearLayout box=ui.column();ui.section(box,"Giao dịch",17);ui.space(box,10);
+            destination(box,R.drawable.ic_coin,"Lịch sử học phí","",()->open("payments"));
+            destination(box,R.drawable.ic_wallet,"Hoàn học phí",pendingRefunds>0?pendingRefunds+" chờ":"",this::openRefunds);
+            destination(box,R.drawable.ic_users,"Thu nhập từng gia sư","",()->{money().incomePeriod=money().payrollPeriod;open("admin_income");});return box;
+        },0);
+        if(!money().error.isEmpty())rows.add("payment-error",money().error,()->ui.note(R.drawable.ic_info,money().error,0xFFFFF0F0,Ui.RED,Ui.RED),0);
+        rows.commit();
+    }
+    private View metric(String title,long amount,int color){
+        LinearLayout box=ui.column();ui.add(box,ui.text(title,12,Ui.MUTED,false));ui.space(box,5);
+        android.widget.TextView value=ui.text(PaymentState.money(amount),17,color,true);value.setMaxLines(1);value.setAutoSizeTextTypeUniformWithConfiguration(11,17,1,android.util.TypedValue.COMPLEX_UNIT_SP);ui.add(box,value);return box;
+    }
+    @Override public void onDestroyView(){super.onDestroyView();body=null;}
 }

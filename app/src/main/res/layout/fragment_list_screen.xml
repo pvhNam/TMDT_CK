@@ -24,7 +24,7 @@
         app:tabIndicatorHeight="3dp"
         app:tabMode="fixed"
         app:tabSelectedTextColor="@color/app_accent"
-        app:tabTextAppearance="@style/ChatTabText"
+        app:tabTextAppearance="@style/SectionTabText"
         app:tabTextColor="@color/chat_muted" />
 
     <View

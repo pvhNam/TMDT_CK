@@ -150,8 +150,6 @@ public final class TutorCommentsFragment extends Fragment {
         boolean preserveScroll = !renderedContentKey.isEmpty();
         renderedContentKey = nextKey;
         // Let Android restore the profile hierarchy's scroll on this view's first render.
-        ScrollView scroll = preserveScroll ? profileScroll() : null;
-        int offset = scroll == null ? 0 : scroll.getScrollY();
         com.example.tmdt.ui.common.StableBindings<ItemTutorCommentBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.tutorCommentsList);rows.begin();
         if (available) for (GroupClassQuestion comment : state.questions()) {
             ItemTutorCommentBinding row = rows.item(comment.id,()->ItemTutorCommentBinding.inflate(getLayoutInflater(), binding.tutorCommentsList, false));
@@ -194,7 +192,6 @@ public final class TutorCommentsFragment extends Fragment {
         FragmentTutorCommentsBinding renderedBinding = binding;
         com.example.tmdt.ui.common.ThemeColors.apply(binding.tutorCommentsList);
         com.example.tmdt.ui.common.Motion.bindControls(binding.tutorCommentsList);
-        if (scroll != null) renderedBinding.getRoot().post(() -> { if (binding == renderedBinding) scroll.scrollTo(0, offset); });
     }
 
     private static void appendKey(StringBuilder key, GroupClassQuestion message) {

@@ -24,17 +24,7 @@ public final class StableBindings<B extends ViewBinding> {
     }
     public void commit(ViewGroup parent){
         List<View> desired=new ArrayList<>();for(String id:order)desired.add(rows.get(id).getRoot());
-        boolean changed=parent.getChildCount()!=desired.size();
-        if(!changed)for(int i=0;i<desired.size();i++)if(parent.getChildAt(i)!=desired.get(i)){changed=true;break;}
-        if(!changed)return;
-        Motion.change(parent);
-        Set<View> retained=new HashSet<>(desired);
-        for(int i=parent.getChildCount()-1;i>=0;i--)if(!retained.contains(parent.getChildAt(i)))parent.removeViewAt(i);
-        for(int i=0;i<desired.size();i++){
-            View view=desired.get(i);if(parent.getChildAt(i)==view)continue;
-            if(view.getParent()==parent)parent.removeView(view);parent.addView(view,i);
-            ThemeColors.apply(view);Motion.bindControls(view);
-        }
+        StableViews.reconcile(parent,desired);
         rows.keySet().retainAll(new HashSet<>(order));
     }
 }

@@ -188,7 +188,8 @@ public class MainActivity extends AppCompatActivity {
         if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
         destination=exchange.redirect(destination);
-        if(java.util.Arrays.asList("payments","payment_detail","tutor_income","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
+        if(java.util.Arrays.asList("payments","payment_detail","tutor_income","tutor_wallet","withdraw_funds","withdrawal_detail","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
+        if(java.util.Arrays.asList("tutor_wallet","withdraw_funds").contains(destination)&&(account.profile()==null||!account.profile().tutor||"ADMIN".equals(account.profile().role)))destination="account";
         if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
         if("post_request".equals(destination)&&!"post_request".equals(screen))
             postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
@@ -226,9 +227,13 @@ public class MainActivity extends AppCompatActivity {
             case "admin_contract":fragment=new com.example.tmdt.ui.admin.AdminContractDetailFragment();break;
             case "admin_income":fragment=new com.example.tmdt.ui.admin.AdminIncomeFragment();break;
             case "admin_finance":fragment=new com.example.tmdt.ui.admin.AdminFinanceFragment();break;
-            case "payments":fragment=new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
+            case "payments":fragment=payments.tutor&&!payments.admin?new com.example.tmdt.ui.payments.TutorFinanceFragment():new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
             case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
-            case "tutor_income":fragment=new com.example.tmdt.ui.payments.TutorIncomeFragment();break;
+            case "tutor_income":fragment=com.example.tmdt.ui.payments.TutorFinanceFragment.income();break;
+            case "tutor_wallet":fragment=com.example.tmdt.ui.payments.TutorFinanceFragment.wallet();break;
+            case "withdraw_funds":fragment=new com.example.tmdt.ui.payments.WalletWithdrawalFragment();break;
+            case "withdrawal_detail":fragment=new com.example.tmdt.ui.payments.WithdrawalDetailFragment();break;
+            case "admin_withdrawals":fragment=new com.example.tmdt.ui.payments.AdminWithdrawalsFragment();break;
             case "payout_bank":fragment=new com.example.tmdt.ui.payments.PayoutBankFragment();break;
             case "admin_payroll":fragment=new com.example.tmdt.ui.payments.AdminPayrollFragment();break;
             case "payout_detail":fragment=new com.example.tmdt.ui.payments.PayoutDetailFragment();break;
@@ -253,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
             case "post_request":fragment=new com.example.tmdt.ui.requests.PostTutorRequestFragment();break;
-            case "my_requests":fragment=new com.example.tmdt.ui.requests.ManageTutorRequestsFragment();break;
+            case "my_requests":fragment=classroom.isTutor()?new com.example.tmdt.ui.requests.RequestsHubFragment():new com.example.tmdt.ui.requests.ManageTutorRequestsFragment();break;
             case "search_requests":fragment=new com.example.tmdt.ui.requests.SearchTutorRequestsFragment();break;
             case "edit_request":fragment=com.example.tmdt.ui.requests.EditTutorRequestFragment.newInstance(selectedRequestId);break;
             case "request_applicants":fragment=com.example.tmdt.ui.requests.RequestApplicantsFragment.newInstance(selectedRequestId);break;
@@ -282,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         String destination=classroom.redirect(screen);
         if(!screen.equals(destination)){show(destination);return;}
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
-        if(current instanceof ScreenFragment)((ScreenFragment)current).refreshData();
+        if(current instanceof ScreenFragment&&screen.equals(current.getTag()))((ScreenFragment)current).refreshData();
     }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
@@ -330,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
             menu.findItem(R.id.nav_account).setTitle("Tài chính");
             selected=screen.equals("admin_users")||screen.equals("admin_user")?R.id.nav_schedule:
                 screen.equals("admin_contracts")||screen.equals("admin_contract")?R.id.nav_messages:
-                java.util.Arrays.asList("admin_finance","admin_income","admin_payroll","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
+                java.util.Arrays.asList("admin_finance","admin_income","admin_payroll","admin_withdrawals","withdrawal_detail","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
         }
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
@@ -382,8 +387,10 @@ public class MainActivity extends AppCompatActivity {
             case "admin_income":show("admin_finance");break;
             case "admin_dashboard":finish();break;
             case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
-            case "payments":case "tutor_income":case "admin_payroll":show(isAdmin()?"admin_finance":"account");break;
-            case "payout_bank":show("tutor_income");break;
+            case "payments":case "tutor_income":case "tutor_wallet":case "admin_payroll":case "admin_withdrawals":show(isAdmin()?"admin_finance":"account");break;
+            case "withdraw_funds":show("tutor_wallet");break;
+            case "withdrawal_detail":show(payments.withdrawalOrigin);break;
+            case "payout_bank":show(payments.bankOrigin);break;
             case "welcome":finish();break;
             case "student_intro":show("welcome");break;
             case "register":

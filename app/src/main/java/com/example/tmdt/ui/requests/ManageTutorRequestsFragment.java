@@ -6,6 +6,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -31,6 +32,7 @@ public final class ManageTutorRequestsFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         binding = FragmentManageTutorRequestsBinding.bind(view);
+        if(com.example.tmdt.ui.common.SectionHubFragment.embedded(this))binding.toolbar.setVisibility(View.GONE);
         manager = new ViewModelProvider(requireActivity()).get(TutorRequestManager.class);
         closed = savedInstanceState == null ? manager.closedTab() : savedInstanceState.getBoolean("closed");
         binding.toolbar.setNavigationOnClickListener(v -> host().back());
@@ -63,17 +65,13 @@ public final class ManageTutorRequestsFragment extends Fragment {
         updateTabCount(0, R.string.requests_open, manager.requests(false).size());
         updateTabCount(1, R.string.requests_closed, manager.requests(true).size());
         binding.requestsSectionTitle.setText(closed ? R.string.requests_list_closed : R.string.requests_list_open);
-        binding.requestsSectionCaption.setText(closed ? R.string.requests_caption_closed : R.string.requests_caption_open);
         binding.requestsEmptyTitle.setText(closed ? R.string.requests_empty_closed_title : R.string.requests_empty_open_title);
         binding.requestsEmpty.setText(closed ? R.string.requests_empty_closed : R.string.requests_empty_open);
         binding.requestsEmptyPanel.setVisibility(!manager.loading() && manager.error().isEmpty() && requests.isEmpty() ? View.VISIBLE : View.GONE);
-        int scrollY = binding.requestsScroll.getScrollY();
+        binding.requestsEmpty.setVisibility(View.GONE);
         com.example.tmdt.ui.common.StableBindings<ItemTutorRequestBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.requestsList);rows.begin();
         for (TutorRequestRecord request : requests) addRequest(request);
         rows.commit(binding.requestsList);
-        binding.requestsScroll.post(() -> {
-            if (binding != null) binding.requestsScroll.scrollTo(0, scrollY);
-        });
     }
 
     private void updateTabCount(int position, int label, int count) {
@@ -95,31 +93,38 @@ public final class ManageTutorRequestsFragment extends Fragment {
         row.requestBudget.setText(getString(R.string.requests_card_budget, CatalogState.money(request.budget)));
         row.requestSchedule.setText(getString(R.string.requests_schedule_value, request.schedule));
         row.requestDescription.setText(request.description);
-        row.editRequest.setOnClickListener(v -> host().openRequestEditor(request.id));
         row.requestApplicants.setOnClickListener(v -> host().openRequestApplicants(request.id));
-        row.closeRequest.setVisibility(request.isOpen() ? View.VISIBLE : View.GONE);
-        row.closeRequest.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.requests_close_title)
-                .setMessage(getString(R.string.requests_close_confirm, request.title))
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.requests_close, (dialog, which) -> manager.close(request.id)).show());
-        row.deleteRequest.setContentDescription(getString(R.string.requests_card_delete, request.title));
-        row.deleteRequest.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.requests_delete_title)
-                .setMessage(getString(R.string.requests_delete_confirm, request.title))
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.requests_delete, (dialog, which) -> manager.delete(request.id)).show());
+        row.requestMore.setOnClickListener(v -> showActions(v, request));
         boolean editable = !manager.busy() && !manager.offline();
-        row.editRequest.setEnabled(editable);
-        row.closeRequest.setEnabled(editable);
-        row.deleteRequest.setEnabled(editable);
+        row.requestMore.setEnabled(editable);
         row.requestApplicants.setEnabled(!manager.busy());
-        row.editRequest.setAlpha(editable ? 1f : .45f);
-        row.closeRequest.setAlpha(editable ? 1f : .45f);
-        row.deleteRequest.setAlpha(editable ? 1f : .45f);
+        row.requestMore.setAlpha(editable ? 1f : .45f);
         row.requestApplicants.setAlpha(manager.busy() ? .45f : 1f);
         com.example.tmdt.ui.common.ThemeColors.apply(row.getRoot());
         com.example.tmdt.ui.common.Motion.bindControls(row.getRoot());
+    }
+
+    private void showActions(View anchor, TutorRequestRecord request) {
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(0, 1, 0, R.string.requests_edit);
+        if (request.isOpen()) menu.getMenu().add(0, 2, 1, R.string.requests_close);
+        menu.getMenu().add(0, 3, 2, R.string.requests_delete);
+        menu.setOnMenuItemClickListener(item -> {
+            if (manager.busy() || manager.offline()) return true;
+            if (item.getItemId() == 1) host().openRequestEditor(request.id);
+            else if (item.getItemId() == 2) new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.requests_close_title)
+                    .setMessage(getString(R.string.requests_close_confirm, request.title))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.requests_close, (dialog, which) -> manager.close(request.id)).show();
+            else if (item.getItemId() == 3) new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.requests_delete_title)
+                    .setMessage(getString(R.string.requests_delete_confirm, request.title))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.requests_delete, (dialog, which) -> manager.delete(request.id)).show();
+            return true;
+        });
+        menu.show();
     }
 
     @Override public void onSaveInstanceState(@NonNull Bundle outState) {

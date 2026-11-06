@@ -28,14 +28,20 @@ public final class PaymentState extends ViewModel {
     PaymentApi api=new PaymentApi();
     public final MutableLiveData<Integer> changes=new MutableLiveData<>(0);
     public final Map<String,Row> payments=new LinkedHashMap<>(),earnings=new LinkedHashMap<>(),payouts=new LinkedHashMap<>(),refunds=new LinkedHashMap<>(),sessions=new TreeMap<>();
+    public final Map<String,Row> wallets=new LinkedHashMap<>(),withdrawals=new LinkedHashMap<>();
     private final Map<String,Map<String,Row>> sources=new HashMap<>();
     private final List<ListenerRegistration> listeners=new ArrayList<>();
-    private ListenerRegistration sessionListener,bankListener;
+    private ListenerRegistration sessionListener,bankListener,walletListener;
     private String sessionOwner="",key="";private int generation;
     public String owner="",selected="",selectedPayout="",selectedRefund="",requestedType="",requestedSource="",requestedStudent="",origin="account",destination,error="",notice="";
     public String incomePeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString(),payrollPeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusMonths(1).toString();
     public boolean admin,tutor,busy;
     public int adminPaymentTab;
+    public int payrollFilter;
+    public int walletFilter,withdrawalFilter;
+    public boolean walletLoaded;
+    public String selectedWithdrawal="",withdrawalOrigin="tutor_wallet";
+    public String withdrawalDraft="",withdrawalRequestId="",bankOrigin="tutor_wallet";
     public Map<String,Object> bank=new HashMap<>();
     public void account(AccountState account){
         UserProfile profile=account.profile();
@@ -45,8 +51,10 @@ public final class PaymentState extends ViewModel {
         for(ListenerRegistration listener:listeners)listener.remove();listeners.clear();
         if(sessionListener!=null)sessionListener.remove();sessionListener=null;sessionOwner="";
         if(bankListener!=null)bankListener.remove();bankListener=null;
+        if(walletListener!=null)walletListener.remove();walletListener=null;
         owner=next;admin=profile!=null&&"ADMIN".equals(profile.role);tutor=profile!=null&&profile.tutor;
         payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();bank.clear();busy=false;error="";notice="";
+        wallets.clear();withdrawals.clear();walletLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
         if(owner.isEmpty()){selected="";changed();return;}
         if(admin){listen("payments",db.collection(api.collection("payments")),payments);listen("payouts",db.collection(api.collection("tutor_payouts")),payouts);listen("refunds",db.collection(api.collection("refund_requests")),refunds);}
         else{
@@ -57,6 +65,18 @@ public final class PaymentState extends ViewModel {
         }
         listen("earnings",admin?db.collection(api.collection("tutor_earnings")):db.collection(api.collection("tutor_earnings")).whereEqualTo("tutor_id",owner),earnings);
         final int version=generation;
+        if(admin){
+            listen("wallets",db.collection(api.collection("tutor_wallets")),wallets);
+            listen("withdrawals",db.collection(api.collection("wallet_withdrawals")),withdrawals);
+        }else if(tutor){
+            listen("withdrawals",db.collection(api.collection("wallet_withdrawals")).whereEqualTo("tutor_id",owner),withdrawals);
+            walletListener=db.collection(api.collection("tutor_wallets")).document(owner).addSnapshotListener((doc,failure)->{
+                if(version!=generation)return;
+                if(failure!=null){walletLoaded=false;failRead(failure);return;}
+                wallets.clear();if(doc!=null&&doc.exists())wallets.put(doc.getId(),new Row(doc.getId(),doc.getData()));
+                walletLoaded=true;changed();
+            });
+        }
         bankListener=db.collection(api.collection("payout_accounts")).document(owner).addSnapshotListener((doc,failure)->{
             if(version!=generation)return;
             if(failure!=null){failRead(failure);return;}
@@ -72,6 +92,7 @@ public final class PaymentState extends ViewModel {
             sources.put(name,rows);target.clear();
             if(target==payments){for(Map.Entry<String,Map<String,Row>> source:sources.entrySet())if(source.getKey().equals("payments")||source.getKey().endsWith("-payments"))target.putAll(source.getValue());}
             else target.putAll(rows);
+            if(target==wallets)walletLoaded=true;
             watchSessions();changed();
         }));
     }
@@ -111,7 +132,23 @@ public final class PaymentState extends ViewModel {
         request("POST","/payments/"+selected+"/sessions/"+number+"/"+action,json("reason",reason),result->notice=action.equals("confirm")?"Đã xác nhận buổi học.":"Đã cập nhật buổi học.");
     }
     public void saveBank(String name,String number,String holder){request("PUT","/bank",json("bank_name",name,"account_number",number,"account_name",holder),r->notice="Đã lưu tài khoản nhận tiền.");}
-    public void preparePayroll(){request("POST","/admin/payroll",json("period",payrollPeriod),r->notice="Đã lập "+r.optInt("created")+" bảng chi trả.");}
+    public void preparePayroll(){
+        String period=payrollPeriod;
+        request("POST","/admin/payroll",json("period",period),r->notice=r.optInt("created")>0?
+                "Đã lập "+r.optInt("created")+" bảng lương kỳ "+period+".":
+                "Không có bảng lương mới. Kiểm tra khoản chưa lập bảng và trạng thái gia sư.");
+    }
+    public void creditSalary(String id){request("POST","/admin/payouts/"+id+"/credit",json(),r->notice="Đã trả lương vào ví gia sư.");}
+    public Row wallet(){return wallets.get(owner);}
+    public void beginWithdrawal(){clearFeedback();withdrawalDraft="";withdrawalRequestId=owner+"_"+UUID.randomUUID();destination="withdraw_funds";changed();}
+    public void requestWithdrawal(long amount,String requestId,Map<String,Object> bank){
+        request("POST","/wallet/withdrawals",json("amount",amount,"request_id",requestId,"bank",new JSONObject(bank)),r->{notice="PENDING".equals(r.optString("status","PENDING"))?"Đã gửi yêu cầu rút tiền.":TutorWallet.withdrawalStatus(r.optString("status"));withdrawalDraft="";withdrawalRequestId="";destination="tutor_wallet";});
+    }
+    public void openWithdrawal(String id,String from){selectedWithdrawal=id;withdrawalOrigin=from;clearFeedback();destination="withdrawal_detail";changed();}
+    public void processWithdrawal(String id,String action,String value){
+        request("POST","/wallet/withdrawals/"+id+"/"+action,json("reference",value,"reason",value),r->notice=
+                "claim".equals(action)?"Đã nhận xử lý. Chuyển khoản rồi xác nhận mã giao dịch.":"paid".equals(action)?"Đã xác nhận chuyển tiền.":"Yêu cầu đã đóng. Tiền đã trở lại ví gia sư.");
+    }
     public void markPayout(String reference){request("POST","/admin/payouts/"+selectedPayout+"/paid",json("reference",reference),r->notice="Đã ghi nhận khoản chuyển tiền cho gia sư.");}
     public void cancelPayout(String reason){request("POST","/admin/payouts/"+selectedPayout+"/cancel",json("reason",reason),r->notice="Đã hủy bảng chi trả.");}
     public void refund(String reason){request("POST","/payments/"+selected+"/refund",json("reason",reason),r->notice="Đã gửi yêu cầu hoàn học phí.");}
@@ -140,6 +177,6 @@ public final class PaymentState extends ViewModel {
         case "PENDING":return "Chờ xử lý";case "REJECTED":return "Đã từ chối";
         default:return value;
     }}
-    public static String payoutStatus(String value){return "PAID".equals(value)?"Đã chi trả":"CANCELLED".equals(value)?"Đã hủy bảng chi":status(value);}
-    @Override protected void onCleared(){for(ListenerRegistration listener:listeners)listener.remove();if(sessionListener!=null)sessionListener.remove();if(bankListener!=null)bankListener.remove();super.onCleared();}
+    public static String payoutStatus(String value){return "CREDITED".equals(value)?"Đã vào ví":"PAID".equals(value)?"Đã chuyển ngân hàng":"CANCELLED".equals(value)?"Đã hủy bảng chi":status(value);}
+    @Override protected void onCleared(){for(ListenerRegistration listener:listeners)listener.remove();if(sessionListener!=null)sessionListener.remove();if(bankListener!=null)bankListener.remove();if(walletListener!=null)walletListener.remove();super.onCleared();}
 }

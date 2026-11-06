@@ -3,13 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/request_manage_background"
+    android:background="@color/app_background"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         style="@style/ReferenceToolbar"
-        android:background="@android:color/white"
+        android:background="@color/app_background"
         app:title="@string/requests_heading" />
 
     <ScrollView
@@ -18,69 +18,57 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
+        android:scrollbars="none"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="24dp">
 
-            <TextView
-                style="@style/ScreenTitle"
-                android:layout_marginBottom="8dp"
-                android:accessibilityHeading="true"
-                android:text="@string/requests_dashboard_title"
-                android:textColor="@color/request_manage_ink"
-                android:textSize="24sp"
-                android:textStyle="bold" />
-
-            <TextView
-                style="@style/RequestManageBody"
-                android:layout_marginBottom="20dp"
-                android:text="@string/requests_intro" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/create_request"
-                style="@style/RequestManagePrimary"
-                android:text="@string/requests_create"
-                app:icon="@drawable/ic_ex_plus"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp"
-                app:iconSize="20dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/requests_section_title"
+                    style="@style/FieldLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginBottom="0dp"
+                    android:accessibilityHeading="true"
+                    android:textColor="@color/app_ink"
+                    android:textSize="16sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/create_request"
+                    style="@style/RequestManagePrimary"
+                    android:layout_width="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/requests_create_short"
+                    app:icon="@drawable/ic_ex_plus"
+                    app:iconGravity="textStart"
+                    app:iconPadding="6dp"
+                    app:iconSize="16dp" />
+            </LinearLayout>
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/request_tabs"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/bg_request_manage_tab_track"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:background="@android:color/transparent"
                 app:tabGravity="fill"
-                app:tabIndicator="@drawable/bg_request_manage_tab_indicator"
-                app:tabIndicatorColor="@android:color/white"
-                app:tabIndicatorFullWidth="true"
-                app:tabIndicatorGravity="stretch"
+                app:tabIndicatorColor="@color/app_accent"
+                app:tabIndicatorFullWidth="false"
+                app:tabIndicatorHeight="2dp"
                 app:tabMinWidth="0dp"
                 app:tabMode="fixed"
                 app:tabRippleColor="@color/request_manage_pale"
                 app:tabSelectedTextColor="@color/request_manage_blue"
-                app:tabTextAppearance="@style/RequestManageTabText"
+                app:tabTextAppearance="@style/SectionTabText"
                 app:tabTextColor="@color/request_manage_muted" />
-
-            <TextView
-                android:id="@+id/requests_section_title"
-                style="@style/FieldLabel"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="4dp"
-                android:accessibilityHeading="true"
-                android:textColor="@color/request_manage_ink"
-                android:textSize="17sp" />
-
-            <TextView
-                android:id="@+id/requests_section_caption"
-                style="@style/RequestManageBody"
-                android:layout_marginBottom="16dp"
-                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/requests_offline"

@@ -66,6 +66,12 @@ public final class MessagesFragment extends Fragment {
 
     private void render(MainActivity host) {
         if (binding == null) return;
+        binding.conversationsSummary.setVisibility(chat.hasConversations()?View.VISIBLE:View.GONE);
+        TabLayout.Tab unread=binding.tabs.getTabAt(1);
+        if(unread!=null){
+            if(chat.unreadTotal()>0){unread.getOrCreateBadge().setNumber(chat.unreadTotal());unread.getOrCreateBadge().setBackgroundColor(requireContext().getColor(R.color.app_accent));}
+            else unread.removeBadge();
+        }
         if (!chat.signedIn()) {
             adapter.state(getString(R.string.chat_sign_in_needed), getString(R.string.chat_sign_in), () -> host.show("login"), false);
             return;
@@ -77,6 +83,7 @@ public final class MessagesFragment extends Fragment {
             adapter.state(chat.listError(), getString(R.string.chat_retry), chat::retryList, false); return;
         }
         List<Conversation> results = chat.results();
+        binding.conversationsSummary.setText(results.size()+" cuộc trò chuyện"+(chat.unreadOnly()?" chưa đọc":""));
         adapter.submit(results, chat.myId());
     }
 

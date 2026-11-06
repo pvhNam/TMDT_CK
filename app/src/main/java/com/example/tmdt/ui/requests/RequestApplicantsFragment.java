@@ -53,7 +53,6 @@ public final class RequestApplicantsFragment extends Fragment {
         binding.applicantsError.setVisibility(manager.applicantsError().isEmpty() ? View.GONE : View.VISIBLE);
         binding.retryApplicants.setVisibility(manager.applicantsError().isEmpty() ? View.GONE : View.VISIBLE);
         binding.applicantsEmpty.setVisibility(View.GONE);
-        int scrollY = binding.applicantsScroll.getScrollY();
         com.example.tmdt.ui.common.StableBindings<ItemTutorApplicationBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.applicantsList);rows.begin();
         for (TutorApplication application : manager.applicants()) {
             ItemTutorApplicationBinding row = rows.item(application.tutorId,()->ItemTutorApplicationBinding.inflate(getLayoutInflater(), binding.applicantsList, false));
@@ -73,9 +72,6 @@ public final class RequestApplicantsFragment extends Fragment {
             }
         }
         rows.commit(binding.applicantsList);
-        binding.applicantsScroll.post(() -> {
-            if (binding != null) binding.applicantsScroll.scrollTo(0, scrollY);
-        });
         com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
         com.example.tmdt.ui.common.Motion.bindControls(binding.applicantsList);
     }

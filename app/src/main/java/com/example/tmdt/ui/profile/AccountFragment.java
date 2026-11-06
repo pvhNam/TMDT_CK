@@ -26,14 +26,11 @@ public final class AccountFragment extends AccountFragmentBase {
         View.OnClickListener soon=v->Toast.makeText(requireContext(),"Tính năng sắp ra mắt",Toast.LENGTH_SHORT).show();
         binding.rowFavorites.setOnClickListener(v->go("favorites"));binding.rowSettings.setOnClickListener(v->go("settings"));
         binding.rowRequests.setOnClickListener(v->host().openMyRequests("account"));
-        binding.rowSearchRequests.setOnClickListener(v->host().openRequestSearch("account"));
         // UC23: Hợp đồng của tôi (kèm số hợp đồng chờ xác nhận), hợp đồng cộng tác (gia sư), mẫu hợp đồng (quản trị viên).
         binding.rowContracts.setOnClickListener(v->host().exchange.openContracts());
-        binding.rowAgreement.setOnClickListener(v->host().exchange.openAgreement());
         binding.rowTemplates.setOnClickListener(v->host().exchange.openTemplates());
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowPayments.setOnClickListener(v->go("payments"));
-        binding.rowIncome.setOnClickListener(v->go("tutor_income"));
         binding.rowReviews.setOnClickListener(v->host().exchange.openMyReviews());
         binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
@@ -41,7 +38,8 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.tutorAction.setOnClickListener(v->{
             com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
             if(state.profile()!=null&&"ADMIN".equals(state.profile().role))go("admin_dashboard");
-            else if(state.profile()!=null&&state.profile().tutor&&"VERIFIED".equals(review.status())){state.clearFeedback();host().classroom.setTutorMode(!host().classroom.tutorMode());}
+            else if(state.profile()!=null&&state.profile().tutor&&"VERIFIED".equals(review.status())){state.clearFeedback();
+                host().classroom.setTutorMode(!host().classroom.tutorMode());}
             else if(state.profile()!=null&&state.profile().tutor)go("tutor_pending");
             else go("register_tutor");
         });
@@ -62,8 +60,7 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.profileContent.setVisibility(profile==null?View.GONE:View.VISIBLE);
         binding.retry.setVisibility(profile==null&&!state.isBusy()?View.VISIBLE:View.GONE);
         if(profile==null)return;
-        binding.paymentsLabel.setText("ADMIN".equals(profile.role)?"Quản lý thanh toán & chi trả":"Thanh toán của tôi");
-        binding.rowIncome.setVisibility(profile.tutor?View.VISIBLE:View.GONE);
+        binding.paymentsLabel.setText("ADMIN".equals(profile.role)?"Quản lý thanh toán & chi trả":profile.tutor?"Ví & thanh toán":"Thanh toán của tôi");
         AvatarRenderer.render(binding.avatar,profile.avatar,profile.name);
         binding.name.setText(profile.name);
         // TODO: replace with real counts (completed lessons / favourite tutors) once Classroom exposes them.
@@ -74,9 +71,6 @@ public final class AccountFragment extends AccountFragmentBase {
         com.example.tmdt.TutorReviewState review=new androidx.lifecycle.ViewModelProvider(requireActivity()).get(com.example.tmdt.TutorReviewState.class);
         if("ADMIN".equals(profile.role)){binding.tutorAction.setText("Mở trang quản trị");binding.tutorTitle.setText("Quản trị hệ thống");binding.tutorCaption.setText("Tài khoản, duyệt gia sư, hợp đồng và chi trả.");}
         else if(profile.tutor&&!"VERIFIED".equals(review.status())){binding.tutorAction.setText("Theo dõi hồ sơ gia sư");binding.tutorCaption.setText("Xem trạng thái xét duyệt và yêu cầu bổ sung.");}
-        boolean canSearch=profile.tutor&&"ACTIVE".equals(profile.status)&&"VERIFIED".equals(review.status());
-        binding.rowSearchRequests.setVisibility(canSearch?View.VISIBLE:View.GONE);
-        binding.searchRequestsDivider.setVisibility(canSearch?View.VISIBLE:View.GONE);
         binding.role.setText("ADMIN".equals(profile.role)?R.string.role_admin:host().classroom.tutorMode()?R.string.role_tutor:R.string.role_student);
         value(binding.email,profile.email);value(binding.phone,profile.phone);value(binding.address,profile.address);
         value(binding.level,profile.level);value(binding.region,profile.region);value(binding.goal,profile.goal);
@@ -84,8 +78,6 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.studyDetails.setVisibility(profile.grade.isEmpty()&&profile.age==0?View.GONE:View.VISIBLE);
         binding.verification.setText(state.verified()?getString(R.string.verified_phone,state.verifiedPhone()):getString(R.string.unverified));
         binding.verify.setVisibility(state.verified()?View.GONE:View.VISIBLE);
-        int agreement=profile.tutor&&"VERIFIED".equals(review.status())?View.VISIBLE:View.GONE;
-        binding.rowAgreement.setVisibility(agreement);binding.agreementDivider.setVisibility(agreement);
         int templates="ADMIN".equals(profile.role)?View.VISIBLE:View.GONE;
         binding.rowTemplates.setVisibility(templates);binding.templatesDivider.setVisibility(templates);
         renderContracts();

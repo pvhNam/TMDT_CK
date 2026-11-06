@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="request_manage_background">#F5F7FC</color>
-    <color name="request_manage_ink">#142B50</color>
-    <color name="request_manage_muted">#66758D</color>
-    <color name="request_manage_blue">#0866F5</color>
-    <color name="request_manage_border">#E3E9F2</color>
-    <color name="request_manage_pale">#EAF2FF</color>
-    <color name="request_manage_green">#18794E</color>
+    <color name="request_manage_background">@color/app_background</color>
+    <color name="request_manage_ink">@color/app_ink</color>
+    <color name="request_manage_muted">@color/app_muted</color>
+    <color name="request_manage_blue">@color/app_accent</color>
+    <color name="request_manage_border">@color/app_border</color>
+    <color name="request_manage_pale">@color/app_surface_variant</color>
+    <color name="request_manage_green">@color/app_success</color>
     <color name="request_manage_green_pale">#E8F5EE</color>
-    <color name="request_manage_closed">#626F83</color>
+    <color name="request_manage_closed">@color/app_muted</color>
     <color name="request_manage_closed_pale">#EDF0F5</color>
-    <color name="request_manage_red">#B3261E</color>
+    <color name="request_manage_red">@color/app_error</color>
 
     <style name="RequestManageLabel" parent="FieldLabel">
         <item name="android:textSize">12sp</item>
@@ -37,7 +37,7 @@
         <item name="android:insetBottom">0dp</item>
         <item name="cornerRadius">12dp</item>
         <item name="strokeColor">@color/request_manage_border</item>
-        <item name="backgroundTint">@android:color/white</item>
+        <item name="backgroundTint">@color/app_surface</item>
     </style>
 
     <style name="RequestManagePrimary" parent="PrimaryButton">
@@ -49,7 +49,7 @@
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
         <item name="cornerRadius">14dp</item>
-        <item name="backgroundTint">@color/request_manage_blue</item>
+        <item name="backgroundTint">#0866F5</item>
     </style>
 
     <style name="RequestManageTabText" parent="TextAppearance.Material3.LabelLarge">

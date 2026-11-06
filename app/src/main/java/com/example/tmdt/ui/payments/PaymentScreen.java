@@ -17,7 +17,7 @@ abstract class PaymentScreen extends ScreenFragment {
     protected MainActivity host(){return (MainActivity)requireActivity();}
     @Override public void onViewCreated(@NonNull View view,@Nullable Bundle saved){super.onViewCreated(view,saved);state().changes.observe(getViewLifecycleOwner(),ignored->refreshData());}
     @Override protected Object dataSnapshot(){return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,state());}
-    protected LinearLayout root(String title){LinearLayout root=ui.column();root.setBackgroundColor(0xFFF7F9FD);ui.header(root,title,host()::back,null);return root;}
+    protected LinearLayout root(String title){LinearLayout root=ui.column();root.setBackgroundColor(0xFFF7F9FD);if(!com.example.tmdt.ui.common.SectionHubFragment.embedded(this))ui.header(root,title,host()::back,null);return root;}
     protected void feedback(LinearLayout body){
         if(!state().error.isEmpty()){ui.add(body,ui.note(R.drawable.ic_info,state().error,0xFFFFF0F0,Ui.RED,Ui.RED));ui.space(body,12);}
         if(!state().notice.isEmpty()){ui.add(body,ui.note(R.drawable.ic_info,state().notice,Ui.GREEN_BG,Ui.GREEN,Ui.INK));ui.space(body,12);}

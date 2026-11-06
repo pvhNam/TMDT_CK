@@ -91,7 +91,7 @@ public final class Exchange {
     Fragment fragment(String destination) {
         switch (destination) {
             case CONTRACT: return new ContractFragment();
-            case CONTRACTS: return new ContractsFragment();
+            case CONTRACTS: return isTutor()?new com.example.tmdt.ui.exchange.ContractsHubFragment():new ContractsFragment();
             case AGREEMENT: return new AgreementFragment();
             case TEMPLATES: return new ContractTemplatesFragment();
             case REVIEW: return new ReviewFormFragment();

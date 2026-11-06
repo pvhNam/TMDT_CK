@@ -166,7 +166,6 @@ public final class ClassQuestionsDialog extends DialogFragment {
         String nextKey = key.toString();
         if (nextKey.equals(renderedContentKey)) return;
         renderedContentKey = nextKey;
-        int scroll = binding.classQuestionsScroll.getScrollY();
         com.example.tmdt.ui.common.StableBindings<ItemClassQuestionBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.classQuestionsList);rows.begin();
         if (available) for (GroupClassQuestion question : state.questions()) {
             ItemClassQuestionBinding row = rows.item(question.id,()->ItemClassQuestionBinding.inflate(getLayoutInflater(), binding.classQuestionsList, false));
@@ -203,10 +202,6 @@ public final class ClassQuestionsDialog extends DialogFragment {
             }
         }
         rows.commit(binding.classQuestionsList);
-        DialogClassQuestionsBinding renderedBinding = binding;
-        renderedBinding.classQuestionsScroll.post(() -> {
-            if (binding == renderedBinding) renderedBinding.classQuestionsScroll.scrollTo(0, scroll);
-        });
     }
 
     private static void appendKey(StringBuilder key, GroupClassQuestion message) {

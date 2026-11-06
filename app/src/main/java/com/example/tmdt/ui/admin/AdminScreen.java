@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.tmdt.*;
 import com.example.tmdt.ui.common.ScreenFragment;
+import com.example.tmdt.ui.common.StableViews;
 import com.example.tmdt.ui.common.Ui;
 
 abstract class AdminScreen extends ScreenFragment {
@@ -89,6 +90,12 @@ abstract class AdminScreen extends ScreenFragment {
         if(!state().notice.isEmpty()){ui.add(body,ui.note(R.drawable.ic_info,state().notice,Ui.GREEN_BG,Ui.GREEN,Ui.INK));ui.space(body,12);}
         if(state().busy){ui.add(body,ui.text("Đang cập nhật…",14,Ui.BLUE,false));ui.space(body,10);}
         return true;
+    }
+    protected boolean feedback(StableViews rows){
+        rows.add("admin-feedback",java.util.Arrays.asList(state().active,state().error,state().notice,state().busy),()->{
+            LinearLayout box=ui.column();feedback(box);return box;
+        },0);
+        return state().active;
     }
     protected void action(LinearLayout body,String label,int style,Runnable run){ui.addAction(body,ui.action(label,0,state().busy?Ui.DISABLED:style,state().busy?null:run),48);ui.space(body,10);}
     protected void card(LinearLayout body,String title,String value,String detail,Runnable click){

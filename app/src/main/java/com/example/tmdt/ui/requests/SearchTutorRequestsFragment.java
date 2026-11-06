@@ -29,6 +29,7 @@ public final class SearchTutorRequestsFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         binding = FragmentSearchTutorRequestsBinding.bind(view);
+        if(com.example.tmdt.ui.common.SectionHubFragment.embedded(this))binding.toolbar.setVisibility(View.GONE);
         state = new ViewModelProvider(requireActivity()).get(TutorRequestSearchState.class);
         catalog = new ViewModelProvider(requireActivity()).get(CatalogState.class);
         binding.toolbar.setNavigationOnClickListener(v -> host().back());
@@ -81,6 +82,7 @@ public final class SearchTutorRequestsFragment extends Fragment {
         binding.requestSearchSubject.setText(label == null || label.isEmpty()
                 ? getString(R.string.request_search_choose_subject) : label);
         binding.resetSearchFilter.setEnabled(state.authorized() && !state.selectedSubjectId().isEmpty());
+        binding.resetSearchFilter.setVisibility(state.selectedSubjectId().isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void render() {
@@ -100,7 +102,6 @@ public final class SearchTutorRequestsFragment extends Fragment {
         List<TutorRequestRecord> requests = allowed ? state.requests() : java.util.Collections.emptyList();
         binding.searchRequestsCount.setText(getString(R.string.request_search_count, requests.size()));
         binding.searchRequestsEmpty.setVisibility(View.GONE);
-        int scrollY = binding.searchRequestsScroll.getScrollY();
         com.example.tmdt.ui.common.StableBindings<ItemSearchTutorRequestBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.searchRequestsList);rows.begin();
         for (TutorRequestRecord request : requests) {
             if (!request.isOpen()) continue;
@@ -115,9 +116,6 @@ public final class SearchTutorRequestsFragment extends Fragment {
             row.viewRequestDetails.setOnClickListener(v -> openDetails(request.id));
         }
         rows.commit(binding.searchRequestsList);
-        binding.searchRequestsScroll.post(() -> {
-            if (binding != null) binding.searchRequestsScroll.scrollTo(0, scrollY);
-        });
         renderFilter();
         com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
         com.example.tmdt.ui.common.Motion.bindControls(binding.searchRequestsList);

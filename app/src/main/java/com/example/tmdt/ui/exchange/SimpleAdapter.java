@@ -21,10 +21,24 @@ public final class SimpleAdapter<T, B extends ViewBinding> extends RecyclerView.
     private final Inflate<B> inflate;
     private final Bind<T, B> bind;
     private final List<T> items = new ArrayList<>();
+    private final List<String> ids = new ArrayList<>();
+    private final List<Object> snapshots = new ArrayList<>();
+    private final java.util.function.Function<T,String> key;
 
-    public SimpleAdapter(Inflate<B> inflate, Bind<T, B> bind) { this.inflate = inflate; this.bind = bind; }
+    public SimpleAdapter(Inflate<B> inflate, java.util.function.Function<T,String> key, Bind<T, B> bind) { this.inflate = inflate; this.key=key; this.bind = bind; }
 
-    public void submit(List<T> values) { items.clear(); items.addAll(values); notifyDataSetChanged(); }
+    public void submit(List<T> values) {
+        List<T> next=new ArrayList<>(values);List<String> nextIds=new ArrayList<>();List<Object> nextSnapshots=new ArrayList<>();
+        for(T item:next){nextIds.add(key.apply(item));nextSnapshots.add(com.example.tmdt.ui.common.RenderSnapshot.of(item));}
+        androidx.recyclerview.widget.DiffUtil.DiffResult diff=androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){
+            @Override public int getOldListSize(){return ids.size();}
+            @Override public int getNewListSize(){return nextIds.size();}
+            @Override public boolean areItemsTheSame(int oldPosition,int newPosition){return ids.get(oldPosition).equals(nextIds.get(newPosition));}
+            @Override public boolean areContentsTheSame(int oldPosition,int newPosition){return snapshots.get(oldPosition).equals(nextSnapshots.get(newPosition));}
+        });
+        items.clear();items.addAll(next);ids.clear();ids.addAll(nextIds);snapshots.clear();snapshots.addAll(nextSnapshots);
+        diff.dispatchUpdatesTo(this);
+    }
     @Override public int getItemCount() { return items.size(); }
     @NonNull @Override public Holder<B> onCreateViewHolder(@NonNull ViewGroup parent, int type) {
         return new Holder<>(inflate.inflate(LayoutInflater.from(parent.getContext()), parent, false));

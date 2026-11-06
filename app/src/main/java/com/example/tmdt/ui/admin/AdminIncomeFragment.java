@@ -13,7 +13,7 @@ public final class AdminIncomeFragment extends AdminScreen {
         AdminMonthPicker.add(ui,body,money().incomePeriod,value->{money().incomePeriod=value;refresh();});
         Map<String,long[]> totals=new LinkedHashMap<>();Map<String,String> names=new HashMap<>();
         for(PaymentState.Row e:money().earnings.values())if(money().incomePeriod.equals(e.text("period"))){long[] v=totals.computeIfAbsent(e.text("tutor_id"),id->new long[3]);v[0]+=e.number("amount");v[1]++;names.put(e.text("tutor_id"),e.text("tutor_name"));}
-        for(PaymentState.Row p:money().payouts.values())if(money().incomePeriod.equals(p.text("period"))&&"PAID".equals(p.text("status")))totals.computeIfAbsent(p.text("tutor_id"),id->new long[3])[2]+=p.number("amount");
+        for(PaymentState.Row p:money().payouts.values())if(money().incomePeriod.equals(p.text("period"))&&TutorWallet.salaryPaid(p.text("status")))totals.computeIfAbsent(p.text("tutor_id"),id->new long[3])[2]+=p.number("amount");
         if(totals.isEmpty())ui.add(body,ui.text("Chưa có thu nhập trong tháng.",15,Ui.MUTED,false));
         for(Map.Entry<String,long[]> e:totals.entrySet()){
             long[] n=e.getValue();PaymentState.Row u=state().users.get(e.getKey());

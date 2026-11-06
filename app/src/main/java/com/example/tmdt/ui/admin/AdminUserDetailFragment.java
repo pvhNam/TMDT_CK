@@ -27,7 +27,7 @@ public final class AdminUserDetailFragment extends AdminScreen {
         }
         if(r.flag("la_gia_su")){
             long earned=0,paid=0;for(PaymentState.Row e:money().earnings.values())if(r.id.equals(e.text("tutor_id")))earned+=e.number("amount");
-            for(PaymentState.Row p:money().payouts.values())if(r.id.equals(p.text("tutor_id"))&&"PAID".equals(p.text("status")))paid+=p.number("amount");
+            for(PaymentState.Row p:money().payouts.values())if(r.id.equals(p.text("tutor_id"))&&TutorWallet.salaryPaid(p.text("status")))paid+=p.number("amount");
             card(body,"Thu nhập",PaymentState.money(earned),"Đã chi: "+PaymentState.money(paid)+"\nChưa chi: "+PaymentState.money(Math.max(0,earned-paid)),()->host().show("admin_income"));
         }return root;
     }

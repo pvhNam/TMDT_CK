@@ -18,6 +18,7 @@ import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.StableViews;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.Lesson;
 import com.example.tmdt.Tutor;
@@ -35,56 +36,66 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         return root;
     }
 
-    private void animateCalendar(){
-        render();com.example.tmdt.ui.common.Motion.reveal(content);
-    }
-    private void render() {
-        content.removeAllViews();
-        LocalDate day = classroom.teachingDay; boolean month = classroom.teachingMonth;
+    @Override protected boolean updateContent(){if(content==null)return false;render();return true;}
+    @Override public void onDestroyView(){super.onDestroyView();content=null;}
+    private void animateCalendar(){render();}
+    private View calendar(LocalDate day,boolean month){
+        LinearLayout calendar=ui.column();
         LinearLayout toggle = ui.row();
         ui.weight(toggle,ui.choice("Tuần",!month,()->{if(classroom.teachingMonth){classroom.teachingMonth=false;animateCalendar();}})); ui.gap(toggle,8);
         ui.weight(toggle,ui.choice("Tháng",month,()->{if(!classroom.teachingMonth){classroom.teachingMonth=true;animateCalendar();}}));
-        ui.add(content,toggle); ui.space(content,12);
+        ui.add(calendar,toggle); ui.space(calendar,12);
 
         LinearLayout period = ui.row();
         period.addView(ui.iconButton(R.drawable.ic_back,Ui.INK,month?"Tháng trước":"Tuần trước",()->{classroom.teachingDay=month?day.minusMonths(1):day.minusWeeks(1);animateCalendar();}),ui.lp(40,36));
         TextView label = ui.text("Tháng "+day.getMonthValue()+", "+day.getYear(),20,Ui.INK,true); label.setGravity(Gravity.CENTER); ui.weight(period,label);
         period.addView(ui.iconButton(R.drawable.ic_right,Ui.INK,month?"Tháng sau":"Tuần sau",()->{classroom.teachingDay=month?day.plusMonths(1):day.plusWeeks(1);animateCalendar();}),ui.lp(40,36));
-        ui.add(content,period);
+        ui.add(calendar,period);
 
-        List<Entry> shown = new ArrayList<>();
         if (!month) {
             LinearLayout strip = ui.row(); LocalDate monday = day.with(DayOfWeek.MONDAY);
             for (int i = 0; i < 7; i++) {
                 LocalDate date = monday.plusDays(i); if (i > 0) ui.gap(strip,5);
                 ui.weight(strip,ui.day(date,date.equals(day),()->{if(!date.equals(classroom.teachingDay)){classroom.teachingDay=date;animateCalendar();}}));
             }
-            ui.add(content,strip); ui.space(content,6);
+            ui.add(calendar,strip); ui.space(calendar,6);
         }
-        for (Lesson lesson : mine()) if (visible(LocalDate.parse(lesson.date),day,month)) shown.add(new Entry(lesson.start(),card(lesson,month)));
+        return calendar;
+    }
+    private void render() {
+        if(content==null)return;
+        LocalDate day=classroom.teachingDay;boolean month=classroom.teachingMonth;
+        StableViews rows=StableViews.at(content);rows.begin();
+        rows.add("calendar",java.util.Arrays.asList(day,month),()->calendar(day,month),ui.dp(10));
+        List<Entry> shown=new ArrayList<>();
+        for (Lesson lesson : mine()) if (visible(LocalDate.parse(lesson.date),day,month))
+            shown.add(new Entry(lesson.start(),"lesson/"+lesson.id,java.util.Arrays.asList(lesson,month,lesson.started(),lesson.roomOpen()),()->card(lesson,month)));
         for (GroupClass item : classroom.store.classes)
             if (item.tutorId.equals(classroom.me()) && item.active())
                 for (GroupClass.Session session : item.sessionList())
-                    if (visible(session.date,day,month)) shown.add(new Entry(session.start(),classCard(session,month)));
+                    if (visible(session.date,day,month)) shown.add(new Entry(session.start(),"session/"+item.id+"/"+session.number,
+                            java.util.Arrays.asList(item,session.number,month,session.started(),session.roomOpen()),()->classCard(session,month)));
         shown.sort(Comparator.comparing(entry->entry.start));
-        for (Entry entry : shown) { ui.add(content,entry.view); ui.space(content,11); }
+        for (Entry entry : shown)rows.add(entry.id,entry.data,entry.create,ui.dp(11));
 
-        ui.space(content,4); ui.section(content,"Đề nghị thay đổi",19); ui.space(content,6);
         int proposals = 0;
         for (Lesson lesson : mine()) if (lesson.proposal()) {
-            ui.add(content,ui.note(R.drawable.ic_clock,"Chờ học viên đồng ý · "+lesson.studentName+" · "+lesson.title+"\n"
-                    +lesson.dateLabel()+" "+lesson.timeLabel()+" → "+lesson.proposalLabel(),Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE));
-            ui.space(content,8); proposals++;
+            if(proposals++==0)proposalHeading(rows);
+            rows.add("proposal/"+lesson.id,lesson,()->ui.note(R.drawable.ic_clock,"Chờ học viên đồng ý · "+lesson.studentName+" · "+lesson.title+"\n"
+                    +lesson.dateLabel()+" "+lesson.timeLabel()+" → "+lesson.proposalLabel(),Ui.ORANGE_BG,Ui.BLUE,Ui.ORANGE),ui.dp(8));
         }
         for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && item.active() && item.proposalOpen()) {
-            ui.add(content,proposalNote(item,true)); ui.space(content,8); proposals++;
+            if(proposals++==0)proposalHeading(rows);
+            rows.add("group-proposal/"+item.id,item,()->proposalNote(item,true),ui.dp(8));
         }
         for (Lesson lesson : mine()) if (lesson.replied()) {
-            ui.add(content,ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
-                    lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK));
-            ui.space(content,8); proposals++;
+            if(proposals++==0)proposalHeading(rows);
+            rows.add("reply/"+lesson.id,lesson,()->ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
+                    lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK),ui.dp(8));
         }
+        rows.commit();
     }
+    private void proposalHeading(StableViews rows){rows.add("proposal-heading",true,()->ui.text("Đề nghị thay đổi",19,Ui.INK,true),ui.dp(6));}
 
     /** The selected day in week view, or any day of the selected month in month view. */
     private static boolean visible(LocalDate date, LocalDate day, boolean month) {
@@ -93,8 +104,8 @@ public final class TeachingScheduleFragment extends ScreenFragment {
 
     /** A card with the time it is sorted by, so lessons and class sessions share one list. */
     private static final class Entry {
-        final LocalDateTime start; final View view;
-        Entry(LocalDateTime start, View view) { this.start=start; this.view=view; }
+        final LocalDateTime start;final String id;final Object data;final java.util.function.Supplier<View> create;
+        Entry(LocalDateTime start,String id,Object data,java.util.function.Supplier<View> create){this.start=start;this.id=id;this.data=data;this.create=create;}
     }
 
     /** One session of a group class; the tutor can move it alone, and it moves once no member is busy at the new time. */

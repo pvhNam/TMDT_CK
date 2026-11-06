@@ -10,13 +10,16 @@ import com.example.tmdt.R;
 import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.StableViews;
+import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
 public final class OpenedClassesFragment extends ScreenFragment {
-    private LinearLayout tabContainer, listContainer;
+    private LinearLayout listContainer;
+    private TabLayout tabs;
     private static final String[] STATUSES = {GroupClass.OPEN, GroupClass.RUNNING, GroupClass.ENDED};
 
     @Override protected View build() {
@@ -24,24 +27,35 @@ public final class OpenedClassesFragment extends ScreenFragment {
         View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->classroom.openClass(null,"openClass"));
         open.setLayoutParams(ui.lp(104,37));
         ui.title(root,"Lớp đã mở",open);
-        tabContainer=ui.column();ui.add(root,tabContainer);
-        listContainer=ui.page(root);renderClasses();return root;
-    }
-    private void renderClasses(){
-        tabContainer.removeAllViews();listContainer.removeAllViews();
-        String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
-        for(int i=0;i<3;i++)labels[i]+=" ("+mine(STATUSES[i]).size()+")";
-        ui.tabs(tabContainer,labels,classroom.classTab,index->{
-            if(index==classroom.classTab)return;
-            classroom.classTab=index;renderClasses();
-            ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
-            com.example.tmdt.ui.common.Motion.reveal(listContainer);
+        tabs=new TabLayout(requireContext());tabs.setTabMode(TabLayout.MODE_FIXED);
+        for(String title:new String[]{"Đang tuyển","Đang học","Đã kết thúc"})tabs.addTab(tabs.newTab().setText(title),false);
+        tabs.getTabAt(classroom.classTab).select();ui.add(root,tabs);
+        listContainer=ui.page(root);
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){
+            @Override public void onTabSelected(TabLayout.Tab tab){
+                if(tab.getPosition()==classroom.classTab)return;
+                classroom.classTab=tab.getPosition();renderClasses();
+                ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab){}
+            @Override public void onTabReselected(TabLayout.Tab tab){}
         });
-        ui.space(listContainer,4);
-        if(classroom.classTab==0&&!GroupMatch.groups(classroom.store.openRequests,classroom.me()).isEmpty()){ui.add(listContainer,matchLink());ui.space(listContainer,12);}
-        List<GroupClass> list=mine(STATUSES[classroom.classTab]);
-        for(GroupClass item:list){ui.add(listContainer,card(item));ui.space(listContainer,11);}
+        renderClasses();return root;
     }
+    @Override protected boolean updateContent(){if(listContainer==null)return false;renderClasses();return true;}
+    private void renderClasses(){
+        String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
+        for(int i=0;i<3;i++)tabs.getTabAt(i).setText(labels[i]+" ("+mine(STATUSES[i]).size()+")");
+        if(tabs.getSelectedTabPosition()!=classroom.classTab)tabs.getTabAt(classroom.classTab).select();
+        StableViews rows=StableViews.at(listContainer);rows.begin();
+        int groups=GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
+        if(classroom.classTab==0&&groups>0)rows.add("matches",groups,this::matchLink,ui.dp(12));
+        List<GroupClass> list=mine(STATUSES[classroom.classTab]);
+        for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
+        rows.commit();
+    }
+
+    @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}
 
     /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */
     private View matchLink() {

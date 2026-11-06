@@ -16,10 +16,12 @@ final class RevenuePieView extends View {
     private final RectF bounds=new RectF();
     private final float density;
     private final boolean animate;
+    private final String countLabel;
+    private final Typeface medium=Typeface.create("sans-serif-medium",Typeface.NORMAL),regular=Typeface.create("sans-serif",Typeface.NORMAL);
     private float progress=1;
     private ValueAnimator animator;
     RevenuePieView(Ui ui,RevenueBreakdown data,boolean animate){
-        super(ui.context);this.data=data;density=getResources().getDisplayMetrics().density;this.animate=animate;
+        super(ui.context);this.data=data;density=getResources().getDisplayMetrics().density;this.animate=animate;countLabel=String.valueOf(data.transactions);
         setContentDescription(data.received==0?"Biểu đồ doanh thu: chưa có học phí đã nhận":"Biểu đồ tròn doanh thu theo hình thức học; số tiền và tỷ lệ ở chú giải bên dưới");
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
@@ -42,9 +44,9 @@ final class RevenuePieView extends View {
             canvas.drawArc(bounds,start,sweep*progress,false,paint);start+=sweep*progress;
         }
         paint.setStyle(Paint.Style.FILL);paint.setTextAlign(Paint.Align.CENTER);
-        paint.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.INK));paint.setTextSize(25*density);
-        canvas.drawText(data.received==0?"0":"100%",cx,cy+2*density,paint);
-        paint.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.MUTED));paint.setTextSize(12*density);
-        canvas.drawText("Học phí đã nhận",cx,cy+23*density,paint);
+        paint.setTypeface(medium);paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.INK));paint.setTextSize(25*density);
+        canvas.drawText(countLabel,cx,cy+2*density,paint);
+        paint.setTypeface(regular);paint.setColor(com.example.tmdt.ui.common.ThemeColors.text(getContext(),Ui.MUTED));paint.setTextSize(12*density);
+        canvas.drawText("giao dịch",cx,cy+23*density,paint);
     }
 }

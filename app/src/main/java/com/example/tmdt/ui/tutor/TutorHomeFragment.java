@@ -49,6 +49,7 @@ public final class TutorHomeFragment extends ScreenFragment {
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(false)).show());
         mode.setContentDescription("Chế độ gia sư. Chạm để chuyển về chế độ học viên"); hello.addView(mode,ui.lp(-2,27));
         ui.weight(top,hello);
+        top.addView(ui.iconButton(R.drawable.ic_wallet,Ui.BLUE,"Ví gia sư",()->classroom.show("tutor_wallet")));
         top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         ui.add(body,top); ui.space(body,10);
         agreementCard(body);

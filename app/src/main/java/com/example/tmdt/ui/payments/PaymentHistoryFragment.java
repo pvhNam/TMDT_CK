@@ -3,38 +3,60 @@ package com.example.tmdt.ui.payments;
 import android.view.View;
 import android.widget.LinearLayout;
 import com.example.tmdt.PaymentState;
+import com.example.tmdt.R;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.StableViews;
 
 public final class PaymentHistoryFragment extends PaymentScreen {
+    private LinearLayout body;
     @Override protected View build(){
-        LinearLayout root=root(state().admin?"Quản lý thanh toán":"Thanh toán của tôi"),body=ui.page(root);feedback(body);
-        if(state().admin){ui.tabs(body,new String[]{"Học phí","Hoàn tiền"},state().adminPaymentTab,i->{state().adminPaymentTab=i;scrollToTop();refresh();});ui.space(body,16);}
+        LinearLayout root=root(state().admin?"Quản lý thanh toán":"Thanh toán của tôi");body=ui.page(root);render();return root;
+    }
+    @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
+    @Override public void onDestroyView(){super.onDestroyView();body=null;}
+    private void render(){
+        StableViews rows=StableViews.at(body);rows.begin();
+        if(!state().error.isEmpty()||!state().notice.isEmpty()||state().busy)
+            rows.add("feedback",java.util.Arrays.asList(state().error,state().notice,state().busy),()->{LinearLayout box=ui.column();feedback(box);return box;},0);
+        if(state().admin)rows.add("tabs",state().adminPaymentTab,()->{
+            LinearLayout box=ui.column();ui.tabs(box,new String[]{"Học phí","Hoàn tiền"},state().adminPaymentTab,i->{state().adminPaymentTab=i;scrollToTop();refresh();});return box;
+        },ui.dp(16));
         if(!state().admin||state().adminPaymentTab==0){
-        if(state().tutor)action(body,"Thu nhập và tài khoản nhận tiền",Ui.OUTLINE,()->host().show("tutor_income"));
-        LinearLayout heading=ui.row();ui.weight(heading,ui.text("Lịch sử giao dịch",19,Ui.INK,true));heading.addView(ui.pill(String.valueOf(state().payments.size()),12,Ui.BLUE,Ui.PALE));ui.add(body,heading);ui.space(body,14);
-        for(PaymentState.Row payment:newest(state().payments.values())){
+        if(state().tutor&&!com.example.tmdt.ui.common.SectionHubFragment.embedded(this))rows.add("income",state().busy,()->{
+            LinearLayout box=ui.column();action(box,"Thu nhập và tài khoản nhận tiền",Ui.OUTLINE,()->host().show("tutor_income"));return box;
+        },0);
+        rows.add("heading",state().payments.size(),()->{
+            LinearLayout heading=ui.row();ui.weight(heading,ui.text("Lịch sử giao dịch",16,Ui.INK,true));heading.addView(ui.pill(String.valueOf(state().payments.size()),12,Ui.BLUE,Ui.PALE));return heading;
+        },ui.dp(14));
+        for(PaymentState.Row payment:newest(state().payments.values()))rows.add("payment/"+payment.id,payment,()->{
             LinearLayout card=ui.card(),top=ui.row();
-            ui.weight(top,ui.text(payment.text("title").isEmpty()?"Thanh toán học phí":payment.text("title"),17,Ui.INK,true));ui.gap(top,8);top.addView(ui.text("›",25,Ui.BLUE,false));ui.add(card,top);ui.space(card,8);
-            ui.add(card,ui.text(payment.text("tutor_name")+" · "+payment.number("session_count")+" buổi",13,Ui.MUTED,false));ui.space(card,14);
-            ui.add(card,ui.text(PaymentState.money(payment.number("amount")),24,Ui.BLUE,true));ui.space(card,10);
-            ui.add(card,statusPill(payment.text("status")));
-            if(payment.time("created_at")>0){ui.space(card,10);ui.add(card,ui.text(date(payment.time("created_at")),12,Ui.MUTED,false));}
+            top.addView(statusPill(payment.text("status")));ui.add(card,top);ui.space(card,12);
+            ui.add(card,ui.text(payment.text("title").isEmpty()?"Thanh toán học phí":payment.text("title"),16,Ui.INK,true));ui.space(card,6);
+            String tutor=payment.text("tutor_name");
+            ui.add(card,ui.text((tutor.isEmpty()?"":tutor+" · ")+payment.number("session_count")+" buổi",13,Ui.MUTED,false));ui.space(card,14);
+            ui.line(card);ui.space(card,12);
+            LinearLayout bottom=ui.row(),detail=ui.column();
+            ui.add(detail,ui.text(PaymentState.money(payment.number("amount")),20,Ui.BLUE,true));
+            if(payment.time("created_at")>0){ui.space(detail,4);ui.add(detail,ui.text(date(payment.time("created_at")),12,Ui.MUTED,false));}
+            ui.weight(bottom,detail);bottom.addView(ui.icon(R.drawable.ic_right,18,Ui.MUTED));ui.add(card,bottom);
             card.setContentDescription("Xem giao dịch "+(payment.text("title").isEmpty()?payment.id:payment.text("title")));
-            ui.clickable(card,()->state().openExisting(payment.id,"payments"));ui.add(body,card);ui.space(body,12);
-        }
+            ui.clickable(card,()->state().openExisting(payment.id,"payments"));return card;
+        },ui.dp(12));
         }
         if(state().admin&&state().adminPaymentTab==1){
-            ui.space(body,10);ui.add(body,ui.text("Yêu cầu hoàn tiền",19,Ui.INK,true));ui.space(body,10);
-            for(PaymentState.Row refund:newest(state().refunds.values())){
-                summary(body,refund.text("title"),refund.text("reason")+"\n"+PaymentState.status(refund.text("status")),PaymentState.money(refund.number("amount")));
+            rows.add("refund-heading",true,()->ui.text("Yêu cầu hoàn tiền",19,Ui.INK,true),ui.dp(10));
+            for(PaymentState.Row refund:newest(state().refunds.values()))rows.add("refund/"+refund.id,java.util.Arrays.asList(refund,state().busy),()->{
+                LinearLayout box=ui.column();
+                summary(box,refund.text("title"),refund.text("reason")+"\n"+PaymentState.status(refund.text("status")),PaymentState.money(refund.number("amount")));
                 if("PENDING".equals(refund.text("status"))){
-                    action(body,"Xác nhận đã chuyển hoàn tiền",Ui.OUTLINE,()->{
+                    action(box,"Xác nhận đã chuyển hoàn tiền",Ui.OUTLINE,()->{
                     state().selectedRefund=refund.id;prompt("Xác nhận đã hoàn tiền","Mã giao dịch ngân hàng",state()::finishRefund);
                     });
-                    action(body,"Từ chối yêu cầu hoàn tiền",Ui.OUTLINE,()->{state().selectedRefund=refund.id;prompt("Từ chối hoàn tiền","Lý do từ chối",state()::rejectRefund);});
+                    action(box,"Từ chối yêu cầu hoàn tiền",Ui.OUTLINE,()->{state().selectedRefund=refund.id;prompt("Từ chối hoàn tiền","Lý do từ chối",state()::rejectRefund);});
                 }
-            }
+                return box;
+            },0);
         }
-        return root;
+        rows.commit();
     }
 }
