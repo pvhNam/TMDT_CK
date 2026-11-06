@@ -592,7 +592,7 @@ service cloud.firestore {
         return signedIn()
           && (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) || activeUser());
       }
-      allow read: if canRead() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
+      allow read: if admin() || (canRead() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid));
       allow create: if activeUser() && validRegistration() && applied() && request.resource.data.created_at == request.time;
       allow update: if activeUser() && validRegistration()
         && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at']))
