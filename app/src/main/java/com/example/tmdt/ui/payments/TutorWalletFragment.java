@@ -24,14 +24,15 @@ public final class TutorWalletFragment extends PaymentScreen {
         PaymentState.Row wallet=state().wallet();long earned=0,paid=0;
         for(PaymentState.Row earning:state().earnings.values())if(state().owner.equals(earning.text("tutor_id")))earned+=earning.number("amount");
         for(PaymentState.Row payout:state().payouts.values())if(state().owner.equals(payout.text("tutor_id"))&&TutorWallet.salaryPaid(payout.text("status")))paid+=payout.number("amount");
-        final long pendingSalary=Math.max(0,earned-paid),available=TutorWallet.available(wallet),reserved=TutorWallet.reserved(wallet);
+        final long pendingSalary=Math.max(0,earned-paid),available=TutorWallet.available(wallet),reserved=TutorWallet.reserved(wallet),withdrawn=wallet==null?0:wallet.number("total_withdrawn");
         rows.add("balance",Arrays.asList(wallet,pendingSalary,state().walletLoaded,state().busy),()->{
             LinearLayout card=ui.card();ui.cardSurface(card,Ui.PALE,Ui.BORDER);LinearLayout top=ui.row();
             top.addView(ui.icon(R.drawable.ic_wallet,24,Ui.BLUE));ui.gap(top,10);ui.weight(top,ui.text("Số dư khả dụng",14,Ui.MUTED,false));ui.add(card,top);ui.space(card,16);
             TextView amount=ui.text(state().walletLoaded?PaymentState.money(available):"Đang tải số dư…",26,Ui.INK,true);amount.setMaxLines(1);amount.setAutoSizeTextTypeUniformWithConfiguration(16,26,1,android.util.TypedValue.COMPLEX_UNIT_SP);ui.add(card,amount);ui.space(card,18);
             boolean enabled=state().walletLoaded&&available>=TutorWallet.MIN_WITHDRAWAL&&!state().busy;
             ui.addAction(card,ui.action("Rút về ngân hàng",0,enabled?Ui.PRIMARY:Ui.DISABLED,enabled?()->state().beginWithdrawal():null),48);ui.space(card,16);ui.line(card);ui.space(card,14);
-            LinearLayout stats=ui.row();ui.weight(stats,metric("Đang rút",reserved,Ui.INK));ui.gap(stats,12);ui.weight(stats,metric("Lương chờ vào ví",pendingSalary,Ui.MUTED));ui.add(card,stats);return card;
+            LinearLayout stats=ui.row();ui.weight(stats,metric("Đã rút",withdrawn,Ui.GREEN));ui.gap(stats,12);ui.weight(stats,metric("Lương chờ vào ví",pendingSalary,Ui.MUTED));ui.add(card,stats);
+            if(reserved>0){ui.space(card,10);ui.add(card,ui.text("Chưa hoàn tất: "+PaymentState.money(reserved),12,Ui.MUTED,false));}return card;
         },ui.dp(12));
         rows.add("bank",state().bank,()->{
             LinearLayout card=ui.row();ui.pad(card,14,10);ui.surface(card,Ui.WHITE,16,Ui.BORDER);card.addView(ui.icon(R.drawable.ic_wallet,22,Ui.BLUE));ui.gap(card,12);

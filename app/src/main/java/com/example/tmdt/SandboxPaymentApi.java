@@ -48,7 +48,7 @@ final class SandboxPaymentApi {
                 if(method.equals("POST")&&path.equals("/wallet/withdrawals"))return requestWithdrawal(uid,body);
                 String[] parts=path.split("/");
                 if(method.equals("POST")&&parts.length==5&&parts[1].equals("wallet")&&parts[2].equals("withdrawals")){
-                    withdrawalAction(uid,admin,parts[3],parts[4],body);return PaymentState.json("ok",true);
+                    withdrawalAction(uid,parts[3],parts[4]);return PaymentState.json("ok",true);
                 }
                 if(method.equals("POST")&&parts.length>=4&&parts[1].equals("payments")){
                     String id=parts[2],action=parts[3];
@@ -224,41 +224,32 @@ final class SandboxPaymentApi {
             check(expectedBank!=null&&text(bank,"bank_name").equals(expectedBank.optString("bank_name"))&&text(bank,"account_number").equals(expectedBank.optString("account_number"))&&text(bank,"account_name").equals(expectedBank.optString("account_name")),"Tài khoản ngân hàng đã thay đổi. Vui lòng kiểm tra rồi gửi lại.");
             check("ACTIVE".equals(text(teacher,"trang_thai"))&&Boolean.TRUE.equals(teacher.get("la_gia_su")),"Chỉ gia sư đang hoạt động được rút tiền.");
             check(num(old,"available_balance")>=amount,"Số dư khả dụng không đủ.");
-            Map<String,Object> wallet=walletValues(uid,old,"WITHDRAW_REQUEST",id);
-            wallet.put("available_balance",num(old,"available_balance")-amount);wallet.put("reserved_balance",Math.addExact(num(old,"reserved_balance"),amount));
-            tx.set(target,wallet);tx.set(withdrawal,map("is_sandbox",true,"tutor_id",uid,"tutor_name",teacher.get("ho_ten"),"amount",amount,"currency","VND","bank",bankSnapshot(bank),"status","PENDING","processing_by","","processing_at",null,"processed_by","","processed_at",null,"bank_reference","","review_note","","created_at",stamp(),"updated_at",stamp()));return "PENDING";
+            // This class only writes sandbox_* data; no bank transfer is made by this transaction.
+            Map<String,Object> wallet=walletValues(uid,old,"WITHDRAW_AUTO",id);
+            wallet.put("available_balance",num(old,"available_balance")-amount);wallet.put("total_withdrawn",Math.addExact(num(old,"total_withdrawn"),amount));
+            tx.set(target,wallet);tx.set(withdrawal,map("is_sandbox",true,"tutor_id",uid,"tutor_name",teacher.get("ho_ten"),"amount",amount,"currency","VND","bank",bankSnapshot(bank),"status","PAID","processing_by","","processing_at",null,"processed_by",uid,"processed_at",stamp(),"bank_reference","TEST_"+id,"review_note","","created_at",stamp(),"updated_at",stamp()));return "PAID";
         }));return PaymentState.json("ok",true,"id",id,"status",status);
     }
-    private void withdrawalAction(String actor,boolean admin,String id,String action,JSONObject body)throws Exception{
-        check(Arrays.asList("claim","paid","reject","cancel").contains(action),"Thao tác rút tiền chưa hợp lệ.");
-        String status=action.equals("claim")?"PROCESSING":action.equals("paid")?"PAID":action.equals("reject")?"REJECTED":"CANCELLED";
-        String note=action.equals("reject")?reason(body,5,500,"reason"):action.equals("cancel")?"Gia sư hủy yêu cầu.":"";
-        String reference=action.equals("paid")?reason(body,3,150,"reference"):"";
+    private void withdrawalAction(String actor,String id,String action)throws Exception{
+        check(Arrays.asList("complete","cancel").contains(action),"Thao tác rút tiền chưa hợp lệ.");
+        boolean complete=action.equals("complete");String status=complete?"PAID":"CANCELLED";
         Tasks.await(db.runTransaction(tx->{
             DocumentReference withdrawal=ref("wallet_withdrawals",id);Map<String,Object> w=must(tx.get(withdrawal));
-            String uid=text(w,"tutor_id");if(action.equals("cancel"))check(uid.equals(actor),"Chỉ chủ ví được hủy yêu cầu rút tiền.");else admin(admin);
+            String uid=text(w,"tutor_id");check(uid.equals(actor),"Chỉ chủ ví được xử lý yêu cầu rút tiền.");
             String previous=text(w,"status");
-            if(status.equals(previous)){if(action.equals("claim"))check(actor.equals(text(w,"processing_by")),"Quản trị viên khác đang xử lý yêu cầu này.");return null;}
-            if(action.equals("claim")){
-                check("PENDING".equals(previous),"Yêu cầu không còn chờ xử lý.");
-                Map<String,Object> teacher=must(tx.get(db.collection("users").document(uid)));
-                check("ACTIVE".equals(text(teacher,"trang_thai")),"Gia sư đang bị khóa. Hãy từ chối yêu cầu để hoàn số dư vào ví.");
-                tx.update(withdrawal,map("status","PROCESSING","processing_by",actor,"processing_at",stamp(),"updated_at",stamp()));return null;
-            }
+            if(status.equals(previous))return null;
             check(TutorWallet.withdrawing(previous),"Yêu cầu rút tiền đã được xử lý.");
-            if(action.equals("cancel"))check("PENDING".equals(previous),"Yêu cầu đang được quản trị viên xử lý, không thể hủy.");
-            else if("PROCESSING".equals(previous))check(actor.equals(text(w,"processing_by")),"Quản trị viên khác đang xử lý yêu cầu này.");
-            if(action.equals("paid"))check("PROCESSING".equals(previous),"Nhận xử lý yêu cầu trước khi chuyển khoản.");
             Map<String,Object> teacher=must(tx.get(db.collection("users").document(uid)));
             DocumentReference target=ref("tutor_wallets",uid);Map<String,Object> old=must(tx.get(target));long amount=num(w,"amount");
             check(amount>=TutorWallet.MIN_WITHDRAWAL&&amount<=TutorWallet.MAX_WITHDRAWAL,"Số tiền trong yêu cầu rút chưa hợp lệ.");
             check(num(old,"reserved_balance")>=amount,"Khoản giữ tiền không còn hợp lệ.");
-            if(action.equals("paid"))check("ACTIVE".equals(text(teacher,"trang_thai")),"Gia sư đang bị khóa. Hãy từ chối yêu cầu để hoàn số dư vào ví.");
-            Map<String,Object> wallet=walletValues(uid,old,action.equals("paid")?"WITHDRAW_PAID":"WITHDRAW_RELEASE",id);
+            check("ACTIVE".equals(text(teacher,"trang_thai")),"Tài khoản chưa được kích hoạt.");
+            if(complete)check(Boolean.TRUE.equals(teacher.get("la_gia_su")),"Chỉ gia sư được rút tiền.");
+            Map<String,Object> wallet=walletValues(uid,old,complete?"WITHDRAW_PAID":"WITHDRAW_RELEASE",id);
             wallet.put("reserved_balance",num(old,"reserved_balance")-amount);
-            if(action.equals("paid"))wallet.put("total_withdrawn",Math.addExact(num(old,"total_withdrawn"),amount));
+            if(complete)wallet.put("total_withdrawn",Math.addExact(num(old,"total_withdrawn"),amount));
             else wallet.put("available_balance",Math.addExact(num(old,"available_balance"),amount));
-            tx.set(target,wallet);tx.update(withdrawal,map("status",status,"processed_by",actor,"processed_at",stamp(),"bank_reference",reference,"review_note",note,"updated_at",stamp()));return null;
+            tx.set(target,wallet);tx.update(withdrawal,map("status",status,"processed_by",actor,"processed_at",stamp(),"bank_reference",complete?"TEST_"+id:"","review_note",complete?"":"Gia sư hủy yêu cầu.","updated_at",stamp()));return null;
         }));
     }
     private void refund(String uid,boolean admin,String id,JSONObject body)throws Exception{

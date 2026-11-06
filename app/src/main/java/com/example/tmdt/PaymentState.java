@@ -142,12 +142,17 @@ public final class PaymentState extends ViewModel {
     public Row wallet(){return wallets.get(owner);}
     public void beginWithdrawal(){clearFeedback();withdrawalDraft="";withdrawalRequestId=owner+"_"+UUID.randomUUID();destination="withdraw_funds";changed();}
     public void requestWithdrawal(long amount,String requestId,Map<String,Object> bank){
-        request("POST","/wallet/withdrawals",json("amount",amount,"request_id",requestId,"bank",new JSONObject(bank)),r->{notice="PENDING".equals(r.optString("status","PENDING"))?"Đã gửi yêu cầu rút tiền.":TutorWallet.withdrawalStatus(r.optString("status"));withdrawalDraft="";withdrawalRequestId="";destination="tutor_wallet";});
+        request("POST","/wallet/withdrawals",json("amount",amount,"request_id",requestId,"bank",new JSONObject(bank)),r->{
+            String status=r.optString("status");notice=TutorWallet.withdrawalStatus(status);withdrawalDraft="";withdrawalRequestId="";
+            if(TutorWallet.withdrawing(status)){selectedWithdrawal=r.optString("id",requestId);withdrawalOrigin="tutor_wallet";destination="withdrawal_detail";}else destination="tutor_wallet";
+        });
     }
     public void openWithdrawal(String id,String from){selectedWithdrawal=id;withdrawalOrigin=from;clearFeedback();destination="withdrawal_detail";changed();}
-    public void processWithdrawal(String id,String action,String value){
-        request("POST","/wallet/withdrawals/"+id+"/"+action,json("reference",value,"reason",value),r->notice=
-                "claim".equals(action)?"Đã nhận xử lý. Chuyển khoản rồi xác nhận mã giao dịch.":"paid".equals(action)?"Đã xác nhận chuyển tiền.":"Yêu cầu đã đóng. Tiền đã trở lại ví gia sư.");
+    public void completeWithdrawal(String id){
+        request("POST","/wallet/withdrawals/"+id+"/complete",json(),r->notice="Đã rút tiền.");
+    }
+    public void cancelWithdrawal(String id){
+        request("POST","/wallet/withdrawals/"+id+"/cancel",json(),r->notice="Đã hủy yêu cầu. Tiền đã trở lại ví.");
     }
     public void markPayout(String reference){request("POST","/admin/payouts/"+selectedPayout+"/paid",json("reference",reference),r->notice="Đã ghi nhận khoản chuyển tiền cho gia sư.");}
     public void cancelPayout(String reason){request("POST","/admin/payouts/"+selectedPayout+"/cancel",json("reason",reason),r->notice="Đã hủy bảng chi trả.");}

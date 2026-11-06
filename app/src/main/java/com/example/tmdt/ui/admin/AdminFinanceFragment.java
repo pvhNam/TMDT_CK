@@ -35,14 +35,13 @@ public final class AdminFinanceFragment extends AdminScreen {
             if(payroll.unpreparedAmount>0){ui.space(card,12);ui.add(card,ui.text("Chưa lập bảng: "+PaymentState.money(payroll.unpreparedAmount),13,Ui.MUTED,false));}
             ui.space(card,16);ui.addAction(card,ui.action("Xem bảng lương",0,Ui.PRIMARY,()->open("admin_payroll")),48);return card;
         },ui.dp(20));
-        long available=0,reserved=0;int pendingWithdrawals=0;
-        for(PaymentState.Row wallet:money().wallets.values()){available+=TutorWallet.available(wallet);reserved+=TutorWallet.reserved(wallet);}
-        for(PaymentState.Row withdrawal:money().withdrawals.values())if(TutorWallet.withdrawing(withdrawal.text("status")))pendingWithdrawals++;
-        final long walletAvailable=available,walletReserved=reserved;final int requests=pendingWithdrawals;
+        long available=0,withdrawn=0;
+        for(PaymentState.Row wallet:money().wallets.values()){available+=TutorWallet.available(wallet);withdrawn+=wallet.number("total_withdrawn");}
+        final long walletAvailable=available,walletWithdrawn=withdrawn;
         rows.add("wallet-heading",true,()->ui.text("Ví gia sư",18,Ui.INK,true),ui.dp(12));
-        rows.add("wallets",Arrays.asList(available,reserved,pendingWithdrawals,money().walletLoaded),()->{
-            LinearLayout card=ui.card(),stats=ui.row();ui.weight(stats,metric("Số dư khả dụng",walletAvailable,Ui.INK));ui.gap(stats,10);ui.weight(stats,metric("Tiền đang rút",walletReserved,Ui.INK));ui.add(card,stats);
-            ui.space(card,14);ui.addAction(card,ui.action("Duyệt rút tiền"+(requests>0?" ("+requests+")":""),0,Ui.PRIMARY,()->{money().withdrawalFilter=0;open("admin_withdrawals");}),48);return card;
+        rows.add("wallets",Arrays.asList(available,withdrawn,money().walletLoaded),()->{
+            LinearLayout card=ui.card(),stats=ui.row();ui.weight(stats,metric("Số dư khả dụng",walletAvailable,Ui.INK));ui.gap(stats,10);ui.weight(stats,metric("Đã rút",walletWithdrawn,Ui.GREEN));ui.add(card,stats);
+            ui.space(card,14);ui.addAction(card,ui.action("Xem lịch sử rút tiền",0,Ui.OUTLINE,()->{money().withdrawalFilter=0;open("admin_withdrawals");}),48);return card;
         },ui.dp(20));
         int refunds=0;
         for(PaymentState.Row r:money().refunds.values())if("PENDING".equals(r.text("status")))refunds++;

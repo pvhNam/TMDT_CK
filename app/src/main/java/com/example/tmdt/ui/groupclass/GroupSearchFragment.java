@@ -100,7 +100,8 @@ public final class GroupSearchFragment extends ScreenFragment {
         int sent=0,waiting=0;
         for(GroupClass item:classroom.store.classes)for(GroupClass.Registration registration:item.registrations)
             if(registration.studentId.equals(classroom.me())){sent++;if(registration.pending())waiting++;}
-        historyRows.add("history",new int[]{sent,waiting},this::historyLink,0);historyRows.commit();
+        final int sentCount=sent,waitingCount=waiting;
+        historyRows.add("history",new int[]{sent,waiting},()->historyLink(sentCount,waitingCount),0);historyRows.commit();
         StableViews rows=StableViews.at(results);rows.begin();
         String query = normalized(search.getText().toString());
         // Ghép nhóm có cùng yêu cầu: classes that suit the student's own tutor requests come first while nothing is searched.
@@ -120,6 +121,16 @@ public final class GroupSearchFragment extends ScreenFragment {
             rows.add("class/"+item.id,item,()->card(item,null),ui.dp(13));
         }
         rows.commit();
+    }
+
+    private View historyLink(int sent,int waiting) {
+        LinearLayout row=ui.row();ui.pad(row,14,12);ui.cardSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE));ui.gap(row,12);
+        LinearLayout copy=ui.column();ui.add(copy,ui.text("Lớp đã đăng ký",15,Ui.INK,true));ui.space(copy,4);
+        ui.add(copy,ui.text(sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
+        ui.weight(row,copy);ui.gap(row,8);row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Lớp đã đăng ký, "+sent+" đăng ký, "+waiting+" chờ duyệt");
+        ui.clickable(row,classroom::openRegistrations);return row;
     }
 
     @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;history=null;search=null;}

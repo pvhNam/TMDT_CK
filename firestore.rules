@@ -807,6 +807,15 @@ service cloud.firestore {
       allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == tutorId);
       allow list, write: if false;
     }
+    match /tutor_wallets/{tutorId} {
+      allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == tutorId);
+      allow list: if admin();
+      allow write: if false;
+    }
+    match /wallet_withdrawals/{withdrawalId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
     match /refund_requests/{refundId} {
       allow read: if financialMember(resource.data);
       allow write: if false;
@@ -814,6 +823,71 @@ service cloud.firestore {
     // Native VNPay TEST (LTMobile-style). Client results are NEVER trusted for real money.
     // These rules only authorize the isolated sandbox_* ledger. Production collections above stay read-only.
     function sandboxActive() { return signedIn() && account().trang_thai == 'ACTIVE'; }
+    function walletBefore(uid) {
+      let path = /databases/$(database)/documents/sandbox_tutor_wallets/$(uid);
+      return exists(path) ? get(path).data : {'available_balance':0,'reserved_balance':0,'total_credited':0,'total_withdrawn':0,'created_at':request.time};
+    }
+    function walletDelta(before, after, available, reserved, credited, withdrawn) {
+      return after.available_balance == before.available_balance + available
+        && after.reserved_balance == before.reserved_balance + reserved
+        && after.total_credited == before.total_credited + credited
+        && after.total_withdrawn == before.total_withdrawn + withdrawn;
+    }
+    function walletLink(uid, reference, operation) {
+      let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(uid)).data;
+      return after.tutor_id == uid && after.updated_at == request.time
+        && after.last_reference == reference && after.last_operation == operation;
+    }
+    function salaryWalletCredit(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_tutor_payouts/$(after.last_reference);
+      let payout = get(path).data;
+      let next = getAfter(path).data;
+      return admin() && payout.tutor_id == uid && payout.status == 'READY' && next.status == 'CREDITED'
+        && next.tutor_id == uid && next.amount == payout.amount
+        && next.credited_by == request.auth.uid && next.credited_at == request.time
+        && get(/databases/$(database)/documents/users/$(uid)).data.trang_thai == 'ACTIVE'
+        && payout.due_at is timestamp && request.time >= payout.due_at
+        && walletDelta(before,after,payout.amount,0,payout.amount,0);
+    }
+    function walletAutomaticWithdrawal(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_wallet_withdrawals/$(after.last_reference);
+      let next = getAfter(path).data;
+      return request.auth.uid == uid && account().la_gia_su == true && !exists(path)
+        && next.is_sandbox == true && next.status == 'PAID' && next.tutor_id == uid
+        && next.created_at == request.time && next.processed_at == request.time && next.processed_by == uid
+        && next.bank_reference == 'TEST_' + after.last_reference
+        && next.amount is int && next.amount >= 50000 && next.amount <= 100000000
+        && walletDelta(before,after,-next.amount,0,0,next.amount);
+    }
+    function walletFinish(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_wallet_withdrawals/$(after.last_reference);
+      let previous = get(path).data;
+      let next = getAfter(path).data;
+      return request.auth.uid == uid && previous.is_sandbox == true
+        && previous.tutor_id == uid && next.tutor_id == uid && next.amount == previous.amount
+        && previous.amount is int && previous.amount >= 50000 && previous.amount <= 100000000
+        && previous.status in ['PENDING','PROCESSING'] && next.processed_at == request.time && next.processed_by == request.auth.uid
+        && ((after.last_operation == 'WITHDRAW_PAID' && account().la_gia_su == true && next.status == 'PAID'
+              && next.bank_reference == 'TEST_' + after.last_reference
+              && walletDelta(before,after,0,-previous.amount,0,previous.amount))
+          || (after.last_operation == 'WITHDRAW_RELEASE' && next.status == 'CANCELLED'
+              && walletDelta(before,after,previous.amount,-previous.amount,0,0)));
+    }
+    function validWallet(uid) {
+      let d = request.resource.data;
+      let before = walletBefore(uid);
+      let fields = ['is_sandbox','tutor_id','currency','available_balance','reserved_balance','total_credited','total_withdrawn','created_at','updated_at','last_operation','last_reference'];
+      return sandboxActive() && d.keys().hasAll(fields) && d.keys().hasOnly(fields)
+        && d.is_sandbox == true && d.tutor_id == uid && d.currency == 'VND'
+        && d.available_balance is int && d.available_balance >= 0 && d.reserved_balance is int && d.reserved_balance >= 0
+        && d.total_credited is int && d.total_credited >= 0 && d.total_withdrawn is int && d.total_withdrawn >= 0
+        && d.available_balance + d.reserved_balance == d.total_credited - d.total_withdrawn
+        && d.created_at == before.created_at && d.updated_at == request.time
+        && d.last_reference is string && d.last_reference.matches('[A-Za-z0-9_-]{1,180}')
+        && ((d.last_operation == 'SALARY_CREDIT' && salaryWalletCredit(uid,before,d))
+          || (d.last_operation == 'WITHDRAW_AUTO' && walletAutomaticWithdrawal(uid,before,d))
+          || (d.last_operation in ['WITHDRAW_PAID','WITHDRAW_RELEASE'] && walletFinish(uid,before,d)));
+    }
     function sandboxPayment(id) { return get(/databases/$(database)/documents/sandbox_payments/$(id)).data; }
     function sandboxSource(d) {
       let name = d.type == 'LESSON' ? 'lessons' : (d.type == 'CONTRACT' ? 'contracts' : 'class_registrations');
@@ -914,6 +988,61 @@ service cloud.firestore {
             && request.resource.data.bank_reference is string && request.resource.data.bank_reference.size() >= 3
             && request.resource.data.bank_reference.size() <= 150))
         && changed(['status','bank_reference','paid_by','paid_at','cancel_reason','cancelled_by','updated_at']);
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'READY'
+        && request.resource.data.status == 'CREDITED' && stamped()
+        && changed(['status','credited_by','credited_at','updated_at'])
+        && request.resource.data.credited_by == request.auth.uid && request.resource.data.credited_at == request.time
+        && resource.data.due_at is timestamp && request.time >= resource.data.due_at
+        && walletLink(resource.data.tutor_id,payoutId,'SALARY_CREDIT')
+        && walletDelta(walletBefore(resource.data.tutor_id),getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(resource.data.tutor_id)).data,resource.data.amount,0,resource.data.amount,0);
+      allow delete: if false;
+    }
+    match /sandbox_tutor_wallets/{tutorId} {
+      allow get: if sandboxActive() && (admin() || request.auth.uid == tutorId);
+      allow list: if admin();
+      allow create, update: if validWallet(tutorId);
+      allow delete: if false;
+    }
+    match /sandbox_wallet_withdrawals/{withdrawalId} {
+      function validRequest() {
+        let d = request.resource.data;
+        let bank = get(/databases/$(database)/documents/sandbox_payout_accounts/$(request.auth.uid)).data;
+        let before = walletBefore(d.tutor_id);
+        let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(d.tutor_id)).data;
+        let fields = ['is_sandbox','tutor_id','tutor_name','amount','currency','bank','status','processing_by','processing_at','processed_by','processed_at','bank_reference','review_note','created_at','updated_at'];
+        return d.keys().hasAll(fields) && d.keys().hasOnly(fields) && d.is_sandbox == true
+          && d.tutor_id == request.auth.uid && account().la_gia_su == true && d.tutor_name == account().ho_ten
+          && withdrawalId.matches(request.auth.uid + '_[0-9a-f-]{36}')
+          && d.amount is int && d.amount >= 50000 && d.amount <= 100000000 && d.currency == 'VND'
+          && d.bank is map && d.bank.keys().hasAll(['bank_name','account_number','account_name'])
+          && d.bank.keys().hasOnly(['bank_name','account_number','account_name'])
+          && d.bank.bank_name == bank.bank_name && d.bank.account_number == bank.account_number && d.bank.account_name == bank.account_name
+          && d.status == 'PAID' && d.processing_by == '' && d.processing_at == null
+          && d.processed_by == request.auth.uid && d.processed_at == request.time
+          && d.bank_reference == 'TEST_' + withdrawalId && d.review_note == ''
+          && d.created_at == request.time && stamped()
+          && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_AUTO') && walletDelta(before,after,-d.amount,0,0,d.amount);
+      }
+      function validFinish() {
+        let d = request.resource.data;
+        let before = walletBefore(resource.data.tutor_id);
+        let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(resource.data.tutor_id)).data;
+        return resource.data.is_sandbox == true && resource.data.status in ['PENDING','PROCESSING'] && stamped()
+          && d.tutor_id == request.auth.uid && d.amount is int && d.amount >= 50000 && d.amount <= 100000000
+          && changed(['status','processed_by','processed_at','bank_reference','review_note','updated_at'])
+          && d.processed_by == request.auth.uid && d.processed_at == request.time
+          && d.review_note is string && d.review_note.size() <= 500
+          && d.bank_reference is string && d.bank_reference.size() <= 185
+          && ((account().la_gia_su == true && d.status == 'PAID' && d.bank_reference == 'TEST_' + withdrawalId && d.review_note == ''
+                && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_PAID') && walletDelta(before,after,0,-d.amount,0,d.amount))
+            || (d.status == 'CANCELLED'
+                && d.review_note.size() >= 5 && d.bank_reference == '' && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_RELEASE')
+                && walletDelta(before,after,d.amount,-d.amount,0,0)));
+      }
+      allow get: if sandboxActive() && (admin() || (resource == null && withdrawalId.matches(request.auth.uid + '_[0-9a-f-]{36}')) || request.auth.uid == resource.data.tutor_id);
+      allow list: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if sandboxActive() && validRequest();
+      allow update: if sandboxActive() && validFinish();
       allow delete: if false;
     }
     match /sandbox_refund_requests/{refundId} {

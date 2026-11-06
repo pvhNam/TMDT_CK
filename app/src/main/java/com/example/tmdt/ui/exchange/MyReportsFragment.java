@@ -51,7 +51,7 @@ public final class MyReportsFragment extends Fragment {
         binding.header.action.setImageResource(R.drawable.ic_ex_plus);
         binding.header.action.setContentDescription(getString(R.string.ex_new_report));
         binding.header.action.setOnClickListener(v -> { reports.clearDraft(); exchange.openReport(null, null); });
-        adapter = new SimpleAdapter<>(ItemMyReportBinding::inflate, this::bind);
+        adapter = new SimpleAdapter<>(ItemMyReportBinding::inflate, report -> report.id, this::rowState, this::bind);
         ListScreen.setup(binding, adapter);
         ListScreen.tabs(binding, tab, position -> { tab = position; render(); }, getString(R.string.ex_tab_processing), getString(R.string.ex_tab_resolved));
         picker.onResult((files, failed) -> {
@@ -84,6 +84,11 @@ public final class MyReportsFragment extends Fragment {
         }
         ListScreen.state(binding, null, null, null);
         adapter.submit(items);
+    }
+
+    private Object rowState(Report report) {
+        return expanded.contains(report.id)
+                ? java.util.Arrays.asList(true,reports.busy(),reports.evidence(report)) : Boolean.FALSE;
     }
 
     private void bind(ItemMyReportBinding b, Report r) {

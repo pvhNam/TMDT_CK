@@ -5,7 +5,7 @@ public final class TutorWallet {
     private TutorWallet(){}
     public static boolean salaryPaid(String status){return "PAID".equals(status)||"CREDITED".equals(status);}
     public static String withdrawalStatus(String status){
-        switch(status){case "PENDING":return "Chờ chuyển khoản";case "PROCESSING":return "Đang chuyển khoản";case "PAID":return "Đã chuyển khoản";
+        switch(status){case "PENDING":case "PROCESSING":return "Chưa hoàn tất";case "PAID":return "Đã rút tiền";
             case "REJECTED":return "Đã từ chối · Hoàn về ví";case "CANCELLED":return "Đã hủy · Hoàn về ví";default:return status;}
     }
     public static long available(PaymentState.Row wallet){return wallet==null?0:wallet.number("available_balance");}

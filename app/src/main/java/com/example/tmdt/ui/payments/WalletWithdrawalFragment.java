@@ -36,7 +36,7 @@ public final class WalletWithdrawalFragment extends Fragment {
         ui.label(body,"Ngân hàng nhận tiền");bank=ui.text("",14,Ui.INK,true);ui.add(body,bank);ui.space(body,6);
         ui.add(body,ui.link("Thay đổi tài khoản",13,()->{state.bankOrigin="withdraw_funds";host.show("payout_bank");}));ui.space(body,16);
         error=ui.text("",13,Ui.RED,false);error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);ui.add(body,error);ui.space(body,12);
-        submit=ui.action("Gửi yêu cầu rút tiền",0,Ui.PRIMARY,()->submit(host));ui.addAction(body,submit,48);
+        submit=ui.action("Rút tiền",0,Ui.PRIMARY,()->submit(host));ui.addAction(body,submit,48);
         amount.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){state.withdrawalDraft=s.toString();}public void afterTextChanged(Editable value){}});
         return root;
     }
@@ -46,7 +46,7 @@ public final class WalletWithdrawalFragment extends Fragment {
         String name=String.valueOf(state.bank.getOrDefault("bank_name","")),number=String.valueOf(state.bank.getOrDefault("account_number","")),holder=String.valueOf(state.bank.getOrDefault("account_name",""));
         bank.setText(number.isEmpty()?"Chưa có tài khoản ngân hàng":name+"\n"+number+"\n"+holder);
         boolean enabled=!state.busy&&state.tutor&&state.walletLoaded&&!number.isEmpty()&&TutorWallet.available(state.wallet())>=TutorWallet.MIN_WITHDRAWAL;
-        submit.setEnabled(enabled);submit.setAlpha(enabled?1f:.45f);amount.setEnabled(!state.busy);error.setText(state.busy?"Đang gửi yêu cầu…":state.error);
+        submit.setEnabled(enabled);submit.setAlpha(enabled?1f:.45f);amount.setEnabled(!state.busy);error.setText(state.busy?"Đang rút tiền…":state.error);
     }
     private void submit(MainActivity host){
         long value;try{value=Long.parseLong(amount.getText().toString().trim());}catch(NumberFormatException failure){amount.setError("Nhập số tiền cần rút.");return;}
@@ -55,7 +55,7 @@ public final class WalletWithdrawalFragment extends Fragment {
         java.util.Map<String,Object> snapshot=new java.util.HashMap<>();for(String key:new String[]{"bank_name","account_number","account_name"})snapshot.put(key,state.bank.getOrDefault(key,""));
         String requestId=state.withdrawalRequestId;
         host.hideKeyboard();ui.dialog().setTitle("Xác nhận rút tiền").setMessage(PaymentState.money(value)+"\n"+bank.getText())
-                .setNegativeButton("Đóng",null).setPositiveButton("Gửi yêu cầu",(dialog,which)->state.requestWithdrawal(value,requestId,snapshot)).show();
+                .setNegativeButton("Đóng",null).setPositiveButton("Rút tiền",(dialog,which)->state.requestWithdrawal(value,requestId,snapshot)).show();
     }
     @Override public void onSaveInstanceState(@NonNull Bundle out){super.onSaveInstanceState(out);out.putString("request_id",state.withdrawalRequestId);out.putString("amount",state.withdrawalDraft);}
     @Override public void onDestroyView(){super.onDestroyView();amount=null;balance=null;bank=null;error=null;submit=null;}

@@ -11,23 +11,23 @@ import java.util.Arrays;
 
 public final class AdminWithdrawalsFragment extends PaymentScreen {
     private LinearLayout body;
-    @Override protected View build(){LinearLayout root=root("Yêu cầu rút tiền");body=ui.page(root);render();return root;}
+    @Override protected View build(){LinearLayout root=root("Lịch sử rút tiền");body=ui.page(root);render();return root;}
     @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
     private void render(){
         StableViews rows=StableViews.at(body);rows.begin();if(!state().admin){rows.commit();return;}
         if(!state().error.isEmpty()||!state().notice.isEmpty()||state().busy)rows.add("feedback",Arrays.asList(state().error,state().notice,state().busy),()->{LinearLayout box=ui.column();feedback(box);return box;},0);
-        long pending=0;int count=0;for(PaymentState.Row row:state().withdrawals.values())if(TutorWallet.withdrawing(row.text("status"))){pending+=row.number("amount");count++;}
-        final long reserved=pending;final int waiting=count;
-        rows.add("summary",Arrays.asList(pending,count),()->{
-            LinearLayout card=ui.card();ui.cardSurface(card,Ui.PALE,Ui.BORDER);ui.add(card,ui.text("Tiền đang chờ rút",13,Ui.MUTED,false));ui.space(card,10);
-            ui.add(card,ui.text(PaymentState.money(reserved),26,Ui.INK,true));ui.space(card,8);ui.add(card,ui.text(waiting+" yêu cầu cần xử lý",13,Ui.MUTED,false));return card;
+        long total=0;int count=0;for(PaymentState.Row row:state().withdrawals.values())if("PAID".equals(row.text("status"))){total+=row.number("amount");count++;}
+        final long withdrawn=total;final int completed=count;
+        rows.add("summary",Arrays.asList(total,count),()->{
+            LinearLayout card=ui.card();ui.cardSurface(card,Ui.PALE,Ui.BORDER);ui.add(card,ui.text("Tổng đã rút",13,Ui.MUTED,false));ui.space(card,10);
+            ui.add(card,ui.text(PaymentState.money(withdrawn),26,Ui.INK,true));ui.space(card,8);ui.add(card,ui.text(completed+" giao dịch hoàn tất",13,Ui.MUTED,false));return card;
         },ui.dp(16));
         rows.add("filters",state().withdrawalFilter,()->{
-            LinearLayout box=ui.column();ui.tabs(box,new String[]{"Chờ xử lý","Đã chuyển","Đã đóng"},state().withdrawalFilter,index->{state().withdrawalFilter=index;state().changed();});return box;
+            LinearLayout box=ui.column();ui.tabs(box,new String[]{"Tất cả","Đã rút","Đã đóng"},state().withdrawalFilter,index->{state().withdrawalFilter=index;state().changed();});return box;
         },ui.dp(14));
         int shown=0;
         for(PaymentState.Row row:newest(state().withdrawals.values())){
-            String status=row.text("status");boolean show=state().withdrawalFilter==0?TutorWallet.withdrawing(status):state().withdrawalFilter==1?"PAID".equals(status):Arrays.asList("REJECTED","CANCELLED").contains(status);
+            String status=row.text("status");boolean show=state().withdrawalFilter==0|| (state().withdrawalFilter==1?"PAID".equals(status):Arrays.asList("REJECTED","CANCELLED").contains(status));
             if(!show)continue;shown++;
             rows.add("withdrawal/"+row.id,row,()->{
                 LinearLayout card=ui.card(),top=ui.row(),copy=ui.column();top.addView(ui.avatar(row.text("tutor_id"),row.text("tutor_name"),44));ui.gap(top,12);
@@ -37,7 +37,7 @@ public final class AdminWithdrawalsFragment extends PaymentScreen {
                 ui.clickable(card,()->state().openWithdrawal(row.id,"admin_withdrawals"));return card;
             },ui.dp(12));
         }
-        if(shown==0)rows.add("empty",state().withdrawalFilter,()->ui.text("Không có yêu cầu trong mục này.",13,Ui.MUTED,false),0);
+        if(shown==0)rows.add("empty",state().withdrawalFilter,()->ui.text("Chưa có giao dịch trong mục này.",13,Ui.MUTED,false),0);
         rows.commit();
     }
     @Override public void onDestroyView(){super.onDestroyView();body=null;}

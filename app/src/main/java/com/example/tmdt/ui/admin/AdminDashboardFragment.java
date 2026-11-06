@@ -33,15 +33,13 @@ public final class AdminDashboardFragment extends AdminScreen {
             LinearLayout second=ui.row();ui.weight(second,shortcut(R.drawable.ic_file,"Hợp đồng",()->{state().selectTutor("");open("admin_contracts");}));ui.gap(second,10);
             ui.weight(second,shortcut(R.drawable.ic_wallet,"Tài chính",()->open("admin_finance")));ui.add(box,second);return box;
         },ui.dp(18));
-        int ready=0,refunds=0,withdrawals=0;for(PaymentState.Row p:money().payouts.values())if("READY".equals(p.text("status")))ready++;
+        int ready=0,refunds=0;for(PaymentState.Row p:money().payouts.values())if("READY".equals(p.text("status")))ready++;
         for(PaymentState.Row r:money().refunds.values())if("PENDING".equals(r.text("status")))refunds++;
-        for(PaymentState.Row r:money().withdrawals.values())if(TutorWallet.withdrawing(r.text("status")))withdrawals++;
-        if(ready>0||refunds>0||withdrawals>0){
-            final int pendingPayouts=ready,pendingRefunds=refunds,pendingWithdrawals=withdrawals;
-            rows.add("pending",Arrays.asList(ready,refunds,withdrawals),()->{
+        if(ready>0||refunds>0){
+            final int pendingPayouts=ready,pendingRefunds=refunds;
+            rows.add("pending",Arrays.asList(ready,refunds),()->{
                 LinearLayout box=ui.column();ui.section(box,"Cần xử lý",17);ui.space(box,10);
                 if(pendingPayouts>0)destination(box,R.drawable.ic_wallet,"Chi trả gia sư",String.valueOf(pendingPayouts),this::openPayroll);
-                if(pendingWithdrawals>0)destination(box,R.drawable.ic_wallet,"Gia sư yêu cầu rút tiền",String.valueOf(pendingWithdrawals),()->{money().withdrawalFilter=0;open("admin_withdrawals");});
                 if(pendingRefunds>0)destination(box,R.drawable.ic_coin,"Hoàn học phí",String.valueOf(pendingRefunds),this::openRefunds);return box;
             },ui.dp(8));
         }

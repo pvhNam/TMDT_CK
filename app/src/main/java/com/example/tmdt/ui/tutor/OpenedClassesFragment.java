@@ -13,6 +13,7 @@ import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
 import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
@@ -21,11 +22,16 @@ public final class OpenedClassesFragment extends ScreenFragment {
     private TabLayout tabs;
     private static final String[] STATUSES = {GroupClass.OPEN, GroupClass.RUNNING, GroupClass.ENDED};
 
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view,android.os.Bundle state){
+        super.onViewCreated(view,state);classroom.watchRequests();
+    }
+
     @Override protected View build() {
         LinearLayout root = ui.column();
         View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->classroom.openClass(null,"openClass"));
         open.setLayoutParams(ui.lp(104,37));
         ui.title(root,"Lớp đã mở",open);
+        classroom.classTab=Math.max(0,Math.min(classroom.classTab,STATUSES.length-1));
         tabs=new TabLayout(requireContext());tabs.setTabMode(TabLayout.MODE_FIXED);
         for(String title:new String[]{"Đang tuyển","Đang học","Đã kết thúc"})tabs.addTab(tabs.newTab().setText(title),false);
         tabs.getTabAt(classroom.classTab).select();ui.add(root,tabs);
@@ -35,6 +41,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
                 if(tab.getPosition()==classroom.classTab)return;
                 classroom.classTab=tab.getPosition();renderClasses();
                 ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
+                com.example.tmdt.ui.common.Motion.reveal(listContainer);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab){}
             @Override public void onTabReselected(TabLayout.Tab tab){}
@@ -48,18 +55,19 @@ public final class OpenedClassesFragment extends ScreenFragment {
         if(tabs.getSelectedTabPosition()!=classroom.classTab)tabs.getTabAt(classroom.classTab).select();
         StableViews rows=StableViews.at(listContainer);rows.begin();
         int groups=GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
-        if(classroom.classTab==0&&groups>0)rows.add("matches",groups,this::matchLink,ui.dp(12));
-        for(int i=0;i<3;i++)labels[i]+=" ("+mine(STATUSES[i]).size()+")";
-        ui.tabs(tabContainer,labels,classroom.classTab,index->{
-            if(index==classroom.classTab)return;
-            classroom.classTab=index;renderClasses();
-            ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
-            com.example.tmdt.ui.common.Motion.reveal(listContainer);
-        });
-        ui.space(listContainer,4);
+        if(classroom.classTab==0&&groups>0)rows.add("matches",groups,()->matchLink(groups),ui.dp(12));
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
         rows.commit();
+    }
+
+    private View matchLink(int groups){
+        LinearLayout row=ui.row();row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE));ui.gap(row,12);
+        LinearLayout copy=ui.column();ui.add(copy,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true));ui.space(copy,2);
+        ui.add(copy,ui.text(groups+" nhóm học viên cùng nhu cầu",13,Ui.MUTED,false));ui.weight(row,copy);ui.gap(row,8);
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));row.setContentDescription("Gợi ý ghép nhóm, "+groups+" nhóm học viên");
+        ui.clickable(row,()->classroom.show("matches"));return row;
     }
 
     @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}

@@ -33,7 +33,7 @@ public final class ReportsAdminFragment extends Fragment {
         admin = exchange.reportAdmin;
         if (state != null) tab = state.getInt("tab");
         ExUi.header(binding.header, getString(R.string.ex_admin_reports_title), getString(R.string.ex_admin_subtitle), exchange::back);
-        adapter = new SimpleAdapter<>(ItemAdminReportBinding::inflate, (b, r) -> {
+        adapter = new SimpleAdapter<>(ItemAdminReportBinding::inflate, report -> report.id, (b, r) -> {
             b.code.setText(r.code);
             b.reason.setText(r.reason);
             b.parties.setText(r.reporterName + " → " + r.targetName);

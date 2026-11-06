@@ -24,12 +24,19 @@ public final class SimpleAdapter<T, B extends ViewBinding> extends RecyclerView.
     private final List<String> ids = new ArrayList<>();
     private final List<Object> snapshots = new ArrayList<>();
     private final java.util.function.Function<T,String> key;
+    private final java.util.function.Function<T,?> viewState;
 
-    public SimpleAdapter(Inflate<B> inflate, java.util.function.Function<T,String> key, Bind<T, B> bind) { this.inflate = inflate; this.key=key; this.bind = bind; }
+    public SimpleAdapter(Inflate<B> inflate, java.util.function.Function<T,String> key, Bind<T, B> bind) {
+        this(inflate,key,null,bind);
+    }
+    public SimpleAdapter(Inflate<B> inflate, java.util.function.Function<T,String> key,
+                         java.util.function.Function<T,?> viewState, Bind<T, B> bind) {
+        this.inflate=inflate;this.key=key;this.viewState=viewState;this.bind=bind;
+    }
 
     public void submit(List<T> values) {
         List<T> next=new ArrayList<>(values);List<String> nextIds=new ArrayList<>();List<Object> nextSnapshots=new ArrayList<>();
-        for(T item:next){nextIds.add(key.apply(item));nextSnapshots.add(com.example.tmdt.ui.common.RenderSnapshot.of(item));}
+        for(T item:next){nextIds.add(key.apply(item));nextSnapshots.add(com.example.tmdt.ui.common.RenderSnapshot.of(item,viewState==null?null:viewState.apply(item)));}
         androidx.recyclerview.widget.DiffUtil.DiffResult diff=androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){
             @Override public int getOldListSize(){return ids.size();}
             @Override public int getNewListSize(){return nextIds.size();}
