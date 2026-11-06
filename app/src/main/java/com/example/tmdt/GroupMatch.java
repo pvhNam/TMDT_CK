@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
  * are gathered so a tutor can open one group class for them, and a student sees the open classes that suit their requests.
  */
 public final class GroupMatch {
-    /** Subjects a group class can be opened for (screen 34). */
+    /** Subjects written in several ways ("Toán học", "Anh văn"…) that are read as one name; other subjects keep their own name. */
     public static final String[] SUBJECTS = {"Toán","Tiếng Anh","Vật lý","Hóa học"};
     public static final String[] LEVELS = {"TIEU_HOC","THCS","THPT","LUYEN_THI","KHAC"};
     public static final String MORNING = "sáng", AFTERNOON = "chiều", EVENING = "tối";
@@ -121,22 +121,56 @@ public final class GroupMatch {
 
     private GroupMatch() {}
 
-    /** Groups of at least two students wanting the same subject and level, largest first; the tutor's own requests are left out. */
+    /** Largest gap between the lowest and highest budget inside one group. */
+    public static final long BUDGET_GAP = 100000;
+    /** Most students one group class can take, so a larger group is shared out between several classes. */
+    public static final int MAX_SIZE = 10;
+
+    /**
+     * Groups of at least two students wanting the same subject and level whose budgets are at most {@link #BUDGET_GAP} apart,
+     * largest first; students without a budget join the largest group of their need, and a group above {@link #MAX_SIZE} is split evenly
+     * in budget order. The tutor's own requests are left out.
+     */
     public static List<Group> groups(List<Request> open, String tutor) {
-        Map<String,Group> groups = new LinkedHashMap<>();
+        Map<String,List<Request>> needs = new LinkedHashMap<>();
         Map<String,Set<String>> students = new LinkedHashMap<>();
         for (Request request : open) {
             String subject = subject(request.subject);
             if (subject.isEmpty() || request.studentId.equals(tutor) || !Arrays.asList(LEVELS).contains(request.level)) continue;
-            String key = subject+"|"+request.level;
-            Group group = groups.computeIfAbsent(key,k -> new Group(subject,request.level));
-            if (students.computeIfAbsent(key,k -> new LinkedHashSet<>()).add(request.studentId)) group.requests.add(request);
+            String key = plain(subject)+"|"+request.level;
+            if (students.computeIfAbsent(key,k -> new LinkedHashSet<>()).add(request.studentId)) needs.computeIfAbsent(key,k -> new ArrayList<>()).add(request);
         }
         List<Group> list = new ArrayList<>();
-        for (Group group : groups.values()) if (group.size() >= 2) list.add(group);
+        for (List<Request> requests : needs.values()) {
+            String subject = subject(requests.get(0).subject), level = requests.get(0).level;
+            List<Request> priced = new ArrayList<>(), unpriced = new ArrayList<>();
+            for (Request request : requests) (request.budget > 0 ? priced : unpriced).add(request);
+            priced.sort(Comparator.comparingLong(request -> request.budget));
+            List<Group> found = new ArrayList<>(); Group group = null;
+            for (Request request : priced) {
+                if (group == null || request.budget-group.requests.get(0).budget > BUDGET_GAP) { group = new Group(subject,level); found.add(group); }
+                group.requests.add(request);
+            }
+            if (!unpriced.isEmpty()) {
+                Group largest = null;
+                for (Group item : found) if (largest == null || item.size() > largest.size()) largest = item;
+                if (largest == null) { largest = new Group(subject,level); found.add(largest); }
+                largest.requests.addAll(unpriced);
+            }
+            for (Group item : found) {
+                int parts = (item.size()+MAX_SIZE-1)/MAX_SIZE;
+                for (int part = 0; part < parts; part++) {
+                    Group piece = new Group(subject,level);
+                    piece.requests.addAll(item.requests.subList(item.size()*part/parts,item.size()*(part+1)/parts));
+                    if (piece.size() >= 2) list.add(piece);
+                }
+            }
+        }
         list.sort(Comparator.comparingInt((Group group) -> -group.size())
-                .thenComparingInt(group -> Arrays.asList(SUBJECTS).indexOf(group.subject))
-                .thenComparingInt(group -> Arrays.asList(LEVELS).indexOf(group.level)));
+                .thenComparingInt(group -> order(group.subject))
+                .thenComparing(group -> plain(group.subject))
+                .thenComparingInt(group -> Arrays.asList(LEVELS).indexOf(group.level))
+                .thenComparingLong(Group::budget));
         return list;
     }
 
@@ -144,8 +178,7 @@ public final class GroupMatch {
     public static Request suits(GroupClass item, List<Request> mine) {
         Set<String> levels = levels(item);
         for (Request request : mine) {
-            String subject = subject(request.subject);
-            boolean sameSubject = subject.isEmpty() ? plain(request.subject).equals(plain(item.subject)) : subject.equals(item.subject);
+            boolean sameSubject = plain(subject(request.subject)).equals(plain(subject(item.subject)));
             if (sameSubject && (levels.isEmpty() || levels.contains(request.level))) return request;
         }
         return null;
@@ -164,15 +197,17 @@ public final class GroupMatch {
         return levels;
     }
 
-    /** One of {@link #SUBJECTS} for a subject name such as "Toán học" or "Anh văn", or empty. */
+    /** One of {@link #SUBJECTS} for a subject name such as "Toán học" or "Anh văn", otherwise the name itself. */
     public static String subject(String name) {
         String value = plain(name);
         if (value.matches("toan( hoc)?")) return "Toán";
         if (value.matches("(tieng anh|anh van|anh ngu|english)")) return "Tiếng Anh";
         if (value.matches("(vat ly|vat li|ly)")) return "Vật lý";
         if (value.matches("(hoa hoc|hoa)")) return "Hóa học";
-        return "";
+        return name == null ? "" : name.trim().replaceAll("\\s+"," ");
     }
+    /** The four usual subjects first, then the others. */
+    private static int order(String subject) { int index = Arrays.asList(SUBJECTS).indexOf(subject); return index < 0 ? SUBJECTS.length : index; }
 
     public static String levelLabel(String code) {
         switch (code) {

@@ -8,6 +8,10 @@ import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
 import com.example.tmdt.ui.exchange.ContractTemplatesFragment;
 import com.example.tmdt.ui.exchange.ContractsFragment;
+import com.example.tmdt.ui.exchange.HandleReportFragment;
+import com.example.tmdt.ui.exchange.MyReportsFragment;
+import com.example.tmdt.ui.exchange.ReportFragment;
+import com.example.tmdt.ui.exchange.ReportsAdminFragment;
 import com.example.tmdt.ui.exchange.ReviewFormFragment;
 import com.example.tmdt.ui.exchange.ReviewsFragment;
 import java.time.DayOfWeek;
@@ -24,12 +28,14 @@ import java.util.Map;
  *
  * Luồng: học viên đặt lịch → gia sư chấp nhận → gia sư gửi hợp đồng (theo mẫu của quản trị viên) → học viên xác nhận.
  *
- * UC26 đánh giá hai chiều: sau khi hợp đồng đã chốt và buổi học đầu tiên kết thúc.
+ * UC26 đánh giá hai chiều (sau khi hợp đồng đã chốt và buổi học đầu tiên kết thúc), UC27 gửi và theo dõi báo cáo vi phạm,
+ * UC29 quản trị viên xử lý báo cáo vi phạm.
  */
 public final class Exchange {
     public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
-    /** UC26 (tiền tố ex_ để không trùng màn "review" của phần lớp nhóm). */
-    public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews";
+    /** UC26, UC27, UC29 (tiền tố ex_/report_ để không trùng màn "review" của phần lớp nhóm). */
+    public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews", REPORT = "ex_report", REPORTS = "ex_reports",
+            REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
@@ -37,10 +43,12 @@ public final class Exchange {
     public final ContractState contracts;
     public final AgreementState agreements;
     public final ReviewState reviews;
+    public final ReportState reports;
+    public final ReportAdminState reportAdmin;
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
-    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole;
+    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole, reportType, reportSubject, adminReportId;
     /** Màn đã mở từng màn của phần này, để nút quay lại trở về đúng chỗ. */
     private final Map<String, String> origins = new HashMap<>();
 
@@ -50,18 +58,24 @@ public final class Exchange {
         contracts = provider.get(ContractState.class);
         agreements = provider.get(AgreementState.class);
         reviews = provider.get(ReviewState.class);
+        reports = provider.get(ReportState.class);
+        reportAdmin = provider.get(ReportAdminState.class);
         if (state != null) {
             contractId = state.getString("ex.contract");
-            reviewContractId = state.getString("ex.review"); reviewsTarget = state.getString("ex.reviewsTarget");
-            reviewsName = state.getString("ex.reviewsName"); reviewsRole = state.getString("ex.reviewsRole");
+            reviewContractId = state.getString("ex.review"); adminReportId = state.getString("ex.adminReport");
+            reviewsTarget = state.getString("ex.reviewsTarget"); reviewsName = state.getString("ex.reviewsName");
+            reviewsRole = state.getString("ex.reviewsRole");
+            reportType = state.getString("ex.reportType"); reportSubject = state.getString("ex.reportSubject");
             Bundle saved = state.getBundle("ex.origins");
             if (saved != null) for (String key : saved.keySet()) origins.put(key, saved.getString(key));
         }
     }
     void save(Bundle out) {
         out.putString("ex.contract", contractId);
-        out.putString("ex.review", reviewContractId); out.putString("ex.reviewsTarget", reviewsTarget);
-        out.putString("ex.reviewsName", reviewsName); out.putString("ex.reviewsRole", reviewsRole);
+        out.putString("ex.review", reviewContractId); out.putString("ex.adminReport", adminReportId);
+        out.putString("ex.reviewsTarget", reviewsTarget); out.putString("ex.reviewsName", reviewsName);
+        out.putString("ex.reviewsRole", reviewsRole);
+        out.putString("ex.reportType", reportType); out.putString("ex.reportSubject", reportSubject);
         Bundle saved = new Bundle(); for (Map.Entry<String, String> e : origins.entrySet()) saved.putString(e.getKey(), e.getValue());
         out.putBundle("ex.origins", saved);
     }
@@ -71,11 +85,15 @@ public final class Exchange {
     /** Đăng nhập/đăng xuất: bật hoặc tắt các listener của tài khoản. */
     void accountChanged(boolean signedIn) {
         if (signedIn) { contracts.start(); agreements.start(); }
-        else { contracts.stop(); agreements.stop(); reviews.stopWatch(); contracts.draft = null; contractId = null; }
+        else {
+            contracts.stop(); agreements.stop(); contracts.draft = null; contractId = null;
+            reviews.stopWatch(); reports.stop(); reports.clearDraft(); reportAdmin.stop(); adminReportId = null;
+        }
     }
     static boolean owns(String destination) {
         return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination)
-                || REVIEW.equals(destination) || REVIEWS.equals(destination);
+                || REVIEW.equals(destination) || REVIEWS.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
+                || REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination);
     }
     /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
     String redirect(String destination) {
@@ -83,7 +101,9 @@ public final class Exchange {
         if (REVIEWS.equals(destination) && reviewsTarget != null && Review.TUTOR.equals(reviewsRole)) return destination; // Khách xem được đánh giá gia sư.
         if (!host.account.signedIn()) return "login";
         if (REVIEWS.equals(destination) && reviewsTarget == null) return "account";
+        if ((REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination)) && !isAdmin()) return "account";
         if (REVIEW.equals(destination) && reviewContractId == null) return CONTRACTS;
+        if (HANDLE_REPORT.equals(destination) && adminReportId == null) return REPORTS_ADMIN;
         if (TEMPLATES.equals(destination) && !isAdmin()) return "account";
         if (CONTRACT.equals(destination) && contractId == null && contracts.draft == null) return CONTRACTS;
         return destination;
@@ -96,6 +116,10 @@ public final class Exchange {
             case TEMPLATES: return new ContractTemplatesFragment();
             case REVIEW: return new ReviewFormFragment();
             case REVIEWS: return new ReviewsFragment();
+            case REPORT: return new ReportFragment();
+            case REPORTS: return new MyReportsFragment();
+            case REPORTS_ADMIN: return new ReportsAdminFragment();
+            case HANDLE_REPORT: return new HandleReportFragment();
             default: return null;
         }
     }
@@ -104,6 +128,8 @@ public final class Exchange {
         if (CONTRACT.equals(screen)) contracts.draft = null;
         String origin = origins.get(screen);
         if (origin != null && !origin.equals(screen)) return origin;
+        if (HANDLE_REPORT.equals(screen)) return REPORTS_ADMIN;
+        if (REPORTS_ADMIN.equals(screen) && isAdmin()) return "admin_dashboard";
         return "account";
     }
     private void open(String destination) {
@@ -135,6 +161,7 @@ public final class Exchange {
 
     // UC26 – Đánh giá hai chiều ----------------------------------------------------------------------
 
+    public String myRole() { return isTutor() ? Review.TUTOR : Review.STUDENT; }
     public String reviewContractId() { return reviewContractId; }
     /** Màn 09 (học viên đánh giá gia sư) hoặc 46 (gia sư đánh giá học viên) cho một hợp đồng đã chốt. */
     public void openReview(Contract contract) { reviewContractId = contract.id; open(REVIEW); }
@@ -150,10 +177,35 @@ public final class Exchange {
         boolean tutor = isTutor() && host.classroom.tutorMode();
         openReviews(myId(), myName(), tutor ? Review.TUTOR : Review.STUDENT);
     }
-    /** Đánh giá được chưa: hợp đồng đã chốt và buổi học đầu tiên đã kết thúc. */
+    /** Đánh giá có thể viết cho hợp đồng này chưa: đã chốt và buổi học đầu tiên đã kết thúc. */
     public static boolean canReview(Contract c) {
         return c != null && c.agreed() && System.currentTimeMillis() >= c.startAt + c.minutes * 60_000L;
     }
+
+    // UC27 – Báo cáo vi phạm -------------------------------------------------------------------------
+
+    public String reportType() { return reportType; }
+    public String reportSubject() { return reportSubject; }
+    /** Màn 47; type/subjectId (CONTRACT hoặc CONVERSATION) chọn sẵn đối tượng, null để người dùng tự chọn. */
+    public void openReport(String type, String subjectId) {
+        reportType = type; reportSubject = subjectId;
+        if (type != null && subjectId != null) { reports.clearDraft(); reports.draftSubject = type + ":" + subjectId; }
+        open(REPORT);
+    }
+    public void openReports() { open(REPORTS); }
+    /** Thay màn hiện tại (ví dụ sau khi gửi báo cáo): quay lại sẽ về nơi đã mở màn hiện tại. */
+    public void replaceWith(String destination) {
+        String origin = origins.get(host.screen);
+        if (origin != null) origins.put(destination, origin); else origins.remove(destination);
+        host.hideKeyboard(); host.show(destination);
+    }
+
+    // UC29 – Xử lý báo cáo vi phạm (quản trị viên) ---------------------------------------------------
+
+    public String adminReportId() { return adminReportId; }
+    /** Danh sách báo cáo cho quản trị viên. Trang quản trị gọi exchange.openReportsAdmin(). */
+    public void openReportsAdmin() { open(REPORTS_ADMIN); }
+    public void openHandleReport(Report report) { adminReportId = report.id; open(HANDLE_REPORT); }
     public void openContract(Contract contract) { contractId = contract.id; contracts.draft = null; open(CONTRACT); }
     /** Sau khi gửi: màn 40 chuyển sang xem hợp đồng vừa tạo. */
     public void showCreated(String id) { contractId = id; contracts.draft = null; }

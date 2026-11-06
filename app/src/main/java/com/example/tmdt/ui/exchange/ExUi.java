@@ -4,7 +4,9 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -14,18 +16,23 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import com.example.tmdt.Contract;
 import com.example.tmdt.R;
+import com.example.tmdt.Report;
+import com.example.tmdt.ReportState;
 import com.example.tmdt.databinding.ViewExHeaderBinding;
 import com.example.tmdt.ui.messages.ChatFormat;
 import com.google.android.material.snackbar.Snackbar;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.IntConsumer;
 
-/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23 hợp đồng, UC26 đánh giá). */
+/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23 hợp đồng, UC26 đánh giá, UC27/29 báo cáo vi phạm). */
 public final class ExUi {
     public static final int OK = 0, WAIT = 1, BAD = 2, INFO = 3, NEUTRAL = 4;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -61,6 +68,15 @@ public final class ExUi {
         return c.closed() ? BAD : NEUTRAL;
     }
 
+    public static int kind(Report r) {
+        switch (r.status) {
+            case Report.RESOLVED: return OK;
+            case Report.DISMISSED: return NEUTRAL;
+            case Report.NEED_INFO: return BAD;
+            default: return WAIT;
+        }
+    }
+
     /** Hàng sao (UC26); truyền onPick để người dùng chọn số sao. */
     public static void stars(LinearLayout row, int rating, int sizeDp, @Nullable IntConsumer onPick) {
         Context context = row.getContext();
@@ -86,6 +102,9 @@ public final class ExUi {
     public static String date(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE); }
     public static String dateTime(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE_TIME); }
     public static String money(long value) { return String.format(Locale.forLanguageTag("vi-VN"), "%,dđ", value); }
+    public static String size(long bytes) {
+        return bytes >= 1024 * 1024 ? String.format(Locale.ROOT, "%.1f MB", bytes / 1048576f) : Math.max(1, bytes / 1024) + " KB";
+    }
     public static int dp(Context context, float value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }
 
     /** Bộ đếm ký tự "56/500" dưới ô nhập. */
@@ -116,5 +135,34 @@ public final class ExUi {
     @Nullable public static Bitmap decode(String base64) {
         try { byte[] bytes = Base64.decode(base64, Base64.DEFAULT); return BitmapFactory.decodeByteArray(bytes, 0, bytes.length); }
         catch (IllegalArgumentException e) { return null; }
+    }
+
+    /** Xem ảnh minh chứng cỡ lớn. */
+    public static void showImage(Context context, String title, String base64) {
+        Bitmap bitmap = decode(base64);
+        if (bitmap == null) { new AlertDialog.Builder(context).setTitle(title).setMessage("Không đọc được ảnh.").setPositiveButton(R.string.close, null).show(); return; }
+        ImageView image = new ImageView(context);
+        image.setAdjustViewBounds(true); image.setImageBitmap(bitmap);
+        int pad = dp(context, 12); image.setPadding(pad, pad, pad, pad);
+        new AlertDialog.Builder(context).setTitle(title).setView(image).setPositiveButton(R.string.close, null).show();
+    }
+    /** Đọc ảnh người dùng chọn, thu nhỏ tối đa 1280px và nén JPEG cho tới khi vừa giới hạn lưu trữ. Chạy ở luồng nền. */
+    public static ReportState.Attachment compress(Context context, Uri uri, String name) throws IOException {
+        int[] limits = {1280, 1024, 800};
+        for (int edge : limits) {
+            Bitmap bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.getContentResolver(), uri), (decoder, info, source) -> {
+                float ratio = Math.min(1f, (float) edge / Math.max(info.getSize().getWidth(), info.getSize().getHeight()));
+                decoder.setTargetSize(Math.max(1, Math.round(info.getSize().getWidth() * ratio)), Math.max(1, Math.round(info.getSize().getHeight() * ratio)));
+                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+            });
+            for (int quality = 80; quality >= 50; quality -= 15) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bytes);
+                String data = Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP);
+                if (data.length() <= ReportState.MAX_DATA) { bitmap.recycle(); return new ReportState.Attachment(name, data, bytes.size()); }
+            }
+            bitmap.recycle();
+        }
+        throw new IOException("Ảnh quá lớn");
     }
 }

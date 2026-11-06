@@ -22,7 +22,7 @@ public final class BookingFragment extends ScreenFragment {
     private Tutor tutor;
     private LocalDate selectedDate;
     private static final int FIRST_HOUR=7, LAST_END=23;
-    private int hour=19, minutes=60;
+    private int hour=19, minute, minutes=60;
     private String mode="Trực tuyến", savedGoal, savedAddress="";
     private LinearLayout modes, days, addressBox;
     private HorizontalScrollView daysScroll;
@@ -34,11 +34,11 @@ public final class BookingFragment extends ScreenFragment {
         tutor=Tutor.get(classroom.tutorKey);Bundle state=classroom.bookingDraft;
         selectedDate=LocalDate.now().plusDays(4);
         // Start on a day without an existing lesson at the default hour.
-        while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
+        while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minute,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
         savedGoal="";
         if(state!=null) {
             selectedDate=LocalDate.parse(state.getString("date",selectedDate.toString()));
-            hour=state.getInt("hour",19);minutes=state.getInt("minutes",60);
+            hour=state.getInt("hour",19);minute=state.getInt("minute",0);minutes=state.getInt("minutes",60);
             mode=state.getString("mode","Trực tuyến");savedGoal=state.getString("goal",savedGoal);savedAddress=state.getString("address","");
         }
     }
@@ -74,8 +74,8 @@ public final class BookingFragment extends ScreenFragment {
         ui.clickable(month,this::datePicker);ui.add(body,month);
         daysScroll=new HorizontalScrollView(classroom.context());daysScroll.setHorizontalScrollBarEnabled(false);
         days=ui.row();daysScroll.addView(days);ui.add(body,daysScroll);renderDays(true);ui.space(body,15);
-        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,hour,minutes,(h,mi,m)->{hour=h;minutes=m;updatePrice();});
-        hour=time.hour();minutes=time.minutes();
+        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,30,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;updatePrice();});
+        hour=time.hour();minute=time.minute();minutes=time.minutes();
         ui.add(body,time.view("Chọn giờ học"));ui.space(body,15);
         ui.label(body,"Mục tiêu buổi học");goal=ui.entry("Bạn muốn học nội dung gì?",false);goal.setText(savedGoal);
         goal.setSingleLine(false);goal.setMaxLines(3);goal.setContentDescription("Mục tiêu buổi học");
@@ -119,7 +119,7 @@ public final class BookingFragment extends ScreenFragment {
     }
     private void updatePrice(){String price=Tutor.money(tutor.price(minutes));subtotal.setText(price);total.setText(price);}
     private void submit() {
-        if(!selectedDate.atTime(hour,0).isAfter(LocalDateTime.now())) {
+        if(!selectedDate.atTime(hour,minute).isAfter(LocalDateTime.now())) {
             classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai.");return;
         }
         String objective=goal.getText().toString().trim(), location=address.getText().toString().trim();
@@ -130,12 +130,12 @@ public final class BookingFragment extends ScreenFragment {
     /** UC23: bảng xác nhận đăng ký trước khi gửi yêu cầu; sau khi gia sư chấp nhận, gia sư gửi hợp đồng dạy để học viên xác nhận. */
     private void confirmRequest(String objective, String location) {
         String summary="Gia sư: "+tutor.name+"\nMôn học: "+tutor.course+"\nNgày học: "+selectedDate.format(com.example.tmdt.Lesson.DATE)
-                +"\nThời gian: "+com.example.tmdt.Lesson.range(hour,minutes)+" ("+minutes+" phút)\nHình thức: "+mode
+                +"\nThời gian: "+com.example.tmdt.Lesson.range(hour,minute,minutes)+" ("+minutes+" phút)\nHình thức: "+mode
                 +(location.isEmpty()?"":"\nĐịa chỉ: "+location)+"\nHọc phí buổi này: "+Tutor.money(tutor.price(minutes))
                 +"\n\nSau khi gia sư chấp nhận, gia sư sẽ gửi hợp đồng dạy (số buổi, học phí, điều khoản). Bạn xem và xác nhận ở Lịch học → Chi tiết buổi học hoặc Cá nhân → Hợp đồng của tôi.";
         classroom.ui.dialog().setTitle("Xác nhận đăng ký học").setMessage(summary)
                 .setNegativeButton("Xem lại",null)
-                .setPositiveButton("Xác nhận đăng ký",(d,w)->classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minutes,mode,objective,
+                .setPositiveButton("Xác nhận đăng ký",(d,w)->classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minute,minutes,mode,objective,
                         location,false,tutor.price(minutes)))).show();
     }
     /** Keeps the draft when the trial screen replaces this one or the classroom is recreated. */
@@ -145,7 +145,7 @@ public final class BookingFragment extends ScreenFragment {
     }
     private void saveState(Bundle state) {
         state.putString("date",selectedDate.toString());
-        state.putInt("hour",hour);state.putInt("minutes",minutes);state.putString("mode",mode);
+        state.putInt("hour",hour);state.putInt("minute",minute);state.putInt("minutes",minutes);state.putString("mode",mode);
         state.putString("goal",goal==null?savedGoal:goal.getText().toString());
         state.putString("address",address==null?savedAddress:address.getText().toString());
     }

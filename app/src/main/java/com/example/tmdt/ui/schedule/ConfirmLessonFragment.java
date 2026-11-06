@@ -50,8 +50,8 @@ public final class ConfirmLessonFragment extends ScreenFragment {
             ui.addAction(body,ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,this::confirm),47);
         }
         ui.space(body,12);
-        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->classroom.dialog("Báo cáo vấn đề",
-                "Màn hình Báo cáo vi phạm (47) do Thành viên 4 phụ trách. Học phí của buổi này được giữ lại cho đến khi báo cáo được xử lý.")),46);
+        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->((com.example.tmdt.MainActivity)requireActivity()).exchange
+                .openReport(com.example.tmdt.Report.SUBJECT_LESSON,lesson.id)),46);
         return root;
     }
 

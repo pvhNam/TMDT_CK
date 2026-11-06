@@ -402,7 +402,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
     }
 
     private void propose(Lesson lesson) {
-        LocalDate[] date = {LocalDate.parse(lesson.date).plusDays(1)}; int[] hour = {lesson.hour};
+        LocalDate[] date = {LocalDate.parse(lesson.date).plusDays(1)}; int[] hour = {lesson.hour, lesson.minute};
         LinearLayout form = ui.column(); form.setPadding(ui.dp(22),ui.dp(8),ui.dp(22),0);
         ui.label(form,"Ngày mới"); TextView dateValue = ui.value(date[0].format(Lesson.DATE));
         ui.add(form,ui.picker(R.drawable.ic_calendar,dateValue,()->{
@@ -411,8 +411,8 @@ public final class TeachingScheduleFragment extends ScreenFragment {
             picker.getDatePicker().setMinDate(System.currentTimeMillis()-1000); picker.show();
         }));
         ui.space(form,14);
-        TimeRange time = new TimeRange(ui,7,23,lesson.minutes,lesson.minutes,lesson.hour,lesson.minutes,(h,mi,m)->hour[0]=h);
-        hour[0] = time.hour(); ui.add(form,time.view("Giờ học mới"));
+        TimeRange time = new TimeRange(ui,7,23,lesson.minutes,lesson.minutes,30,30,lesson.hour,lesson.minute,lesson.minutes,(h,mi,m)->{hour[0]=h;hour[1]=mi;});
+        hour[0] = time.hour(); hour[1] = time.minute(); ui.add(form,time.view("Giờ học mới"));
         ui.space(form,12); ui.label(form,"Lý do đề xuất"); EditText reason = ui.entry("Ví dụ: Gia sư có lịch công tác.",false);
         reason.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)}); ui.add(form,reason);
         android.widget.ScrollView scroll = new android.widget.ScrollView(classroom.context()); scroll.addView(form);
@@ -421,7 +421,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String text = reason.getText().toString().trim();
             if (text.isEmpty()) { reason.setError("Vui lòng nhập lý do"); return; }
-            String error = classroom.store.propose(lesson,date[0],hour[0],text);
+            String error = classroom.store.propose(lesson,date[0],hour[0],hour[1],text);
             if (error != null) { classroom.dialog("Chưa gửi được đề nghị",error); return; }
             dialog.dismiss(); classroom.hideKeyboard(); render();
             classroom.notice("Đã gửi đề nghị. Lịch cũ được giữ cho đến khi học viên đồng ý.");

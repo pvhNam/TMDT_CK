@@ -145,23 +145,6 @@ public final class GroupSearchFragment extends ScreenFragment {
         return card;
     }
 
-    /** Shortcut to Lịch sử đăng ký lớp học with the number of registrations still waiting. */
-    private View historyLink() {
-        int sent = 0, waiting = 0;
-        for (GroupClass item : classroom.store.classes)
-            for (GroupClass.Registration registration : item.registrations)
-                if (registration.studentId.equals(classroom.me())) { sent++; if (registration.pending()) waiting++; }
-        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
-        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
-        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE)); ui.gap(row,12);
-        LinearLayout text = ui.column(); ui.add(text,ui.text("Lớp đã đăng ký",16,Ui.INK,true)); ui.space(text,2);
-        ui.add(text,ui.text(sent==0?"Xem trạng thái các lớp bạn đăng ký":sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
-        ui.weight(row,text);
-        if (waiting > 0) { row.addView(ui.pill(String.valueOf(waiting),13,Ui.WHITE,Ui.ORANGE),ui.lp(-2,-2)); ui.gap(row,6); }
-        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
-        row.setContentDescription("Lớp đã đăng ký"); ui.clickable(row,classroom::openRegistrations); return row;
-    }
-
     private TextView availability(GroupClass item) {
         if (item.members.contains(classroom.me())) return ui.pill("Đã tham gia",14,Ui.GREEN,Ui.GREEN_BG);
         if (item.registrationOf(classroom.me()) != null) return ui.pill("Đã gửi đăng ký",14,Ui.BLUE,Ui.PALE);

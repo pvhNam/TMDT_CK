@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Một báo cáo trên màn 48: thu gọn (mã, lý do, ngày, trạng thái) và mở rộng (tiến trình, minh chứng, nội dung). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/ExCard"
+    android:layout_marginBottom="12dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_ex_icon_circle"
+            android:importantForAccessibility="no"
+            android:padding="9dp"
+            android:src="@drawable/ic_ex_doc" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/code"
+                style="@style/ExName" />
+
+            <TextView
+                android:id="@+id/reason"
+                style="@style/ExLabel"
+                android:layout_marginTop="2dp"
+                android:maxLines="2" />
+
+            <TextView
+                android:id="@+id/date"
+                style="@style/ExLabel"
+                android:textSize="11.5sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/status"
+                style="@style/ExPill" />
+
+            <ImageView
+                android:id="@+id/chevron"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginTop="6dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_ex_chevron_down" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/timeline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/target"
+            style="@style/ExLabel"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            style="@style/ExValue"
+            android:text="@string/ex_evidence_sent"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/evidence"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/evidence_empty"
+            style="@style/ExLabel"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            style="@style/ExValue"
+            android:layout_marginTop="12dp"
+            android:text="@string/ex_report_content"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/description"
+            style="@style/ExValue"
+            android:layout_width="match_parent"
+            android:layout_marginTop="6dp"
+            android:drawableStart="@drawable/ic_ex_doc"
+            android:drawablePadding="10dp"
+            android:lineSpacingExtra="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/add"
+            style="@style/ExOutline"
+            android:layout_marginTop="14dp"
+            android:text="@string/ex_add_more_evidence"
+            app:icon="@drawable/ic_ex_plus" />
+    </LinearLayout>
+</LinearLayout>

@@ -168,7 +168,7 @@ public final class ContractFragment extends Fragment {
             binding.primary.setText(Contract.AWAITING_ESCROW.equals(c.status) ? (student ? "Thanh toán toàn bộ khóa qua VNPay" : "Xem thanh toán khóa học") : "Thanh toán và các buổi trong khóa");
             binding.primary.setEnabled(!busy);
             binding.primary.setOnClickListener(v -> ((MainActivity)requireActivity()).openPayment("CONTRACT",c.id,c.studentId));
-            // UC26: đánh giá bên kia sau khi buổi học đầu tiên kết thúc. (Nút Báo cáo – UC27 – sẽ thêm khi push UC27.)
+            // UC26: đánh giá bên kia sau khi buổi học đầu tiên kết thúc; UC27: báo cáo vi phạm liên quan hợp đồng này.
             binding.secondary.setVisibility(View.VISIBLE);
             binding.secondary.setText(student ? "Đánh giá gia sư" : "Đánh giá học viên");
             binding.secondary.setEnabled(!busy);
@@ -177,6 +177,9 @@ public final class ContractFragment extends Fragment {
                 else exchange.dialog("Chưa thể đánh giá", "Bạn có thể đánh giá sau khi buổi học đầu tiên kết thúc ("
                         + ExUi.dateTime(c.startAt + c.minutes * 60_000L) + ").");
             });
+            binding.tertiary.setVisibility(View.VISIBLE); binding.tertiary.setText("Báo cáo");
+            binding.tertiary.setEnabled(!busy);
+            binding.tertiary.setOnClickListener(v -> exchange.openReport(com.example.tmdt.Report.SUBJECT_CONTRACT, c.id));
         } else if (tutor) {
             binding.primary.setText("Tạo hợp đồng mới");
             binding.primary.setIconResource(R.drawable.ic_ex_doc);

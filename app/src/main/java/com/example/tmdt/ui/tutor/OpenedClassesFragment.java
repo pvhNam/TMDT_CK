@@ -13,7 +13,6 @@ import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
 import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
-import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
@@ -50,26 +49,20 @@ public final class OpenedClassesFragment extends ScreenFragment {
         StableViews rows=StableViews.at(listContainer);rows.begin();
         int groups=GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
         if(classroom.classTab==0&&groups>0)rows.add("matches",groups,this::matchLink,ui.dp(12));
+        for(int i=0;i<3;i++)labels[i]+=" ("+mine(STATUSES[i]).size()+")";
+        ui.tabs(tabContainer,labels,classroom.classTab,index->{
+            if(index==classroom.classTab)return;
+            classroom.classTab=index;renderClasses();
+            ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
+            com.example.tmdt.ui.common.Motion.reveal(listContainer);
+        });
+        ui.space(listContainer,4);
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
         rows.commit();
     }
 
     @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}
-
-    /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */
-    private View matchLink() {
-        int groups = GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
-        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
-        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
-        row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE)); ui.gap(row,12);
-        LinearLayout text = ui.column(); ui.add(text,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true)); ui.space(text,2);
-        ui.add(text,ui.text(groups>0?groups+" nhóm học viên cùng nhu cầu":"Học viên cùng môn và cấp học",13,Ui.MUTED,false));
-        ui.weight(row,text);
-        if (groups > 0) { row.addView(ui.pill(String.valueOf(groups),13,Ui.WHITE,Ui.BLUE),ui.lp(-2,-2)); ui.gap(row,6); }
-        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
-        row.setContentDescription("Gợi ý ghép nhóm"); ui.clickable(row,()->classroom.show("matches")); return row;
-    }
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();
