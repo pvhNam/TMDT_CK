@@ -2,6 +2,7 @@ package com.example.tmdt.ui.admin;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -18,26 +19,28 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Thống kê (Thành viên 4): biểu đồ cột theo tùy chọn thời gian (từ ngày – đến ngày) cho lượt đăng ký học,
- * người dùng mới hoặc lớp nhóm mới; tự gom theo ngày / tuần / tháng tùy độ dài khoảng.
- * Số liệu tính theo ngày tạo (created_at) nằm trong khoảng đã chọn.
+ * Thống kê lớp học và đăng ký (Thành viên 4).
+ * - Biểu đồ cột theo tuỳ chọn thời gian (từ ngày – đến ngày): lượt đăng ký học, người dùng mới hoặc lớp nhóm mới;
+ *   tự gom theo ngày / tuần / tháng tuỳ độ dài khoảng.
+ * - Biểu đồ tròn: cơ cấu đăng ký hoặc lớp nhóm theo môn học hoặc trạng thái, kèm tỷ lệ % và chú giải.
+ * Mọi số liệu tính theo ngày tạo (created_at) nằm trong khoảng đã chọn.
  */
 public final class AdminStatsFragment extends ManageScreen {
     private static final String[] METRICS = {"Lượt đăng ký học", "Người dùng mới", "Lớp nhóm mới"};
     private LocalDate from = LocalDate.now().minusDays(29), to = LocalDate.now();
-    private int metric;
+    private int metric, pieTarget, pieBy;
 
     @Override public void onCreate(@Nullable Bundle state) {
         super.onCreate(state);
         if (state != null) {
             from = LocalDate.parse(state.getString("from", from.toString())); to = LocalDate.parse(state.getString("to", to.toString()));
-            metric = state.getInt("metric");
+            metric = state.getInt("metric"); pieTarget = state.getInt("pieTarget"); pieBy = state.getInt("pieBy");
         }
     }
     @Override public void onSaveInstanceState(@NonNull Bundle out) {
         super.onSaveInstanceState(out);
         out.putString("from", from.toString()); out.putString("to", to.toString());
-        out.putInt("metric", metric);
+        out.putInt("metric", metric); out.putInt("pieTarget", pieTarget); out.putInt("pieBy", pieBy);
     }
 
     @Override protected View build() {
@@ -81,7 +84,27 @@ public final class AdminStatsFragment extends ManageScreen {
         ui.add(barCard, barChart);
         ui.add(body, barCard); ui.space(body, 18);
 
-        ui.add(body, ui.text("Số liệu tính theo ngày tạo trong khoảng đã chọn. Lượt đăng ký học gồm lịch học 1-1 (cả học thử) và đăng ký lớp nhóm.", 13, Ui.MUTED, false));
+        // Biểu đồ tròn -------------------------------------------------------------------------------
+        ui.section(body, "Biểu đồ tròn – cơ cấu", 18); ui.space(body, 8);
+        LinearLayout target = ui.row();
+        ui.weight(target, ui.choice("Đăng ký học", pieTarget == 0, () -> { pieTarget = 0; refresh(); })); ui.gap(target, 8);
+        ui.weight(target, ui.choice("Lớp nhóm", pieTarget == 1, () -> { pieTarget = 1; refresh(); }));
+        ui.add(body, target); ui.space(body, 6);
+        LinearLayout by = ui.row();
+        ui.weight(by, ui.choice("Theo môn học", pieBy == 0, () -> { pieBy = 0; refresh(); })); ui.gap(by, 8);
+        ui.weight(by, ui.choice("Theo trạng thái", pieBy == 1, () -> { pieBy = 1; refresh(); }));
+        ui.add(body, by); ui.space(body, 10);
+
+        List<AdminStats.Slice> slices = AdminStats.slices(keys(admin, zone));
+        LinearLayout pieCard = ui.card();
+        ui.add(pieCard, ui.text((pieTarget == 0 ? "Đăng ký học" : "Lớp nhóm") + (pieBy == 0 ? " theo môn học" : " theo trạng thái"), 15, Ui.INK, true));
+        ui.space(pieCard, 6);
+        PieChartView pie = new PieChartView(requireContext()); pie.setData(slices, pieTarget == 0 ? "đăng ký" : "lớp");
+        ui.add(pieCard, pie); ui.space(pieCard, 8);
+        if (slices.isEmpty()) ui.add(pieCard, ui.text("Không có dữ liệu trong khoảng đã chọn.", 14, Ui.MUTED, false));
+        for (int i = 0; i < slices.size(); i++) legend(pieCard, PieChartView.color(i), slices.get(i));
+        ui.add(body, pieCard); ui.space(body, 10);
+        ui.add(body, ui.text("Số liệu tính theo ngày tạo trong khoảng đã chọn. Đăng ký học gồm lịch học 1-1 (cả học thử) và đăng ký lớp nhóm.", 13, Ui.MUTED, false));
         return root;
     }
 
@@ -99,6 +122,17 @@ public final class AdminStatsFragment extends ManageScreen {
         TextView chip = ui.choice(label, from.equals(start) && to.equals(end), () -> { from = start; to = end; refresh(); });
         chip.setTextSize(13); ui.weight(row, chip);
     }
+    private void legend(LinearLayout card, int color, AdminStats.Slice slice) {
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(0, ui.dp(5), 0, ui.dp(5));
+        View dot = new View(requireContext()); ui.surface(dot, color, 6, 0); row.addView(dot, ui.lp(12, 12)); ui.gap(row, 10);
+        TextView name = ui.text(slice.label, 14, Ui.INK, false); name.setMaxLines(1); ui.weight(row, name); ui.gap(row, 8);
+        row.addView(ui.text(slice.count + "", 14, Ui.MUTED, false)); ui.gap(row, 12);
+        TextView percent = ui.text(slice.percentLabel(), 14, Ui.INK, true); percent.setMinWidth(ui.dp(52)); percent.setGravity(Gravity.END);
+        row.addView(percent);
+        row.setContentDescription(slice.label + ": " + slice.count + ", " + slice.percentLabel());
+        ui.add(card, row);
+    }
+
     private static long epoch(LocalDate day, ZoneId zone) { return day.atStartOfDay(zone).toInstant().toEpochMilli(); }
 
     /** Mốc thời gian của chỉ số đang chọn cho biểu đồ cột. */
@@ -108,5 +142,18 @@ public final class AdminStatsFragment extends ManageScreen {
         else if (metric == 1) for (ManageState.User u : admin.users()) times.add(u.createdAt);
         else for (ManageState.GroupRow c : admin.classes()) times.add(c.createdAt);
         return times;
+    }
+    /** Nhãn của từng mục trong khoảng đã chọn cho biểu đồ tròn. */
+    private List<String> keys(ManageState admin, ZoneId zone) {
+        long start = epoch(from, zone), end = epoch(to.plusDays(1), zone);
+        List<String> keys = new ArrayList<>();
+        if (pieTarget == 0) {
+            for (ManageState.Registration r : admin.allRegistrations()) if (r.createdAt >= start && r.createdAt < end)
+                keys.add(pieBy == 0 ? (r.subject.isEmpty() ? AdminStats.subjectOf(r.title) : r.subject) : AdminStats.statusLabel(r.statusKey()));
+        } else {
+            for (ManageState.GroupRow c : admin.classes()) if (c.createdAt >= start && c.createdAt < end)
+                keys.add(pieBy == 0 ? c.subject : AdminStats.statusLabel(c.status));
+        }
+        return keys;
     }
 }
