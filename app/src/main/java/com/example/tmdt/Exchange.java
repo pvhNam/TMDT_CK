@@ -4,6 +4,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.tmdt.ui.admin.AdminClassesFragment;
 import com.example.tmdt.ui.admin.AdminStatsFragment;
 import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
@@ -38,6 +39,7 @@ public final class Exchange {
     public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews", REPORT = "ex_report", REPORTS = "ex_reports",
     /** Thống kê cho quản trị viên (mở từ trang Cá nhân). */
     public static final String ADMIN_STATS = "admin_stats";
+    public static final String ADMIN_CLASSES = "admin_classes";
             REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
@@ -95,7 +97,7 @@ public final class Exchange {
     }
     static boolean owns(String destination) {
         return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination)
-                || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
+                || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
                 || REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination);
     }
     /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
@@ -103,7 +105,7 @@ public final class Exchange {
         if (!owns(destination)) return destination;
         if (REVIEWS.equals(destination) && reviewsTarget != null && Review.TUTOR.equals(reviewsRole)) return destination; // Khách xem được đánh giá gia sư.
         if (!host.account.signedIn()) return "login";
-        if (ADMIN_STATS.equals(destination) && !isAdmin()) return "account";
+        if ((ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination)) && !isAdmin()) return "account";
         if (REVIEWS.equals(destination) && reviewsTarget == null) return "account";
         if ((REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination)) && !isAdmin()) return "account";
         if (REVIEW.equals(destination) && reviewContractId == null) return CONTRACTS;
@@ -121,6 +123,7 @@ public final class Exchange {
             case REVIEW: return new ReviewFormFragment();
             case REVIEWS: return new ReviewsFragment();
             case ADMIN_STATS: return new AdminStatsFragment();
+            case ADMIN_CLASSES: return new AdminClassesFragment();
             case REPORT: return new ReportFragment();
             case REPORTS: return new MyReportsFragment();
             case REPORTS_ADMIN: return new ReportsAdminFragment();
@@ -165,6 +168,7 @@ public final class Exchange {
     public void openTemplates() { open(TEMPLATES); }
     /** Thống kê biểu đồ cho quản trị viên. */
     public void openStats() { open(ADMIN_STATS); }
+    public void openClassesAdmin() { open(ADMIN_CLASSES); }
 
     // UC26 – Đánh giá hai chiều ----------------------------------------------------------------------
 

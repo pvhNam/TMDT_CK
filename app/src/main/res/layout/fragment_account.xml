@@ -233,6 +233,12 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View android:id="@+id/stats_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <LinearLayout android:id="@+id/row_classes_admin" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_users" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Lớp học và đăng ký" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/classes_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
             <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
