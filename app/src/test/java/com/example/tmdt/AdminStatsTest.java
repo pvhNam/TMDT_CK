@@ -51,4 +51,33 @@ public class AdminStatsTest {
         List<AdminStats.Bucket> bars = AdminStats.bars(new ArrayList<>(), LocalDate.of(2026, 10, 3), LocalDate.of(2026, 10, 1), VN);
         assertEquals(3, bars.size());
     }
+
+    @Test public void slicesSortAndAddUpTo100() {
+        List<AdminStats.Slice> slices = AdminStats.slices(Arrays.asList("Toán", "Toán", "Toán", "Văn", "Anh", "Anh", "Lý"));
+        assertEquals("Toán", slices.get(0).label);
+        assertEquals(3, slices.get(0).count);
+        assertEquals("42,9%", slices.get(0).percentLabel());
+        double sum = 0; for (AdminStats.Slice s : slices) sum += s.percent;
+        assertEquals(100.0, sum, 0.0001);
+    }
+
+    @Test public void smallGroupsAreMergedIntoOther() {
+        List<String> keys = new ArrayList<>();
+        for (String s : new String[]{"A", "A", "B", "B", "C", "D", "E", "F", "G"}) keys.add(s);
+        List<AdminStats.Slice> slices = AdminStats.slices(keys);
+        assertEquals(AdminStats.MAX_SLICES, slices.size());
+        assertEquals("Khác", slices.get(slices.size() - 1).label);
+        assertEquals(2, slices.get(slices.size() - 1).count);   // F, G
+        assertEquals("Chưa rõ", AdminStats.slices(Arrays.asList("", null)).get(0).label);
+        assertEquals(0, AdminStats.slices(new ArrayList<>()).size());
+    }
+
+    @Test public void subjectAndStatusLabels() {
+        assertEquals("Toán", AdminStats.subjectOf("Toán THPT"));
+        assertEquals("Tiếng Anh", AdminStats.subjectOf("Tiếng Anh Luyện thi"));
+        assertEquals("Hóa học", AdminStats.subjectOf("Hóa học"));
+        assertEquals("Chờ duyệt", AdminStats.statusLabel("PENDING"));
+        assertEquals("Đang tuyển", AdminStats.statusLabel("OPEN"));
+        assertEquals("Chưa rõ", AdminStats.statusLabel(""));
+    }
 }
