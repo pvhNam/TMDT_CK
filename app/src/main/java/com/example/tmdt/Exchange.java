@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.tmdt.ui.admin.AdminClassesFragment;
 import com.example.tmdt.ui.admin.AdminRolesFragment;
 import com.example.tmdt.ui.admin.AdminTutorsFragment;
+import com.example.tmdt.ui.exchange.LearnersFragment;
 import com.example.tmdt.ui.admin.AdminStatsFragment;
 import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
@@ -45,6 +46,7 @@ public final class Exchange {
     public static final String ADMIN_CLASSES = "admin_classes";
     public static final String ADMIN_ROLES = "admin_roles";
     public static final String ADMIN_TUTOR_MANAGE = "admin_tutor_manage";
+    public static final String LEARNERS = "learners";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
@@ -54,6 +56,7 @@ public final class Exchange {
     public final ReviewState reviews;
     public final ReportState reports;
     public final ReportAdminState reportAdmin;
+    public final LearnerState learners;
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
@@ -69,6 +72,7 @@ public final class Exchange {
         reviews = provider.get(ReviewState.class);
         reports = provider.get(ReportState.class);
         reportAdmin = provider.get(ReportAdminState.class);
+        learners = provider.get(LearnerState.class);
         if (state != null) {
             contractId = state.getString("ex.contract");
             reviewContractId = state.getString("ex.review"); adminReportId = state.getString("ex.adminReport");
@@ -93,15 +97,15 @@ public final class Exchange {
 
     /** Đăng nhập/đăng xuất: bật hoặc tắt các listener của tài khoản. */
     void accountChanged(boolean signedIn) {
-        if (signedIn) { contracts.start(); agreements.start(); }
+        if (signedIn) { contracts.start(); agreements.start(); learners.start(); }
         else {
-            contracts.stop(); agreements.stop(); contracts.draft = null; contractId = null;
+            contracts.stop(); agreements.stop(); learners.stop(); contracts.draft = null; contractId = null;
             reviews.stopWatch(); new androidx.lifecycle.ViewModelProvider(host).get(ManageState.class).stop(); reports.stop(); reports.clearDraft(); reportAdmin.stop(); adminReportId = null;
         }
     }
     static boolean owns(String destination) {
         return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination)
-                || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || ADMIN_ROLES.equals(destination) || ADMIN_TUTOR_MANAGE.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
+                || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || ADMIN_ROLES.equals(destination) || ADMIN_TUTOR_MANAGE.equals(destination) || LEARNERS.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
                 || REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination);
     }
     /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
@@ -130,6 +134,7 @@ public final class Exchange {
             case ADMIN_CLASSES: return new AdminClassesFragment();
             case ADMIN_ROLES: return new AdminRolesFragment();
             case ADMIN_TUTOR_MANAGE: return new AdminTutorsFragment();
+            case LEARNERS: return new LearnersFragment();
             case REPORT: return new ReportFragment();
             case REPORTS: return new MyReportsFragment();
             case REPORTS_ADMIN: return new ReportsAdminFragment();
@@ -177,6 +182,7 @@ public final class Exchange {
     public void openClassesAdmin() { open(ADMIN_CLASSES); }
     public void openRoles() { open(ADMIN_ROLES); }
     public void openTutorManage() { open(ADMIN_TUTOR_MANAGE); }
+    public void openLearners() { open(LEARNERS); }
 
     // UC26 – Đánh giá hai chiều ----------------------------------------------------------------------
 

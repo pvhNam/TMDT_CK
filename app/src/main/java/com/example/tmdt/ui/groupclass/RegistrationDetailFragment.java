@@ -78,6 +78,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
             ui.tableRow(sent,R.drawable.ic_clock,"Cập nhật",registration.updated.format(Lesson.TIME)+" · "+registration.updated.format(Lesson.DATE));
         ui.tableRow(sent,R.drawable.ic_file,"Trạng thái",RegistrationHistoryFragment.label(item,registration));
         ui.add(body,sent); ui.space(body,12);
+        if (!registration.learnerName.isEmpty()) { ui.label(body,"Người học"); ui.add(body,ui.text(registration.learnerName,15,Ui.INK,false)); ui.space(body,12); }
         ui.label(body,"Mục tiêu đã gửi");
         TextView goal = ui.text(registration.goal.isEmpty()?"Không có":registration.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
         ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(body,goal); ui.space(body,16);

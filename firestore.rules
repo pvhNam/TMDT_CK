@@ -46,6 +46,23 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ho_ten','so_dien_thoai','la_gia_su','updated_at'])
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.trang_thai_xac_minh == 'PENDING'
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.created_at == request.time));
+      match /learners/{learnerId} {
+        function validLearner() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['ho_ten','lop','cap_hoc','quan_he','ghi_chu','updated_at'])
+            && d.keys().hasOnly(['ho_ten','lop','cap_hoc','quan_he','ghi_chu','created_at','updated_at'])
+            && d.ho_ten is string && d.ho_ten.size() >= 2 && d.ho_ten.size() <= 100
+            && d.lop is string && d.lop.size() <= 40
+            && d.cap_hoc is string && d.cap_hoc.size() <= 40
+            && d.quan_he is string && d.quan_he.size() <= 40
+            && d.ghi_chu is string && d.ghi_chu.size() <= 200
+            && d.updated_at == request.time;
+        }
+        allow read: if owner() || admin();
+        allow create: if owner() && activeUser() && validLearner() && request.resource.data.created_at == request.time;
+        allow update: if owner() && activeUser() && validLearner() && request.resource.data.created_at == resource.data.created_at;
+        allow delete: if owner() && activeUser();
+      }
     }
     // Display images only. Private names/contact details remain in the existing profile collections.
     match /profile_avatars/{userId} {
@@ -395,13 +412,18 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/tutor_profiles/$(uid))
         && get(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'VERIFIED';
     }
+    function ownLearner(d) {
+      return !('ten_nguoi_hoc' in d)
+        || (d.ten_nguoi_hoc is string && d.nguoi_hoc_id is string
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)/learners/$(d.nguoi_hoc_id)).data.ho_ten == d.ten_nguoi_hoc);
+    }
     match /lessons/{lessonId} {
       function validLesson() {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
         let link = d.get('link_phong_hoc', '');
-        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi', 'payment_id'])) && d.keys().hasAll(keys)
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi', 'payment_id', 'nguoi_hoc_id', 'ten_nguoi_hoc'])) && d.keys().hasAll(keys)
           && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
           && d.get('doi_lich_phan_hoi', '') in ['', 'DONG_Y', 'GIU_LICH']
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
@@ -430,7 +452,8 @@ service cloud.firestore {
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
           && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == '' && d.get('doi_lich_phan_hoi', '') == ''
           && d.bat_dau > request.time && d.created_at == request.time
-          && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
+          && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'))
+          && ownLearner(d);
       }
       function answered() {
         let d = request.resource.data;
@@ -583,7 +606,7 @@ service cloud.firestore {
       function validRegistration() {
         let d = request.resource.data;
         let keys = ['class_id','tutor_id','student_id','ten_hoc_vien','muc_tieu','ngay_gui','trang_thai','created_at','updated_at'];
-        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && registrationId == d.class_id + '_' + d.student_id
+        return d.keys().hasOnly(keys.concat(['nguoi_hoc_id','ten_nguoi_hoc'])) && d.keys().hasAll(keys) && registrationId == d.class_id + '_' + d.student_id
           && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 200
           && d.ngay_gui is string && d.ngay_gui.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
@@ -594,7 +617,8 @@ service cloud.firestore {
         let c = get(/databases/$(database)/documents/group_classes/$(d.class_id)).data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten && d.trang_thai == 'PENDING'
           && d.tutor_id == c.tutor_id && c.tutor_id != request.auth.uid && c.trang_thai == 'OPEN'
-          && c.thanh_vien.size() < c.suc_chua && !(request.auth.uid in c.thanh_vien);
+          && c.thanh_vien.size() < c.suc_chua && !(request.auth.uid in c.thanh_vien)
+          && ownLearner(d);
       }
       function reviewed() {
         let d = request.resource.data;
@@ -610,7 +634,7 @@ service cloud.firestore {
       allow read: if admin() || (canRead() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid));
       allow create: if activeUser() && validRegistration() && applied() && request.resource.data.created_at == request.time;
       allow update: if activeUser() && validRegistration()
-        && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at']))
+        && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at', 'nguoi_hoc_id', 'ten_nguoi_hoc']))
           || reviewed());
     }
     match /conversations/{conversationId} {

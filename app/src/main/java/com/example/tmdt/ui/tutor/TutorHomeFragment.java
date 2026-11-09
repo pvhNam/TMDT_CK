@@ -234,6 +234,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         if (!lesson.address.isEmpty()) ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",lesson.address);
         ui.add(view,table); ui.space(view,14);
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(view,"Người học"); ui.add(view,ui.text(lesson.learnerName+" (tài khoản "+lesson.studentName+" đặt lịch)",15,Ui.INK,false)); ui.space(view,12); }
         ui.label(view,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
         ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(view,goal); ui.space(view,12);

@@ -82,8 +82,9 @@ public final class AdminClassesFragment extends ManageScreen {
         } else {
             for (ManageState.Registration r : rows()) {
                 if (!filter.isEmpty() && !filter.equals(r.statusKey())) continue;
-                if (!matches(query, r.studentName, r.tutorName, r.title, r.subject)) continue;
-                String title = (r.studentName.isEmpty() ? "Học viên" : r.studentName) + " → " + (r.tutorName.isEmpty() ? "gia sư" : r.tutorName);
+                if (!matches(query, r.studentName, r.learner, r.tutorName, r.title, r.subject)) continue;
+                String who = r.learner.isEmpty() ? r.studentName : r.learner + " (TK " + r.studentName + ")";
+                String title = who + " → " + (r.tutorName.isEmpty() ? "gia sư" : r.tutorName);
                 String sub = (r.title.isEmpty() ? r.subject : r.title) + " · gửi " + date(r.createdAt);
                 List<TextView> pills = new ArrayList<>();
                 pills.add(pill(AdminStats.statusLabel(r.statusKey()), r.statusKey()));
@@ -113,7 +114,8 @@ public final class AdminClassesFragment extends ManageScreen {
         if (regs.isEmpty()) ui.add(content, ui.text("Chưa có học viên đăng ký.", 14, Ui.MUTED, false));
         for (ManageState.Registration r : regs) {
             LinearLayout line = ui.row(); line.setPadding(0, ui.dp(4), 0, ui.dp(4));
-            TextView name = ui.text(r.studentName.isEmpty() ? "(Học viên)" : r.studentName, 14, Ui.INK, false); ui.weight(line, name);
+            String who = r.learner.isEmpty() ? r.studentName : r.learner + " (TK " + r.studentName + ")";
+            TextView name = ui.text(who.isEmpty() ? "(Học viên)" : who, 14, Ui.INK, false); ui.weight(line, name);
             line.addView(pill(AdminStats.statusLabel(r.status), r.status));
             ui.add(content, line);
         }
@@ -123,7 +125,8 @@ public final class AdminClassesFragment extends ManageScreen {
     private void openRegistration(ManageState.Registration r) {
         LinearLayout content = ui.column();
         LinearLayout table = ui.table();
-        ui.tableRow(table, R.drawable.ic_field_user, "Học viên", r.studentName.isEmpty() ? "—" : r.studentName);
+        ui.tableRow(table, R.drawable.ic_field_user, "Tài khoản đăng ký", r.studentName.isEmpty() ? "—" : r.studentName);
+        if (!r.learner.isEmpty()) ui.tableRow(table, R.drawable.ic_users, "Người học", r.learner);
         ui.tableRow(table, R.drawable.ic_cap, "Gia sư", r.tutorName.isEmpty() ? "—" : r.tutorName);
         ui.tableRow(table, R.drawable.ic_ex_book, r.group() ? "Lớp" : "Nội dung", r.title.isEmpty() ? r.subject : r.title);
         if (!r.group()) {

@@ -49,6 +49,8 @@ public final class ManageState extends MemberState {
     /** Một đăng ký học: đăng ký lớp nhóm (class_registrations) hoặc lịch học 1-1 (lessons). */
     public static final class Registration {
         public String id = "", kind = "", subject = "", title = "", tutorId = "", tutorName = "", studentId = "", studentName = "", status = "", classId = "";
+        /** Người học khi một tài khoản đăng ký cho người khác (rỗng = chính chủ tài khoản). */
+        public String learner = "";
         public boolean trial, finished; public long createdAt, startAt, price;
         public boolean group() { return REGISTRATIONS.equals(kind); }
         /** Trạng thái hiển thị: buổi 1-1 đã học xong tính là "Đã hoàn thành". */
@@ -139,7 +141,7 @@ public final class ManageState extends MemberState {
                 for (DocumentSnapshot d : snapshot.getDocuments()) {
                     Registration r = new Registration(); r.id = d.getId(); r.kind = REGISTRATIONS; r.classId = Docs.text(d, "class_id");
                     r.tutorId = Docs.text(d, "tutor_id"); r.studentId = Docs.text(d, "student_id"); r.studentName = Docs.text(d, "ten_hoc_vien");
-                    r.status = Docs.text(d, "trang_thai"); r.createdAt = time(d, "created_at");
+                    r.status = Docs.text(d, "trang_thai"); r.createdAt = time(d, "created_at"); r.learner = Docs.text(d, "ten_nguoi_hoc");
                     groupRegistrations.add(r);
                 }
                 Collections.sort(groupRegistrations, (a, b) -> Long.compare(b.createdAt, a.createdAt));
@@ -151,7 +153,7 @@ public final class ManageState extends MemberState {
                     r.subject = AdminStats.subjectOf(r.title); r.tutorId = Docs.text(d, "tutor_id"); r.tutorName = Docs.text(d, "ten_gia_su");
                     r.studentId = Docs.text(d, "student_id"); r.studentName = Docs.text(d, "ten_hoc_vien"); r.status = Docs.text(d, "trang_thai");
                     r.trial = Docs.flag(d, "hoc_thu"); r.finished = Docs.flag(d, "da_hoan_thanh"); r.price = Docs.number(d, "hoc_phi");
-                    r.createdAt = time(d, "created_at"); r.startAt = time(d, "bat_dau");
+                    r.createdAt = time(d, "created_at"); r.startAt = time(d, "bat_dau"); r.learner = Docs.text(d, "ten_nguoi_hoc");
                     lessons.add(r);
                 }
                 Collections.sort(lessons, (a, b) -> Long.compare(b.createdAt, a.createdAt));

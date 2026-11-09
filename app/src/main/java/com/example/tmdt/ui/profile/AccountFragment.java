@@ -32,6 +32,7 @@ public final class AccountFragment extends AccountFragmentBase {
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowPayments.setOnClickListener(v->go("payments"));
         binding.rowReviews.setOnClickListener(v->host().exchange.openMyReviews());
+        binding.rowLearners.setOnClickListener(v->host().exchange.openLearners());
         binding.rowReports.setOnClickListener(v->host().exchange.openReports());
         binding.rowReportAdmin.setOnClickListener(v->host().exchange.openReportsAdmin());
         binding.rowStats.setOnClickListener(v->host().exchange.openStats());

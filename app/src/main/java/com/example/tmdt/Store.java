@@ -201,11 +201,14 @@ public final class Store {
                 return "Lớp trùng lịch với lớp \""+other.title+"\" bạn đã đăng ký ("+other.scheduleLabel()+").";
         return null;
     }
-    public String register(GroupClass item, String student, String name, String goal) {
+    public String register(GroupClass item, String student, String name, String goal) { return register(item,student,name,goal,"",""); }
+    /** Đăng ký lớp nhóm; learnerId/learnerName khác rỗng khi tài khoản đăng ký cho người học khác. */
+    public String register(GroupClass item, String student, String name, String goal, String learnerId, String learnerName) {
         String error = registrationError(item, student);
         if (error != null) return error;
         item.registrations.removeIf(old -> old.studentId.equals(student));
         GroupClass.Registration registration = new GroupClass.Registration(item.id,item.tutorId,student,name,goal,LocalDate.now().toString(),Lesson.PENDING);
+        registration.learnerId = learnerId == null ? "" : learnerId; registration.learnerName = learnerName == null ? "" : learnerName;
         item.registrations.add(registration); remote.save(registration); return null;
     }
     /** Never accepts more students than the class limit (UC18). */

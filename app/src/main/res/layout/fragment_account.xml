@@ -207,6 +207,12 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_learners" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_users" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Người học của tôi" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_reviews" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_star" />
                 <TextView style="@style/ProfileRowLabel" android:text="Đánh giá của tôi" />

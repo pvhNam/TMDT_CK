@@ -48,6 +48,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.tableRow(table,R.drawable.ic_hourglass,"Thời lượng",lesson.minutes+" phút");
         ui.add(body,table); ui.space(body,12);
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(body,"Người học"); ui.add(body,ui.text(lesson.learnerName,16,Ui.INK,false)); ui.space(body,12); }
         ui.label(body,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,16,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));
         goal.setMinHeight(ui.dp(46)); ui.cardSurface(goal,Ui.PALE,Ui.BORDER); ui.add(body,goal); ui.space(body,12);

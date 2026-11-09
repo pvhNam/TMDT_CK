@@ -89,6 +89,11 @@ public final class Lesson {
         return ended() ? "Chờ xác nhận hoàn thành" : "Đã xác nhận";
     }
 
+    /** Người học khi tài khoản đặt lịch cho người khác (users/{uid}/learners); rỗng = chính chủ tài khoản. */
+    public String learnerId = "", learnerName = "";
+    /** "Người học (tài khoản ...)" khi đặt cho người khác, ngược lại là tên tài khoản. */
+    public String learnerLabel() { return learnerName.isEmpty() ? studentName : learnerName + " (TK " + studentName + ")"; }
+
     public Map<String,Object> toMap() {
         Map<String,Object> data = new HashMap<>();
         data.put("tutor_id",tutorId); data.put("ten_gia_su",tutorName); data.put("student_id",studentId); data.put("ten_hoc_vien",studentName);
@@ -98,6 +103,7 @@ public final class Lesson {
         data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour,proposedMinute):null); data.put("doi_lich_ly_do",proposalReason);
         data.put("doi_lich_phan_hoi",reply);
         data.put("link_phong_hoc",roomLink);
+        if (!learnerName.isEmpty()) { data.put("nguoi_hoc_id",learnerId); data.put("ten_nguoi_hoc",learnerName); }
         return data;
     }
     /** Null when the document is incomplete, so one bad record never hides the others. */
@@ -112,6 +118,7 @@ public final class Lesson {
         lesson.minute = start.getMinute(); lesson.roomLink = text(data,"link_phong_hoc"); lesson.reply = text(data,"doi_lich_phan_hoi");
         lesson.finished = Boolean.TRUE.equals(data.get("da_hoan_thanh"));
         lesson.content = text(data,"noi_dung"); lesson.cancelReason = text(data,"ly_do_huy");
+        lesson.learnerId = text(data,"nguoi_hoc_id"); lesson.learnerName = text(data,"ten_nguoi_hoc");
         LocalDateTime proposed = time(data.get("doi_lich_bat_dau"));
         if (proposed != null) {
             lesson.proposedDate = proposed.toLocalDate().toString(); lesson.proposedHour = proposed.getHour(); lesson.proposedMinute = proposed.getMinute();
