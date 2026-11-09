@@ -37,10 +37,10 @@ public final class Exchange {
     public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
     /** UC26, UC27, UC29 (tiền tố ex_/report_ để không trùng màn "review" của phần lớp nhóm). */
     public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews", REPORT = "ex_report", REPORTS = "ex_reports",
+            REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
     /** Thống kê cho quản trị viên (mở từ trang Cá nhân). */
     public static final String ADMIN_STATS = "admin_stats";
     public static final String ADMIN_CLASSES = "admin_classes";
-            REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
