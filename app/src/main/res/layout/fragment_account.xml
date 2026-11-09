@@ -245,6 +245,12 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View android:id="@+id/roles_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <LinearLayout android:id="@+id/row_tutor_manage" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_cap" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Quản lý gia sư" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/tutor_manage_divider" style="@style/ProfileDivider" android:visibility="gone" />
             <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />

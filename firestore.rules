@@ -86,7 +86,9 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.la_gia_su == true
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.ho_ten == request.resource.data.ho_ten;
       allow update: if stamped() && (
-        (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
+        (admin() && resource.data.trang_thai_xac_minh == 'VERIFIED'
+          && request.resource.data.nhan_lop is bool && changed(['nhan_lop','updated_at']))
+        || (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
           && request.resource.data.trang_thai_xac_minh in ['IN_REVIEW','VERIFIED','NEEDS_REVISION','REJECTED']
           && changed(['trang_thai_xac_minh','updated_at'])
           && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == request.resource.data.trang_thai_xac_minh

@@ -231,4 +231,19 @@ public final class ManageState extends MemberState {
         batch.set(db.collection("admin_audit_logs").document(), log);
         batch.commit().addOnCompleteListener(task -> { if (task.isSuccessful()) done(success); else failed(task.getException()); });
     }
+
+    /** Ẩn gia sư khỏi danh sách tìm gia sư (nhan_lop = false) hoặc hiện lại. Chỉ gia sư đã duyệt. */
+    public String setTutorVisible(Tutor tutor, boolean visible) {
+        if (uid() == null || busy) return "Đang xử lý, vui lòng đợi.";
+        if (!"VERIFIED".equals(tutor.status)) return "Chỉ ẩn/hiện được gia sư đã được duyệt.";
+        if (tutor.visible == visible) return visible ? "Gia sư đang hiển thị." : "Gia sư đang bị ẩn.";
+        busy = true; notifyUi();
+        Map<String, Object> update = new HashMap<>();
+        update.put("nhan_lop", visible); update.put("updated_at", FieldValue.serverTimestamp());
+        db.collection("tutor_profiles").document(tutor.id).update(update).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) done(visible ? "Đã hiện lại " + tutor.name + " trong danh sách gia sư." : "Đã ẩn " + tutor.name + " khỏi danh sách gia sư.");
+            else failed(task.getException());
+        });
+        return null;
+    }
 }
