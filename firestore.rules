@@ -28,6 +28,12 @@ service cloud.firestore {
         && request.resource.data.trang_thai in ['ACTIVE','BANNED']
         && request.resource.data.trang_thai != resource.data.trang_thai
         && changed(['trang_thai','updated_at']) && stamped();
+      allow update: if admin() && request.auth.uid != userId
+        && resource.data.trang_thai == 'ACTIVE'
+        && resource.data.vai_tro in ['STUDENT','ADMIN']
+        && request.resource.data.vai_tro in ['STUDENT','ADMIN']
+        && request.resource.data.vai_tro != resource.data.vai_tro
+        && changed(['vai_tro','updated_at']) && stamped();
       allow create: if owner() && request.auth.token.email_verified == true && validProfile()
         && request.resource.data.vai_tro == 'STUDENT'
         && request.resource.data.la_gia_su == false
@@ -352,20 +358,27 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid)).data.trang_thai == 'ACTIVE';
     }
     match /admin_audit_logs/{logId} {
+      function auditField(action) { return action in ['BAN_USER','UNBAN_USER'] ? 'trang_thai' : 'vai_tro'; }
+      function validAudit() {
+        let d = request.resource.data;
+        let field = auditField(d.action);
+        return d.keys().hasAll(['actor_id','target_id','action','before','after','reason','created_at'])
+          && d.keys().hasOnly(['actor_id','target_id','action','before','after','reason','created_at'])
+          && d.actor_id == request.auth.uid
+          && d.target_id != request.auth.uid
+          && d.action in ['BAN_USER','UNBAN_USER','GRANT_ADMIN','REVOKE_ADMIN']
+          && d.reason is string && d.reason.size() >= 5 && d.reason.size() <= 500
+          && d.before == get(/databases/$(database)/documents/users/$(d.target_id)).data[field]
+          && d.after == getAfter(/databases/$(database)/documents/users/$(d.target_id)).data[field]
+          && d.before != d.after
+          && ((d.action == 'BAN_USER' && d.after == 'BANNED')
+            || (d.action == 'UNBAN_USER' && d.after == 'ACTIVE')
+            || (d.action == 'GRANT_ADMIN' && d.after == 'ADMIN')
+            || (d.action == 'REVOKE_ADMIN' && d.after == 'STUDENT'))
+          && d.created_at == request.time;
+      }
       allow read: if admin();
-      allow create: if admin()
-        && request.resource.data.keys().hasAll(['actor_id','target_id','action','before','after','reason','created_at'])
-        && request.resource.data.keys().hasOnly(['actor_id','target_id','action','before','after','reason','created_at'])
-        && request.resource.data.actor_id == request.auth.uid
-        && request.resource.data.target_id != request.auth.uid
-        && request.resource.data.action in ['BAN_USER','UNBAN_USER']
-        && request.resource.data.reason is string && request.resource.data.reason.size() >= 5 && request.resource.data.reason.size() <= 500
-        && request.resource.data.before == get(/databases/$(database)/documents/users/$(request.resource.data.target_id)).data.trang_thai
-        && request.resource.data.after == getAfter(/databases/$(database)/documents/users/$(request.resource.data.target_id)).data.trang_thai
-        && request.resource.data.before != request.resource.data.after
-        && ((request.resource.data.action == 'BAN_USER' && request.resource.data.after == 'BANNED')
-          || (request.resource.data.action == 'UNBAN_USER' && request.resource.data.after == 'ACTIVE'))
-        && request.resource.data.created_at == request.time;
+      allow create: if admin() && validAudit();
       allow update, delete: if false;
     }
     function notBanned() {

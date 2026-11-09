@@ -1,8 +1,11 @@
 package com.example.tmdt;
 
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -194,5 +197,38 @@ public final class ManageState extends MemberState {
         List<Registration> result = new ArrayList<>();
         for (Registration r : groupRegistrations()) if (r.classId.equals(classId)) result.add(r);
         return result;
+    }
+
+    // Ghi -------------------------------------------------------------------------------------------
+
+    /** Lý do tối thiểu khi khoá/mở khoá/đổi quyền (rules kiểm tra 5–500 ký tự). */
+    public static final int MIN_REASON = 5, MAX_REASON = 500;
+
+    /** Cấp hoặc thu hồi quyền quản trị. Không áp dụng cho chính mình và tài khoản đang bị khoá. */
+    public String setAdmin(User user, boolean admin, String reason) {
+        String me = uid();
+        if (me == null || busy) return "Đang xử lý, vui lòng đợi.";
+        if (user.id.equals(me)) return "Không thể tự thay đổi quyền của chính bạn.";
+        if (user.banned()) return "Hãy mở khoá tài khoản trước khi đổi quyền.";
+        if (user.admin() == admin) return admin ? "Tài khoản đã là quản trị viên." : "Tài khoản không có quyền quản trị.";
+        String why = reason == null ? "" : reason.trim();
+        if (why.length() < MIN_REASON) return "Nhập lý do ít nhất " + MIN_REASON + " ký tự.";
+        write(user, "vai_tro", user.role, admin ? "ADMIN" : "STUDENT", admin ? "GRANT_ADMIN" : "REVOKE_ADMIN", why,
+                admin ? "Đã cấp quyền quản trị cho " + user.name + "." : "Đã thu hồi quyền quản trị của " + user.name + ".");
+        return null;
+    }
+    private void write(User user, String field, String before, String after, String action, String reason, String success) {
+        busy = true; notifyUi();
+        DocumentReference ref = db.collection("users").document(user.id);
+        Map<String, Object> update = new HashMap<>();
+        update.put(field, after); update.put("updated_at", FieldValue.serverTimestamp());
+        Map<String, Object> log = new HashMap<>();
+        log.put("actor_id", uid()); log.put("target_id", user.id); log.put("action", action);
+        log.put("before", before); log.put("after", after); log.put("reason", reason);
+        log.put("created_at", FieldValue.serverTimestamp());
+        WriteBatch batch = db.batch();
+        batch.update(ref, update);
+        batch.set(db.collection("admin_audit_logs").document(), log);
+        batch.commit().addOnCompleteListener(task -> { if (task.isSuccessful()) done(success); else failed(task.getException()); });
     }
 }

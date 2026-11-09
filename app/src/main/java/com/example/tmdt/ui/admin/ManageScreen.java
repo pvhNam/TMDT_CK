@@ -1,8 +1,10 @@
 package com.example.tmdt.ui.admin;
 
 import android.os.Bundle;
+import android.text.InputFilter;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -16,6 +18,7 @@ import com.example.tmdt.ui.common.Ui;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Consumer;
 
 /**
  * Phần chung của các màn thống kê và quản lý bổ sung cho quản trị viên.
@@ -96,6 +99,29 @@ abstract class ManageScreen extends AdminScreen {
         return card;
     }
 
+    /** Hộp nhập lý do (bắt buộc ≥ 5 ký tự) trước khi đổi quyền hoặc khóa tài khoản. */
+    protected void askReason(String title, String message, String action, boolean danger, Consumer<String> confirm) {
+        LinearLayout form = ui.column(); form.setPadding(ui.dp(22), ui.dp(4), ui.dp(22), 0);
+        ui.add(form, ui.text(message, 14, Ui.MUTED, false)); ui.space(form, 10);
+        EditText input = ui.entry("Lý do (ít nhất " + ManageState.MIN_REASON + " ký tự)", true);
+        input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(ManageState.MAX_REASON)});
+        ui.add(form, input);
+        AlertDialog dialog = ui.dialog().setTitle(title).setView(form)
+                .setNegativeButton("Hủy", null).setPositiveButton(action, null).create();
+        dialog.setOnShowListener(shown -> {
+            if (danger) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Ui.RED);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String reason = input.getText() == null ? "" : input.getText().toString().trim();
+                if (reason.length() < ManageState.MIN_REASON) { input.setError("Nhập lý do ít nhất " + ManageState.MIN_REASON + " ký tự"); return; }
+                dialog.dismiss(); host().hideKeyboard(); confirm.accept(reason);
+            });
+        });
+        dialog.show();
+    }
+
+    /** Lỗi kiểm tra phía app (null = đã gửi yêu cầu). */
+    protected void report(String error) { if (error != null) classroom.dialog("Chưa thực hiện được", error); }
+
     /** So khớp không dấu, không phân biệt hoa thường ("nguyen" khớp "Nguyễn"). */
     static boolean matches(String query, String... fields) {
         String q = fold(query);
@@ -116,6 +142,14 @@ abstract class ManageScreen extends AdminScreen {
         AlertDialog dialog = ui.dialog().setTitle(title).setView(scroll).setPositiveButton("Đóng", null).create();
         dialog.show();
         return dialog;
+    }
+    /** Nút trong hộp chi tiết: đóng hộp rồi chạy {@code action}. */
+    protected void dialogAction(LinearLayout content, AlertDialog[] holder, String label, int style, Runnable action) {
+        ui.space(content, 8);
+        ui.addAction(content, ui.action(label, 0, style, style == Ui.DISABLED ? null : () -> {
+            if (holder[0] != null) holder[0].dismiss();
+            action.run();
+        }), 44);
     }
     /** Chip lọc trong hàng cuộn ngang. */
     protected void chips(LinearLayout body, String[] labels, int selected, java.util.function.IntConsumer select) {

@@ -36,6 +36,7 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.rowReportAdmin.setOnClickListener(v->host().exchange.openReportsAdmin());
         binding.rowStats.setOnClickListener(v->host().exchange.openStats());
         binding.rowClassesAdmin.setOnClickListener(v->host().exchange.openClassesAdmin());
+        binding.rowRoles.setOnClickListener(v->host().exchange.openRoles());
         binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
@@ -87,6 +88,7 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.rowReportAdmin.setVisibility(templates);binding.reportAdminDivider.setVisibility(templates);
         binding.rowStats.setVisibility(templates);binding.statsDivider.setVisibility(templates);
         binding.rowClassesAdmin.setVisibility(templates);binding.classesAdminDivider.setVisibility(templates);
+        binding.rowRoles.setVisibility(templates);binding.rolesDivider.setVisibility(templates);
         renderContracts();
     }
     private void renderContracts(){
