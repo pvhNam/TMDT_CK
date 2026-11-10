@@ -207,6 +207,12 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View style="@style/ProfileDivider" />
+            <LinearLayout android:id="@+id/row_learners" style="@style/ProfileRow">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_users" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Người học của tôi" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View style="@style/ProfileDivider" />
             <LinearLayout android:id="@+id/row_reviews" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_star" />
                 <TextView style="@style/ProfileRowLabel" android:text="Đánh giá của tôi" />
@@ -239,6 +245,18 @@
                 <ImageView style="@style/ProfileRowChevron" />
             </LinearLayout>
             <View android:id="@+id/classes_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <LinearLayout android:id="@+id/row_roles" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_field_shield" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Phân quyền quản trị" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/roles_divider" style="@style/ProfileDivider" android:visibility="gone" />
+            <LinearLayout android:id="@+id/row_tutor_manage" style="@style/ProfileRow" android:visibility="gone">
+                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_cap" app:tint="@color/tutor_ink" />
+                <TextView style="@style/ProfileRowLabel" android:text="Quản lý gia sư" />
+                <ImageView style="@style/ProfileRowChevron" />
+            </LinearLayout>
+            <View android:id="@+id/tutor_manage_divider" style="@style/ProfileDivider" android:visibility="gone" />
             <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
                 <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
                 <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />

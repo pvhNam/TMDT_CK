@@ -15,8 +15,23 @@ import com.example.tmdt.Lesson;
 public final class JoinClassFragment extends ScreenFragment {
     private GroupClass item;
     private EditText goal;
+    /** Người học ("" = bản thân) và mục tiêu đang gõ, giữ lại khi màn vẽ lại. */
+    private String learnerId = "", savedGoal = "";
+
+    private com.example.tmdt.LearnerState learners() { return ((com.example.tmdt.MainActivity) requireActivity()).exchange.learners; }
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, @androidx.annotation.Nullable android.os.Bundle state) {
+        super.onViewCreated(view, state);
+        if (state != null) { learnerId = state.getString("learner", ""); savedGoal = state.getString("goal", ""); }
+        learners().changes().observe(getViewLifecycleOwner(), ignored -> { keepGoal(); refresh(); });
+        learners().start();
+    }
+    @Override public void onSaveInstanceState(@androidx.annotation.NonNull android.os.Bundle out) {
+        super.onSaveInstanceState(out); keepGoal(); out.putString("learner", learnerId); out.putString("goal", savedGoal);
+    }
+    private void keepGoal() { if (goal != null) savedGoal = goal.getText().toString(); }
 
     @Override protected View build() {
+        keepGoal(); goal = null;
         item = classroom.store.groupClass(classroom.classId);
         LinearLayout root = ui.column(); ui.header(root,"Đăng ký tham gia lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
@@ -48,7 +63,10 @@ public final class JoinClassFragment extends ScreenFragment {
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());
         if (!member && sent == null && !item.cancelled()) {
-            ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true);
+            com.example.tmdt.ui.exchange.LearnerPicker.add(ui,body,learners(),learnerId,id->{keepGoal();learnerId=id;refresh();},
+                    ()->{keepGoal();((com.example.tmdt.MainActivity)requireActivity()).exchange.openLearners();});
+            ui.space(body,14);
+            ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true); goal.setText(savedGoal);
             goal.setMinimumHeight(ui.dp(54)); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
             ui.add(body,goal); ui.space(body,16);
         }
@@ -88,7 +106,9 @@ public final class JoinClassFragment extends ScreenFragment {
                 .setPositiveButton("Gửi đăng ký",(dialog,which)->{
                     // Seats may have run out while the dialog was open.
                     if (item.full()) { classroom.show("full"); return; }
-                    String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective);
+                    com.example.tmdt.LearnerState.Learner learner = learners().learner(learnerId);
+                    String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective,
+                            learner == null ? "" : learner.id, learner == null ? "" : learner.name);
                     if (error != null) { classroom.dialog("Chưa gửi được đăng ký",error); return; }
                     classroom.show("groups"); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
                 }).show();
