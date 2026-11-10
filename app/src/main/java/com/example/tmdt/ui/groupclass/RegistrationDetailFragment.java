@@ -96,6 +96,7 @@ public final class RegistrationDetailFragment extends ScreenFragment {
         ui.add(body,details); ui.space(body,18);
 
         ClassQuestionEntry.add(this,ui,body,item.id);
+        com.example.tmdt.ui.groupclass.GroupAssignmentEntry.add(this,ui,body,item,classroom.me());
         actions(body,group);
         return root;
     }

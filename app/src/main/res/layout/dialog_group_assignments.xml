@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent"
+    app:cardBackgroundColor="@color/app_surface" app:cardCornerRadius="22dp" app:cardElevation="0dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <TextView style="@style/ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_marginBottom="0dp"
+                android:text="@string/assignments_title" android:textColor="@color/app_ink" android:textSize="22sp" android:accessibilityHeading="true" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/assignments_close" style="@style/TextButton"
+                android:layout_width="wrap_content" android:minHeight="48dp" android:text="@string/assignments_close" />
+        </LinearLayout>
+        <TextView android:id="@+id/assignments_class_title" style="@style/AssignmentBody" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/assignments_drive_sync" style="@style/AssignmentSecondary" android:text="@string/assignments_drive_sync" android:visibility="gone" />
+        <ProgressBar android:id="@+id/assignments_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp"
+            android:indeterminate="true" android:contentDescription="@string/assignments_loading" android:visibility="gone" />
+        <TextView android:id="@+id/assignments_progress_text" style="@style/AssignmentBody" android:textSize="12sp" android:visibility="gone" android:accessibilityLiveRegion="polite" />
+        <TextView android:id="@+id/assignments_offline" style="@style/AssignmentBody" android:text="@string/assignments_offline" android:visibility="gone" android:accessibilityLiveRegion="polite" />
+        <TextView android:id="@+id/assignments_error" style="@style/AssignmentBody" android:textColor="@color/app_error" android:visibility="gone" android:accessibilityLiveRegion="polite" />
+        <TextView android:id="@+id/assignments_notice" style="@style/AssignmentBody" android:textColor="@color/app_success" android:visibility="gone" android:accessibilityLiveRegion="polite" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/assignments_retry" style="@style/AssignmentSecondary" android:text="@string/assignments_retry" android:visibility="gone" />
+        <ScrollView android:id="@+id/assignments_scroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true" android:clipToPadding="false">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="16dp">
+                <LinearLayout android:id="@+id/assignments_list_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <TextView style="@style/AssignmentBody" android:text="@string/assignments_caption" />
+                    <TextView android:id="@+id/assignments_read_only" style="@style/AssignmentBody" android:text="@string/assignments_read_only" android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/assignments_create_new" style="@style/AssignmentPrimary" android:text="@string/assignments_new"
+                        app:icon="@drawable/ic_ex_plus" app:iconGravity="textStart" app:iconSize="20dp" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/assignment_create_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                        <TextView style="@style/SectionTitle" android:text="@string/assignments_new_title" android:textColor="@color/app_ink" android:accessibilityHeading="true" />
+                        <TextView style="@style/AssignmentLabel" android:text="@string/assignments_title_label" android:labelFor="@id/assignment_title_input" />
+                        <EditText android:id="@+id/assignment_title_input" style="@style/AssignmentInput" android:importantForAutofill="no" android:hint="@string/assignments_title_hint" android:inputType="textCapSentences" android:maxLength="120" android:singleLine="true" />
+                        <TextView style="@style/AssignmentLabel" android:text="@string/assignments_description_label" android:labelFor="@id/assignment_description_input" />
+                        <EditText android:id="@+id/assignment_description_input" style="@style/AssignmentInput" android:importantForAutofill="no" android:hint="@string/assignments_description_hint" android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="3" android:maxLines="7" android:maxLength="6000" />
+                        <TextView style="@style/AssignmentLabel" android:text="@string/assignments_due_label" android:labelFor="@id/assignment_due_button" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/assignment_due_button" style="@style/AssignmentSecondary" android:text="@string/assignments_due_choose" app:icon="@drawable/ic_calendar" app:iconGravity="textStart" />
+                        <TextView android:id="@+id/assignment_file_name" style="@style/AssignmentBody" android:layout_marginTop="12dp" android:text="@string/assignments_no_file" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/assignment_pick_file" style="@style/AssignmentSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="@string/assignments_pick_file" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/assignment_remove_file" style="@style/TextButton" android:layout_width="wrap_content" android:minHeight="48dp" android:text="@string/assignments_remove_file" android:visibility="gone" />
+                        </LinearLayout>
+                        <TextView style="@style/AssignmentBody" android:text="@string/assignments_file_help" android:textSize="12sp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/assignment_publish" style="@style/AssignmentPrimary" android:text="@string/assignments_publish" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/assignment_cancel_create" style="@style/TextButton" android:text="@string/assignments_cancel_create" />
+                    </LinearLayout>
+                    <TextView style="@style/SectionTitle" android:text="@string/assignments_list_heading" android:textColor="@color/app_ink" android:accessibilityHeading="true" />
+                    <TextView android:id="@+id/assignments_empty" style="@style/AssignmentBody" android:text="@string/assignments_empty" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/assignments_list" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/assignment_detail_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/assignment_back" style="@style/AssignmentSecondary" android:text="@string/assignments_back" app:icon="@drawable/ic_back" app:iconGravity="textStart" />
+                    <TextView android:id="@+id/assignment_detail_title" style="@style/ScreenTitle" android:layout_marginTop="16dp" android:textColor="@color/app_ink" android:textSize="22sp" android:accessibilityHeading="true" />
+                    <TextView android:id="@+id/assignment_detail_status" style="@style/AssignmentBody" android:fontFamily="sans-serif-medium" android:textColor="@color/app_accent" />
+                    <TextView android:id="@+id/assignment_detail_due" style="@style/AssignmentBody" />
+                    <TextView android:id="@+id/assignment_detail_description" style="@style/AssignmentBody" android:textColor="@color/app_ink" android:textIsSelectable="true" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/assignment_open_attachment" style="@style/AssignmentSecondary" android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/assignment_toggle_closed" style="@style/AssignmentSecondary" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/submission_student_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                        <TextView style="@style/SectionTitle" android:text="@string/assignments_answer_heading" android:textColor="@color/app_ink" android:accessibilityHeading="true" />
+                        <TextView android:id="@+id/submission_own_status" style="@style/AssignmentBody" android:text="@string/assignments_not_submitted" />
+                        <TextView android:id="@+id/submission_own_time" style="@style/AssignmentBody" android:visibility="gone" />
+                        <TextView android:id="@+id/submission_lock_reason" style="@style/AssignmentBody" android:visibility="gone" />
+                        <TextView style="@style/AssignmentLabel" android:text="@string/assignments_answer_label" android:labelFor="@id/submission_content_input" />
+                        <EditText android:id="@+id/submission_content_input" style="@style/AssignmentInput" android:importantForAutofill="no" android:hint="@string/assignments_answer_hint" android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="3" android:maxLines="7" android:maxLength="6000" />
+                        <TextView android:id="@+id/submission_file_name" style="@style/AssignmentBody" android:text="@string/assignments_no_file" />
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton android:id="@+id/submission_pick_file" style="@style/AssignmentSecondary" android:layout_width="0dp" android:layout_weight="1" android:text="@string/assignments_pick_file" />
+                            <com.google.android.material.button.MaterialButton android:id="@+id/submission_remove_file" style="@style/TextButton" android:layout_width="wrap_content" android:minHeight="48dp" android:text="@string/assignments_remove_file" android:visibility="gone" />
+                        </LinearLayout>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/submission_open_own_attachment" style="@style/AssignmentSecondary" android:visibility="gone" />
+                        <TextView style="@style/AssignmentBody" android:text="@string/assignments_file_help" android:textSize="12sp" />
+                        <TextView style="@style/AssignmentBody" android:text="@string/assignments_answer_help" android:textSize="13sp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/submission_send" style="@style/AssignmentPrimary" android:text="@string/assignments_submit" />
+                        <LinearLayout android:id="@+id/submission_feedback_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                            <TextView style="@style/SectionTitle" android:text="@string/assignments_feedback_title" android:textColor="@color/app_ink" android:accessibilityHeading="true" />
+                            <TextView android:id="@+id/submission_own_score" style="@style/AssignmentLabel" />
+                            <TextView android:id="@+id/submission_own_feedback" style="@style/AssignmentBody" android:textColor="@color/app_ink" android:textIsSelectable="true" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/submissions_teacher_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                        <TextView android:id="@+id/submissions_heading" style="@style/SectionTitle" android:text="@string/assignments_submissions_title" android:textColor="@color/app_ink" android:accessibilityHeading="true" />
+                        <ProgressBar android:id="@+id/submissions_progress" android:layout_width="28dp" android:layout_height="28dp" android:layout_gravity="center_horizontal" android:contentDescription="@string/assignments_loading" android:visibility="gone" />
+                        <TextView android:id="@+id/submissions_error" style="@style/AssignmentBody" android:textColor="@color/app_error" android:visibility="gone" />
+                        <TextView android:id="@+id/submissions_empty" style="@style/AssignmentBody" android:text="@string/assignments_submissions_empty" android:visibility="gone" />
+                        <LinearLayout android:id="@+id/submissions_list" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
