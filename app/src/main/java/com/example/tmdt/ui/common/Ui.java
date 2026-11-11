@@ -93,7 +93,7 @@ public final class Ui {
                 AlertDialog dialog = super.show();
                 TextView message = dialog.findViewById(android.R.id.message);
                 if (message != null) message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-                  if(dialog.getWindow()!=null){ThemeColors.apply(dialog.getWindow().getDecorView());Motion.bindControls(dialog.getWindow().getDecorView());}
+                if(dialog.getWindow()!=null){ThemeColors.apply(dialog.getWindow().getDecorView());Motion.bindControls(dialog.getWindow().getDecorView());}
                 return dialog;
             }
         };

@@ -141,12 +141,12 @@
                     </LinearLayout>
                     <!-- Menu -->
                     <View style="@style/ProfileDivider" android:layout_marginTop="12dp" />
-            <LinearLayout android:id="@+id/row_info" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_user" />
-                <TextView style="@style/ProfileRowLabel" android:text="Thông tin cá nhân" />
-                <ImageView android:id="@+id/info_chevron" style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_info" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_user" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Thông tin cá nhân" />
+                        <ImageView android:id="@+id/info_chevron" style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
 
                     <!-- Expandable personal details -->
                     <LinearLayout
@@ -157,100 +157,100 @@
                         android:paddingTop="4dp"
                         android:paddingBottom="12dp"
                         android:visibility="gone">
-                <TextView style="@style/ReferenceLabel" android:text="@string/email" android:labelFor="@id/email" />
-                <TextView android:id="@+id/email" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_email" android:text="@string/not_updated" tools:text="nam@example.com" />
-                <TextView style="@style/ReferenceLabel" android:text="@string/phone" android:labelFor="@id/phone" />
-                <TextView android:id="@+id/phone" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_phone" android:text="@string/not_updated" tools:text="0901 234 567" />
-                <TextView style="@style/ReferenceLabel" android:text="@string/level" android:labelFor="@id/level" />
-                <TextView android:id="@+id/level" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_level" android:text="@string/not_updated" tools:text="Đại học" />
-                <TextView android:id="@+id/study_details" style="@style/ReferenceBody" android:visibility="gone" tools:text="Lớp 8 · 13 tuổi" />
-                <TextView style="@style/ReferenceLabel" android:text="@string/region" android:labelFor="@id/region" />
-                <TextView android:id="@+id/region" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_location" android:text="@string/not_updated" tools:text="TP. Hồ Chí Minh" />
-                <TextView style="@style/ReferenceLabel" android:text="@string/goal" android:labelFor="@id/goal" />
-                <TextView android:id="@+id/goal" style="@style/ReferenceProfileValue" android:minHeight="72dp" android:drawableStart="@drawable/ic_field_note" android:text="@string/not_updated" tools:text="Củng cố kiến thức và nâng cao kỹ năng." />
-                <TextView style="@style/ReferenceLabel" android:text="@string/address" android:labelFor="@id/address" />
-                <TextView android:id="@+id/address" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_address" android:text="@string/not_updated" tools:text="Quận 1, TP. Hồ Chí Minh" />
-                <TextView style="@style/ReferenceSectionTitle" android:text="@string/security" />
-                <TextView style="@style/ReferenceLabel" android:text="@string/phone_verification" android:labelFor="@id/verification" />
-                <TextView android:id="@+id/verification" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_shield" android:text="@string/unverified" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline" android:text="@string/page_otp" android:contentDescription="@string/page_otp" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/reset" style="@style/ReferenceOutline" android:text="@string/reset_password" android:contentDescription="@string/reset_password" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/email" android:labelFor="@id/email" />
+                        <TextView android:id="@+id/email" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_email" android:text="@string/not_updated" tools:text="nam@example.com" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/phone" android:labelFor="@id/phone" />
+                        <TextView android:id="@+id/phone" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_phone" android:text="@string/not_updated" tools:text="0901 234 567" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/level" android:labelFor="@id/level" />
+                        <TextView android:id="@+id/level" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_level" android:text="@string/not_updated" tools:text="Đại học" />
+                        <TextView android:id="@+id/study_details" style="@style/ReferenceBody" android:visibility="gone" tools:text="Lớp 8 · 13 tuổi" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/region" android:labelFor="@id/region" />
+                        <TextView android:id="@+id/region" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_location" android:text="@string/not_updated" tools:text="TP. Hồ Chí Minh" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/goal" android:labelFor="@id/goal" />
+                        <TextView android:id="@+id/goal" style="@style/ReferenceProfileValue" android:minHeight="72dp" android:drawableStart="@drawable/ic_field_note" android:text="@string/not_updated" tools:text="Củng cố kiến thức và nâng cao kỹ năng." />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/address" android:labelFor="@id/address" />
+                        <TextView android:id="@+id/address" style="@style/ReferenceProfileValue" android:drawableStart="@drawable/ic_field_address" android:text="@string/not_updated" tools:text="Quận 1, TP. Hồ Chí Minh" />
+                        <TextView style="@style/ReferenceSectionTitle" android:text="@string/security" />
+                        <TextView style="@style/ReferenceLabel" android:text="@string/phone_verification" android:labelFor="@id/verification" />
+                        <TextView android:id="@+id/verification" style="@style/ReferenceProfileEmailValue" android:drawableStart="@drawable/ic_field_shield" android:text="@string/unverified" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/verify" style="@style/ReferenceOutline" android:text="@string/page_otp" android:contentDescription="@string/page_otp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/reset" style="@style/ReferenceOutline" android:text="@string/reset_password" android:contentDescription="@string/reset_password" />
                     </LinearLayout>
-            <LinearLayout android:id="@+id/row_requests" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_field_note" />
-                <TextView style="@style/ProfileRowLabel" android:text="@string/manage_requests_title" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <LinearLayout android:id="@+id/row_contracts" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
-                <TextView android:id="@+id/contracts_label" style="@style/ProfileRowLabel" android:text="@string/ex_menu_contracts" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <!-- UC23: quản trị viên soạn mẫu hợp đồng -->
-            <LinearLayout android:id="@+id/row_templates" style="@style/ProfileRow" android:visibility="gone">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_list" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_templates" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View android:id="@+id/templates_divider" style="@style/ProfileDivider" android:visibility="gone" />
-            <LinearLayout android:id="@+id/row_payments" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_wallet" />
-                <TextView android:id="@+id/payments_label" style="@style/ProfileRowLabel" android:text="Thanh toán của tôi" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <LinearLayout android:id="@+id/row_favorites" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_heart" />
-                <TextView style="@style/ProfileRowLabel" android:text="Gia sư yêu thích" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <LinearLayout android:id="@+id/row_reviews" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_star" />
-                <TextView style="@style/ProfileRowLabel" android:text="Đánh giá của tôi" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <!-- UC27: báo cáo vi phạm đã gửi (màn 48), gửi báo cáo mới (màn 47) -->
-            <LinearLayout android:id="@+id/row_reports" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_alert" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="Báo cáo vi phạm của tôi" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <!-- UC29: quản trị viên xử lý báo cáo vi phạm -->
-            <LinearLayout android:id="@+id/row_report_admin" style="@style/ProfileRow" android:visibility="gone">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
-                <TextView android:id="@+id/report_admin_label" style="@style/ProfileRowLabel" android:text="Xử lý báo cáo vi phạm" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View android:id="@+id/report_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
-            <LinearLayout android:id="@+id/row_stats" style="@style/ProfileRow" android:visibility="gone">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_chart" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="Thống kê" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View android:id="@+id/stats_divider" style="@style/ProfileDivider" android:visibility="gone" />
-            <LinearLayout android:id="@+id/row_classes_admin" style="@style/ProfileRow" android:visibility="gone">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_users" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="Lớp học và đăng ký" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View android:id="@+id/classes_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
-            <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
-            <LinearLayout android:id="@+id/row_settings" style="@style/ProfileRow">
-                <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_settings_gear" app:tint="@color/tutor_ink" />
-                <TextView style="@style/ProfileRowLabel" android:text="Cài đặt" />
-                <ImageView style="@style/ProfileRowChevron" />
-            </LinearLayout>
-            <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_requests" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_field_note" />
+                        <TextView style="@style/ProfileRowLabel" android:text="@string/manage_requests_title" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_contracts" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
+                        <TextView android:id="@+id/contracts_label" style="@style/ProfileRowLabel" android:text="@string/ex_menu_contracts" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <!-- UC23: quản trị viên soạn mẫu hợp đồng -->
+                    <LinearLayout android:id="@+id/row_templates" style="@style/ProfileRow" android:visibility="gone">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_list" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="@string/ex_menu_templates" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View android:id="@+id/templates_divider" style="@style/ProfileDivider" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/row_payments" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_wallet" />
+                        <TextView android:id="@+id/payments_label" style="@style/ProfileRowLabel" android:text="Thanh toán của tôi" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_favorites" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_heart" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Gia sư yêu thích" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_reviews" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_star" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Đánh giá của tôi" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <!-- UC27: báo cáo vi phạm đã gửi (màn 48), gửi báo cáo mới (màn 47) -->
+                    <LinearLayout android:id="@+id/row_reports" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_alert" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Báo cáo vi phạm của tôi" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <!-- UC29: quản trị viên xử lý báo cáo vi phạm -->
+                    <LinearLayout android:id="@+id/row_report_admin" style="@style/ProfileRow" android:visibility="gone">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_shield" app:tint="@color/tutor_ink" />
+                        <TextView android:id="@+id/report_admin_label" style="@style/ProfileRowLabel" android:text="Xử lý báo cáo vi phạm" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View android:id="@+id/report_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/row_stats" style="@style/ProfileRow" android:visibility="gone">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_ex_chart" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Thống kê" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View android:id="@+id/stats_divider" style="@style/ProfileDivider" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/row_classes_admin" style="@style/ProfileRow" android:visibility="gone">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_users" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Lớp học và đăng ký" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View android:id="@+id/classes_admin_divider" style="@style/ProfileDivider" android:visibility="gone" />
+                    <LinearLayout android:id="@+id/row_notifications" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_notification_bell" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Thông báo" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
+                    <LinearLayout android:id="@+id/row_settings" style="@style/ProfileRow">
+                        <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_settings_gear" app:tint="@color/tutor_ink" />
+                        <TextView style="@style/ProfileRowLabel" android:text="Cài đặt" />
+                        <ImageView style="@style/ProfileRowChevron" />
+                    </LinearLayout>
+                    <View style="@style/ProfileDivider" />
 
                     <!-- Tutor invitation card -->
                     <LinearLayout
