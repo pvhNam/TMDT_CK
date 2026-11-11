@@ -43,9 +43,10 @@ public final class PaymentState extends ViewModel {
     public TutorPaymentsStatus tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
     public int payrollFilter;
     public int walletFilter,withdrawalFilter;
-    public boolean walletLoaded;
+    public boolean walletLoaded,incomeLoaded;
     public String selectedWithdrawal="",withdrawalOrigin="tutor_wallet";
     public String withdrawalDraft="",withdrawalRequestId="",bankOrigin="tutor_wallet";
+    public String payrollOrigin="admin_finance";
     public Map<String,Object> bank=new HashMap<>();
     public void account(AccountState account){
         UserProfile profile=account.profile();
@@ -61,8 +62,20 @@ public final class PaymentState extends ViewModel {
         tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
         tutorPaymentsStatus=!owner.isEmpty()&&tutor?TutorPaymentsStatus.LOADING:TutorPaymentsStatus.UNAVAILABLE;
         payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();bank.clear();busy=false;error="";notice="";
-        wallets.clear();withdrawals.clear();walletLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
+        wallets.clear();withdrawals.clear();walletLoaded=false;incomeLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
         if(owner.isEmpty()){selected="";changed();return;}
+        attachListeners();
+    }
+    /** Reattach failed subscriptions while retaining the visible data and current selection. */
+    public void retry(){
+        if(owner.isEmpty()||busy)return;generation++;error="";notice="";
+        for(ListenerRegistration listener:listeners)listener.remove();listeners.clear();
+        if(bankListener!=null)bankListener.remove();bankListener=null;
+        if(walletListener!=null)walletListener.remove();walletListener=null;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        attachListeners();watchSessions();
+    }
+    private void attachListeners(){
         if(admin){listen("payments",db.collection(api.collection("payments")),payments);listen("payouts",db.collection(api.collection("tutor_payouts")),payouts);listen("refunds",db.collection(api.collection("refund_requests")),refunds);}
         else{
             listen("student-payments",db.collection(api.collection("payments")).whereEqualTo("student_id",owner),payments);
@@ -108,13 +121,15 @@ public final class PaymentState extends ViewModel {
             if(target==payments){for(Map.Entry<String,Map<String,Row>> source:sources.entrySet())if(source.getKey().equals("payments")||source.getKey().endsWith("-payments"))target.putAll(source.getValue());}
             else target.putAll(rows);
             if(target==wallets)walletLoaded=true;
+            incomeLoaded=sources.containsKey("earnings")&&sources.containsKey("payouts");
             watchSessions();changed();
         }));
     }
     private void watchSessions(){
         String next=payments.containsKey(selected)?selected:"";
-        if(next.equals(sessionOwner))return;
-        if(sessionListener!=null)sessionListener.remove();sessionListener=null;sessionOwner=next;sessions.clear();
+        if(next.equals(sessionOwner)&&(sessionListener!=null||next.isEmpty()))return;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        if(!next.equals(sessionOwner))sessions.clear();sessionOwner=next;
         if(next.isEmpty())return;final int version=generation;
         sessionListener=db.collection(api.collection("payments")).document(next).collection("sessions").addSnapshotListener((snapshot,failure)->{
             if(version!=generation||!next.equals(sessionOwner))return;

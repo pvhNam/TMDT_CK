@@ -15,21 +15,20 @@ public final class AdminDashboardFragment extends AdminScreen {
     private LinearLayout body;
     private ReportPeriod shownPeriod;
     @Override protected View build(){
-        LinearLayout root=root("Quản trị hệ thống");body=ui.page(root);render();return root;
+        LinearLayout root=root("Tổng quan");body=ui.page(root);render();return root;
     }
     @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
     private void render(){
         StableViews rows=StableViews.at(body);rows.begin();if(!feedback(rows)){rows.commit();return;}
-        rows.add("overview-title",true,()->ui.text("Tổng quan",21,Ui.INK,true),ui.dp(14));
         rows.add("people",Arrays.asList(state().totalStudents,state().totalTutors),()->{
             LinearLayout row=ui.row();
             ui.weight(row,statistic("Học sinh",String.valueOf(state().totalStudents),()->openUsers("STUDENT")));ui.gap(row,10);
-            ui.weight(row,statistic("Gia sư",String.valueOf(state().totalTutors),()->openUsers("TUTOR")));return row;
+            ui.weight(row,statistic("Hồ sơ gia sư",String.valueOf(state().totalTutors),()->openUsers("TUTOR")));return row;
         },ui.dp(18));
         rows.add("shortcuts",true,()->{
             LinearLayout box=ui.column();ui.section(box,"Quản lý",17);ui.space(box,10);
             LinearLayout first=ui.row();ui.weight(first,shortcut(R.drawable.ic_pf_shield,"Duyệt gia sư",()->open("admin_tutors")));ui.gap(first,10);
-            ui.weight(first,shortcut(R.drawable.ic_users,"Tài khoản",()->openUsers("ALL")));ui.add(box,first);ui.space(box,10);
+            ui.weight(first,shortcut(R.drawable.ic_users,"Quản lý",()->open("admin_management")));ui.add(box,first);ui.space(box,10);
             LinearLayout second=ui.row();ui.weight(second,shortcut(R.drawable.ic_file,"Hợp đồng",()->{state().selectTutor("");open("admin_contracts");}));ui.gap(second,10);
             ui.weight(second,shortcut(R.drawable.ic_wallet,"Tài chính",()->open("admin_finance")));ui.add(box,second);return box;
         },ui.dp(18));

@@ -12,6 +12,7 @@ public final class AdminState extends ViewModel {
     public final Map<String,PaymentState.Row> tutors=new LinkedHashMap<>(),tutorContracts=new LinkedHashMap<>();
     public String selectedTutor="",tutorQuery="";
     public String userOrigin="admin_users",contractOrigin="admin_contracts";
+    public String selectedIncomeTutor="",incomeTutorName="",incomeOrigin="admin_income",incomeQuery="";
     public boolean loadingTutors,loadingTutorContracts,moreTutors,moreTutorContracts,revenueAnimated;
     public String selectedUser="",selectedContract="",userFilter="ALL",query="",error="",notice="";
     public boolean active,busy,loadingUsers,loadingContracts,moreUsers,moreContracts;
@@ -32,12 +33,13 @@ public final class AdminState extends ViewModel {
         stop();owner=next;active=!next.isEmpty();version++;
         users.clear();contracts.clear();if(!restoreSelection){selectedUser="";selectedContract="";}error="";notice="";busy=false;
         tutors.clear();tutorContracts.clear();if(!restoreSelection){selectedTutor="";userOrigin="admin_users";contractOrigin="admin_contracts";}
+        if(!restoreSelection){selectedIncomeTutor="";incomeTutorName="";incomeOrigin="admin_income";incomeQuery="";}
         tutorLimit=tutorContractLimit=50;revenueAnimated=false;
         if(!restoreSelection)revenuePeriod=ReportPeriod.month(ReportPeriod.currentMonth());
         totalUsers=totalTutors=totalStudents=0;userLimit=contractLimit=50;countedUsers=-1;
         if(active){listenUsers();listenContracts();listenTutors();if(!selectedTutor.isEmpty())listenTutorContracts();}changed();
     }
-    public void retry(){if(!active)return;error="";listenUsers();listenContracts();listenTutors();if(!selectedTutor.isEmpty())listenTutorContracts();counts();}
+    public void retry(){if(!active||busy)return;version++;error="";listenUsers();listenContracts();listenTutors();if(!selectedTutor.isEmpty())listenTutorContracts();counts();changed();}
     public void selectTutor(String uid){
         if(!active)return;selectedTutor=uid;tutorContracts.clear();tutorContractLimit=50;
         if(tutorContractListener!=null)tutorContractListener.remove();tutorVersion++;

@@ -21,6 +21,7 @@ import com.example.tmdt.ui.home.HomeFragment;
 import com.example.tmdt.ui.profile.AccountFragment;
 import com.example.tmdt.ui.profile.EditAccountFragment;
 import com.example.tmdt.ui.common.NavigationAssets;
+import com.example.tmdt.ui.common.FloatingHelpDrag;
 import com.example.tmdt.ui.schedule.ScheduleFragment;
 import com.example.tmdt.ui.messages.ChatFragment;
 import com.example.tmdt.ui.messages.MessagesFragment;
@@ -30,6 +31,7 @@ import java.util.Map;
 
 /** Hosts independent fragments. Layouts, form handling and Firebase access live outside this activity. */
 public class MainActivity extends AppCompatActivity {
+    private static final String FLOATING_HELP_TAG = "floating_help_chat";
     AccountState account;
     CatalogState catalog;
     /** Tin nhắn (member 4, UC21). */
@@ -54,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean updatingNavigation;
     private boolean adminMenuIcons;
     private boolean keyboardVisible;
+    private boolean floatingHelpDismissed;
+    private boolean helpPopupOpen;
+    private FloatingHelpDrag floatingHelpDrag;
     private int bottomInset,systemBottomInset;
     private String navigatingTo;
     private final com.example.tmdt.ui.common.FloatingNavigationInsets navigationInsets=new com.example.tmdt.ui.common.FloatingNavigationInsets();
@@ -67,6 +72,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(),false);
         binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
+        floatingHelpDismissed = savedInstanceState != null && savedInstanceState.getBoolean("floating_help_dismissed");
+        Fragment restoredHelp = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        helpPopupOpen = restoredHelp != null && !restoredHelp.isHidden();
+        setupFloatingHelp();
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
             @Override public void onFragmentViewCreated(androidx.fragment.app.FragmentManager manager,Fragment fragment,View view,Bundle state){
                 view.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.background(view.getContext()));
@@ -75,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
             }
         },true);
         binding.appRoot.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
-            if(right-left!=oldRight-oldLeft)updateNavigationVisibility();
+            if(right-left!=oldRight-oldLeft||bottom-top!=oldBottom-oldTop)updateNavigationVisibility();
         });
         account=new ViewModelProvider(this).get(AccountState.class);
         catalog=new ViewModelProvider(this).get(CatalogState.class);
@@ -86,7 +95,9 @@ public class MainActivity extends AppCompatActivity {
         payments=new ViewModelProvider(this).get(PaymentState.class);
         administration=new ViewModelProvider(this).get(AdminState.class);
         if(savedInstanceState!=null){administration.userOrigin=savedInstanceState.getString("admin_user_origin","admin_users");administration.contractOrigin=savedInstanceState.getString("admin_contract_origin","admin_contracts");administration.selectedTutor=savedInstanceState.getString("admin_tutor","");administration.selectedUser=savedInstanceState.getString("admin_user","");administration.selectedContract=savedInstanceState.getString("admin_contract","");}
+        if(savedInstanceState!=null){administration.selectedIncomeTutor=savedInstanceState.getString("admin_income_tutor","");administration.incomeTutorName=savedInstanceState.getString("admin_income_name","");administration.incomeOrigin=savedInstanceState.getString("admin_income_origin","admin_income");payments.incomePeriod=savedInstanceState.getString("admin_income_period",payments.incomePeriod);}
         if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
+        if(savedInstanceState!=null)payments.payrollOrigin=savedInstanceState.getString("payroll_origin","admin_finance");
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             bottomInset=safe.bottom;
@@ -116,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
-            @Override public void handleOnBackPressed(){if(classroom.root().equals(screen))finish();else back();}
+            @Override public void handleOnBackPressed(){if(helpPopupOpen)closeFloatingHelp();else if(classroom.root().equals(screen))finish();else back();}
         });
         Onboarding intro=new Onboarding(this);
         if(account.signedIn()&&!intro.introduced())intro.existingAccount();
@@ -208,7 +219,8 @@ public class MainActivity extends AppCompatActivity {
                 ||destination.equals("tutor_evidence")||destination.equals("tutor_pending")
                 ||destination.equals("tutor_submitted")||destination.equals("tutor_supplement")||destination.equals("admin_tutors")
                 ||destination.equals("favorites")
-                ||destination.equals("settings")))
+                ||destination.equals("settings")
+                ||destination.equals("help_chat")))
             destination="login";
         if((destination.equals("register_tutor")||destination.equals("review_tutor")||destination.equals("tutor_evidence"))&&account.profile()!=null&&account.profile().tutor)destination="tutor_pending";
         if(destination.equals("admin_tutors")&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
@@ -216,16 +228,19 @@ public class MainActivity extends AppCompatActivity {
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
+        if("help_chat".equals(destination))closeFloatingHelp();
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
             case "admin_dashboard":fragment=new com.example.tmdt.ui.admin.AdminDashboardFragment();break;
+            case "admin_management":fragment=new com.example.tmdt.ui.admin.AdminManagementFragment();break;
             case "admin_users":fragment=new com.example.tmdt.ui.admin.AdminUsersFragment();break;
             case "admin_user":fragment=new com.example.tmdt.ui.admin.AdminUserDetailFragment();break;
             case "admin_contracts":fragment=new com.example.tmdt.ui.admin.AdminContractsFragment();break;
             case "admin_contract":fragment=new com.example.tmdt.ui.admin.AdminContractDetailFragment();break;
             case "admin_income":fragment=new com.example.tmdt.ui.admin.AdminIncomeFragment();break;
+            case "admin_tutor_income":fragment=new com.example.tmdt.ui.admin.AdminTutorIncomeFragment();break;
             case "admin_finance":fragment=new com.example.tmdt.ui.admin.AdminFinanceFragment();break;
             case "payments":fragment=payments.tutor&&!payments.admin?new com.example.tmdt.ui.payments.TutorFinanceFragment():new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
             case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
@@ -252,6 +267,7 @@ public class MainActivity extends AppCompatActivity {
             case "edit_account":fragment=new EditAccountFragment();break;
             case "favorites":fragment=new com.example.tmdt.ui.profile.FavoritesFragment();break;
             case "settings":fragment=new com.example.tmdt.ui.profile.SettingsFragment();break;
+            case "help_chat":fragment=new com.example.tmdt.ui.profile.HelpChatFragment();break;
             case "register_tutor":fragment=new com.example.tmdt.ui.profile.RegisterTutorFragment();break;
             case "review_tutor":fragment=new com.example.tmdt.ui.profile.ReviewTutorFragment();break;
             case "otp":fragment=new PhoneVerificationFragment();break;
@@ -298,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
         if(isAdmin()){
-            destination=itemId==R.id.nav_schedule?"admin_users":itemId==R.id.nav_messages?"admin_contracts":itemId==R.id.nav_account?"admin_finance":"admin_dashboard";
+            destination=itemId==R.id.nav_schedule?"admin_management":itemId==R.id.nav_messages?"admin_contracts":itemId==R.id.nav_account?"admin_finance":"admin_dashboard";
             administration.notice="";
             if(itemId==R.id.nav_messages)administration.selectTutor("");
         }
@@ -331,18 +347,18 @@ public class MainActivity extends AppCompatActivity {
         if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
         selected=classroom.navigationItem(menu,screen,selected);
         if(isAdmin()){
-            menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Tài khoản");
+            menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Quản lý");
             menu.findItem(R.id.nav_account).setTitle("Tài chính");
-            selected=screen.equals("admin_users")||screen.equals("admin_user")?R.id.nav_schedule:
-                screen.equals("admin_contracts")||screen.equals("admin_contract")?R.id.nav_messages:
-                java.util.Arrays.asList("admin_finance","admin_income","admin_payroll","admin_withdrawals","withdrawal_detail","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
+            selected=java.util.Arrays.asList("admin_management","admin_users","admin_user","admin_tutors","report_admin","report_handle").contains(screen)?R.id.nav_schedule:
+                java.util.Arrays.asList("admin_contracts","admin_contract","contract_templates").contains(screen)?R.id.nav_messages:
+                java.util.Arrays.asList("admin_finance","admin_income","admin_tutor_income","admin_payroll","admin_withdrawals","withdrawal_detail","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
         }
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_users".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_management".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
@@ -357,6 +373,114 @@ public class MainActivity extends AppCompatActivity {
         binding.navigationGlass.setVisibility(visibility);
         binding.navigationGlass.setBlurAutoUpdate(visibility==View.VISIBLE);
         updateNavigationPadding();
+        updateFloatingHelp();
+    }
+
+    private void setupFloatingHelp() {
+        com.example.tmdt.ui.common.Ui ui = new com.example.tmdt.ui.common.Ui(this);
+        binding.floatingHelp.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(View view, android.graphics.Outline outline) {
+                outline.setOval(0, 0, view.getWidth(), view.getHeight());
+            }
+        });
+        binding.floatingHelp.setClipToOutline(true);
+        ui.clickable(binding.floatingHelp, this::openFloatingHelp);
+        ui.clickable(binding.hideFloatingHelp, () -> {
+            floatingHelpDismissed = true;
+            updateFloatingHelp();
+        });
+        ui.pad(binding.hideFloatingHelp, 10, 10);
+        floatingHelpDrag = new FloatingHelpDrag(binding.floatingHelp, binding.floatingHelpContainer);
+        ui.surface(binding.helpPopup, com.example.tmdt.ui.common.Ui.WHITE, 20,
+                com.example.tmdt.ui.common.Ui.BORDER);
+        binding.helpPopup.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        binding.helpPopup.setClipToOutline(true);
+    }
+
+    private void openFloatingHelp() {
+        if (helpPopupOpen || getSupportFragmentManager().isStateSaved()) return;
+        hideKeyboard();
+        Fragment help = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        androidx.fragment.app.FragmentTransaction transaction = getSupportFragmentManager()
+                .beginTransaction().setReorderingAllowed(true);
+        if (help == null) {
+            help = com.example.tmdt.ui.profile.HelpChatFragment.floating();
+            transaction.add(R.id.help_popup, help, FLOATING_HELP_TAG);
+        } else {
+            transaction.show(help);
+        }
+        transaction.setMaxLifecycle(help, androidx.lifecycle.Lifecycle.State.RESUMED);
+        helpPopupOpen = true;
+        updateFloatingHelp();
+        transaction.commitNow();
+        com.example.tmdt.ui.common.Motion.reveal(binding.helpPopup);
+    }
+
+    public void closeFloatingHelp() {
+        if (!helpPopupOpen || getSupportFragmentManager().isStateSaved()) return;
+        hideKeyboard();
+        Fragment help = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        if (help != null) {
+            getSupportFragmentManager().beginTransaction().hide(help)
+                    .setMaxLifecycle(help, androidx.lifecycle.Lifecycle.State.STARTED).commitNow();
+        }
+        helpPopupOpen = false;
+        updateFloatingHelp();
+    }
+
+    private void updateFloatingHelp() {
+        if (binding == null) return;
+        int gap = Math.round(12 * getResources().getDisplayMetrics().density);
+        int bottomMargin = gap;
+        if (binding.navigationGlass.getVisibility() == View.VISIBLE) {
+            android.widget.FrameLayout.LayoutParams navigation =
+                    (android.widget.FrameLayout.LayoutParams) binding.navigationGlass.getLayoutParams();
+            int height = binding.navigationGlass.getHeight() > 0 ? binding.navigationGlass.getHeight()
+                    : getResources().getDimensionPixelSize(R.dimen.navigation_height);
+            bottomMargin += height + navigation.bottomMargin;
+        }
+        android.widget.FrameLayout.LayoutParams button =
+                (android.widget.FrameLayout.LayoutParams) binding.floatingHelpContainer.getLayoutParams();
+        if (button.bottomMargin != bottomMargin) {
+            button.bottomMargin = bottomMargin;
+            binding.floatingHelpContainer.setLayoutParams(button);
+        }
+        if (!keyboardVisible && floatingHelpDrag != null) {
+            int buttonWidth = binding.floatingHelpContainer.getWidth() > 0
+                    ? binding.floatingHelpContainer.getWidth() : button.width;
+            int buttonHeight = binding.floatingHelpContainer.getHeight() > 0
+                    ? binding.floatingHelpContainer.getHeight() : button.height;
+            int right = binding.appRoot.getWidth() - binding.appRoot.getPaddingRight() - gap - buttonWidth;
+            int bottom = binding.appRoot.getHeight() - Math.max(binding.appRoot.getPaddingBottom(), systemBottomInset)
+                    - gap - buttonHeight;
+            int permittedBottom = binding.appRoot.getHeight() - binding.appRoot.getPaddingBottom()
+                    - bottomMargin - buttonHeight;
+            if (binding.appRoot.getWidth() > 0 && binding.appRoot.getHeight() > 0) {
+                floatingHelpDrag.updateBounds(binding.appRoot.getPaddingLeft() + gap,
+                        binding.appRoot.getPaddingTop() + gap, right, bottom, permittedBottom);
+            }
+        }
+        boolean visible = !floatingHelpDismissed && !helpPopupOpen && !keyboardVisible && !"help_chat".equals(screen);
+        binding.floatingHelpContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
+        binding.helpPopup.setVisibility(helpPopupOpen ? View.VISIBLE : View.GONE);
+        if (!helpPopupOpen) return;
+
+        int availableWidth = binding.appRoot.getWidth() - binding.appRoot.getPaddingLeft()
+                - binding.appRoot.getPaddingRight() - gap * 2;
+        int availableHeight = binding.appRoot.getHeight() - binding.appRoot.getPaddingTop()
+                - binding.appRoot.getPaddingBottom() - bottomMargin - gap;
+        if (availableWidth <= 0 || availableHeight <= 0) return;
+        float density = getResources().getDisplayMetrics().density;
+        android.widget.FrameLayout.LayoutParams popup =
+                (android.widget.FrameLayout.LayoutParams) binding.helpPopup.getLayoutParams();
+        int width = Math.min(Math.round(360 * density), availableWidth);
+        int height = Math.min(Math.round(500 * density), availableHeight);
+        if (popup.width != width || popup.height != height || popup.bottomMargin != bottomMargin) {
+            popup.width = width;
+            popup.height = height;
+            popup.bottomMargin = bottomMargin;
+            binding.helpPopup.setLayoutParams(popup);
+        }
     }
     private void updateNavigationPadding() {
         if(binding==null)return;
@@ -373,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
     public void back(){
+        if(helpPopupOpen){closeFloatingHelp();return;}
         if(account.isBusy()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return;
         hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
@@ -383,11 +508,14 @@ public class MainActivity extends AppCompatActivity {
             case "admin_user":show(administration.userOrigin);break;
             case "admin_contract":show(administration.contractOrigin);break;
             case "admin_contracts":if(!administration.selectedTutor.isEmpty()){administration.selectTutor("");show("admin_contracts");}else show("admin_dashboard");break;
-            case "admin_users":case "admin_finance":show("admin_dashboard");break;
+            case "admin_users":show("admin_management");break;
+            case "admin_management":case "admin_finance":show("admin_dashboard");break;
             case "admin_income":show("admin_finance");break;
+            case "admin_tutor_income":show("admin_tutor_income".equals(administration.incomeOrigin)?"admin_income":administration.incomeOrigin);break;
             case "admin_dashboard":finish();break;
             case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
-            case "payments":case "tutor_income":case "tutor_wallet":case "admin_payroll":case "admin_withdrawals":show(isAdmin()?"admin_finance":"account");break;
+            case "admin_payroll":show(payments.payrollOrigin.startsWith("admin_")&&!"admin_payroll".equals(payments.payrollOrigin)?payments.payrollOrigin:"admin_finance");break;
+            case "payments":case "tutor_income":case "tutor_wallet":case "admin_withdrawals":show(isAdmin()?"admin_finance":"account");break;
             case "withdraw_funds":show("tutor_wallet");break;
             case "withdrawal_detail":show(payments.withdrawalOrigin);break;
             case "payout_bank":show(payments.bankOrigin);break;
@@ -403,12 +531,16 @@ public class MainActivity extends AppCompatActivity {
             case "otp":account.clearFeedback();show("account");break;
             case "email_verification":account.leaveEmailVerification();break;
             case "favorites":case "settings":account.clearFeedback();show("account");break;
+            case "help_chat":show("settings");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
             case "tutor_evidence":show("register_tutor");break;
             case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
             case "tutor_pending":show("account");break;
-            case "admin_tutors":show("admin_dashboard");break;
+            case "admin_tutors":{
+                Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+                if(!(current instanceof com.example.tmdt.ui.profile.AdminTutorReviewFragment)||!((com.example.tmdt.ui.profile.AdminTutorReviewFragment)current).backToList())show("admin_management");break;
+            }
             case "post_request":show(postRequestOrigin);break;
             case "edit_request":requestManager().resetEdit();show("my_requests");break;
             case "request_applicants":show("my_requests");break;
@@ -507,6 +639,7 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onSaveInstanceState(Bundle out){
         super.onSaveInstanceState(out);
         out.putString("screen",screen);
+        out.putBoolean("floating_help_dismissed",floatingHelpDismissed);
         out.putString("authenticated_destination",authenticatedDestination);
         out.putString("request_id",selectedRequestId);
         out.putString("request_origin",requestManagementOrigin);
@@ -517,10 +650,15 @@ public class MainActivity extends AppCompatActivity {
         out.putString("payment_id",payments.selected);
         out.putString("payout_id",payments.selectedPayout);
         out.putString("payment_origin",payments.origin);
+        out.putString("payroll_origin",payments.payrollOrigin);
         out.putString("admin_user",administration.selectedUser);
         out.putString("admin_contract",administration.selectedContract);
         out.putString("admin_tutor",administration.selectedTutor);
         out.putString("admin_user_origin",administration.userOrigin);
         out.putString("admin_contract_origin",administration.contractOrigin);
+        out.putString("admin_income_tutor",administration.selectedIncomeTutor);
+        out.putString("admin_income_name",administration.incomeTutorName);
+        out.putString("admin_income_origin",administration.incomeOrigin);
+        out.putString("admin_income_period",payments.incomePeriod);
     }
 }

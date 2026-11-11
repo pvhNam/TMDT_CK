@@ -18,6 +18,10 @@ public final class AdminFinanceFragment extends AdminScreen {
     @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
     private void render(){
         StableViews rows=StableViews.at(body);rows.begin();if(!feedback(rows)){rows.commit();return;}
+        rows.add("shortcuts",true,()->{
+            LinearLayout row=ui.row();ui.weight(row,shortcut(R.drawable.ic_users,"Thu nhập gia sư",()->{money().incomePeriod=money().payrollPeriod;open("admin_income");}));ui.gap(row,10);
+            ui.weight(row,shortcut(R.drawable.ic_wallet,"Bảng lương",()->open("admin_payroll")));return row;
+        },ui.dp(18));
         rows.add("revenue-heading",true,()->ui.text("Doanh thu học phí",19,Ui.INK,true),ui.dp(12));
         ReportPeriod period=state().revenuePeriod;
         rows.add("period",period,()->AdminPeriodFilter.create(ui,period,value->{state().revenuePeriod=value;state().changed();}),ui.dp(12));
@@ -54,10 +58,6 @@ public final class AdminFinanceFragment extends AdminScreen {
         },0);
         if(!money().error.isEmpty())rows.add("payment-error",money().error,()->ui.note(R.drawable.ic_info,money().error,0xFFFFF0F0,Ui.RED,Ui.RED),0);
         rows.commit();
-    }
-    private View metric(String title,long amount,int color){
-        LinearLayout box=ui.column();ui.add(box,ui.text(title,12,Ui.MUTED,false));ui.space(box,5);
-        android.widget.TextView value=ui.text(PaymentState.money(amount),17,color,true);value.setMaxLines(1);value.setAutoSizeTextTypeUniformWithConfiguration(11,17,1,android.util.TypedValue.COMPLEX_UNIT_SP);ui.add(box,value);return box;
     }
     @Override public void onDestroyView(){super.onDestroyView();body=null;}
 }

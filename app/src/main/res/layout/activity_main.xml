@@ -47,4 +47,57 @@
         app:menu="@menu/menu_bottom_navigation"
         app:labelVisibilityMode="labeled" />
     </eightbitlab.com.blurview.BlurView>
+
+    <FrameLayout
+        android:id="@+id/floating_help_container"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="12dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/floating_help"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom|start"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/help_open_floating"
+            android:elevation="6dp"
+            android:padding="0dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/help_floating_chat"
+            android:tint="@null"
+            app:tint="@null" />
+
+        <ImageButton
+            android:id="@+id/hide_floating_help"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="top|end"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/help_hide_floating"
+            android:elevation="8dp"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/help_floating_close"
+            android:tint="@color/app_ink"
+            app:tint="@color/app_ink" />
+    </FrameLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/help_popup"
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:clickable="true"
+        android:elevation="16dp"
+        android:focusable="true"
+        android:visibility="gone" />
 </FrameLayout>
