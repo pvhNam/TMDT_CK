@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 
 /** Release reads the real ledger; the native sandbox uses a separate Firestore namespace. */
 public final class PaymentState extends ViewModel {
+    public enum TutorPaymentsStatus { LOADING, CACHED, READY, UNAVAILABLE }
+
     public static final class Row {
         public final String id;public final Map<String,Object> data;
         public Row(String id,Map<String,Object> data){this.id=id;this.data=data;}
@@ -36,7 +38,9 @@ public final class PaymentState extends ViewModel {
     public String owner="",selected="",selectedPayout="",selectedRefund="",requestedType="",requestedSource="",requestedStudent="",origin="account",destination,error="",notice="";
     public String incomePeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString(),payrollPeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusMonths(1).toString();
     public boolean admin,tutor,busy;
-    public int adminPaymentTab;
+    public int adminPaymentTab, tutorIncomeTab;
+    public String tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+    public TutorPaymentsStatus tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
     public int payrollFilter;
     public int walletFilter,withdrawalFilter;
     public boolean walletLoaded;
@@ -53,6 +57,9 @@ public final class PaymentState extends ViewModel {
         if(bankListener!=null)bankListener.remove();bankListener=null;
         if(walletListener!=null)walletListener.remove();walletListener=null;
         owner=next;admin=profile!=null&&"ADMIN".equals(profile.role);tutor=profile!=null&&profile.tutor;
+        tutorIncomeTab=0;
+        tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+        tutorPaymentsStatus=!owner.isEmpty()&&tutor?TutorPaymentsStatus.LOADING:TutorPaymentsStatus.UNAVAILABLE;
         payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();bank.clear();busy=false;error="";notice="";
         wallets.clear();withdrawals.clear();walletLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
         if(owner.isEmpty()){selected="";changed();return;}
@@ -85,9 +92,17 @@ public final class PaymentState extends ViewModel {
     }
     private void listen(String name,Query query,Map<String,Row> target){
         final int version=generation;
-        listeners.add(query.addSnapshotListener((snapshot,failure)->{
+        boolean tracksTutorPayments=tutor&&(name.equals("tutor-payments")||name.equals("payments"));
+        MetadataChanges metadata=tracksTutorPayments?MetadataChanges.INCLUDE:MetadataChanges.EXCLUDE;
+        listeners.add(query.addSnapshotListener(metadata,(snapshot,failure)->{
             if(version!=generation)return;
-            if(failure!=null){failRead(failure);return;}
+            if(failure!=null){
+                if(tracksTutorPayments)tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
+                failRead(failure);return;
+            }
+            if(tracksTutorPayments&&snapshot!=null){
+                tutorPaymentsStatus=snapshot.getMetadata().isFromCache()?TutorPaymentsStatus.CACHED:TutorPaymentsStatus.READY;
+            }
             Map<String,Row> rows=new LinkedHashMap<>();if(snapshot!=null)for(DocumentSnapshot doc:snapshot)rows.put(doc.getId(),new Row(doc.getId(),doc.getData()));
             sources.put(name,rows);target.clear();
             if(target==payments){for(Map.Entry<String,Map<String,Row>> source:sources.entrySet())if(source.getKey().equals("payments")||source.getKey().endsWith("-payments"))target.putAll(source.getValue());}
