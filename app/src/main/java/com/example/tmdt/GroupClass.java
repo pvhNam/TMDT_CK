@@ -20,6 +20,9 @@ public final class GroupClass {
         public String status;
         /** When the tutor last answered, read from Firestore; null until the server has stamped it. */
         public java.time.LocalDateTime updated;
+        /** Người học khi tài khoản đăng ký cho người khác; rỗng = chính chủ tài khoản. */
+        public String learnerId = "", learnerName = "";
+        public String learnerLabel() { return learnerName.isEmpty() ? studentName : learnerName + " (TK " + studentName + ")"; }
         public Registration(String classId, String tutorId, String studentId, String studentName, String goal, String date, String status) {
             this.classId=classId; this.tutorId=tutorId; this.studentId=studentId; this.studentName=studentName; this.goal=goal; this.date=date; this.status=status;
         }
@@ -29,6 +32,7 @@ public final class GroupClass {
             Map<String,Object> data = new HashMap<>();
             data.put("class_id",classId); data.put("tutor_id",tutorId); data.put("student_id",studentId); data.put("ten_hoc_vien",studentName);
             data.put("muc_tieu",goal); data.put("ngay_gui",date); data.put("trang_thai",status);
+            if (!learnerName.isEmpty()) { data.put("nguoi_hoc_id",learnerId); data.put("ten_nguoi_hoc",learnerName); }
             return data;
         }
         public static Registration from(Map<String,Object> data) {
@@ -36,6 +40,7 @@ public final class GroupClass {
                     Lesson.text(data,"ten_hoc_vien"),Lesson.text(data,"muc_tieu"),Lesson.text(data,"ngay_gui"),Lesson.text(data,"trang_thai"));
             try { LocalDate.parse(registration.date); } catch (RuntimeException invalid) { return null; }
             registration.updated = Lesson.time(data.get("updated_at"));
+            registration.learnerId = Lesson.text(data,"nguoi_hoc_id"); registration.learnerName = Lesson.text(data,"ten_nguoi_hoc");
             return registration.classId.isEmpty() || registration.studentId.isEmpty() || registration.status.isEmpty() ? null : registration;
         }
     }

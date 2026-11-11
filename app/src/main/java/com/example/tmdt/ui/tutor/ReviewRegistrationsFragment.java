@@ -84,6 +84,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         top.addView(ui.avatar(registration.studentId,registration.studentName,71)); ui.gap(top,15);
         LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.studentName,20,Ui.INK,true));
         nameRow.addView(ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG)); ui.add(info,nameRow); ui.space(info,4);
+        if (!registration.learnerName.isEmpty()) { ui.add(info,ui.text("Người học: "+registration.learnerName,15,Ui.BLUE,true)); ui.space(info,5); }
         ui.add(info,ui.text("Mục tiêu học",14,Ui.MUTED,false)); ui.space(info,5);
         ui.add(info,ui.text(registration.goal,16,Ui.INK,false)); ui.space(info,7);
         ui.add(info,ui.text("▦ Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),15,Ui.INK,false));

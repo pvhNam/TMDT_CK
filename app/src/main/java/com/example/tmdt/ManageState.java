@@ -1,8 +1,11 @@
 package com.example.tmdt;
 
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +49,8 @@ public final class ManageState extends MemberState {
     /** Một đăng ký học: đăng ký lớp nhóm (class_registrations) hoặc lịch học 1-1 (lessons). */
     public static final class Registration {
         public String id = "", kind = "", subject = "", title = "", tutorId = "", tutorName = "", studentId = "", studentName = "", status = "", classId = "";
+        /** Người học khi một tài khoản đăng ký cho người khác (rỗng = chính chủ tài khoản). */
+        public String learner = "";
         public boolean trial, finished; public long createdAt, startAt, price;
         public boolean group() { return REGISTRATIONS.equals(kind); }
         /** Trạng thái hiển thị: buổi 1-1 đã học xong tính là "Đã hoàn thành". */
@@ -136,7 +141,7 @@ public final class ManageState extends MemberState {
                 for (DocumentSnapshot d : snapshot.getDocuments()) {
                     Registration r = new Registration(); r.id = d.getId(); r.kind = REGISTRATIONS; r.classId = Docs.text(d, "class_id");
                     r.tutorId = Docs.text(d, "tutor_id"); r.studentId = Docs.text(d, "student_id"); r.studentName = Docs.text(d, "ten_hoc_vien");
-                    r.status = Docs.text(d, "trang_thai"); r.createdAt = time(d, "created_at");
+                    r.status = Docs.text(d, "trang_thai"); r.createdAt = time(d, "created_at"); r.learner = Docs.text(d, "ten_nguoi_hoc");
                     groupRegistrations.add(r);
                 }
                 Collections.sort(groupRegistrations, (a, b) -> Long.compare(b.createdAt, a.createdAt));
@@ -148,7 +153,7 @@ public final class ManageState extends MemberState {
                     r.subject = AdminStats.subjectOf(r.title); r.tutorId = Docs.text(d, "tutor_id"); r.tutorName = Docs.text(d, "ten_gia_su");
                     r.studentId = Docs.text(d, "student_id"); r.studentName = Docs.text(d, "ten_hoc_vien"); r.status = Docs.text(d, "trang_thai");
                     r.trial = Docs.flag(d, "hoc_thu"); r.finished = Docs.flag(d, "da_hoan_thanh"); r.price = Docs.number(d, "hoc_phi");
-                    r.createdAt = time(d, "created_at"); r.startAt = time(d, "bat_dau");
+                    r.createdAt = time(d, "created_at"); r.startAt = time(d, "bat_dau"); r.learner = Docs.text(d, "ten_nguoi_hoc");
                     lessons.add(r);
                 }
                 Collections.sort(lessons, (a, b) -> Long.compare(b.createdAt, a.createdAt));
@@ -194,5 +199,53 @@ public final class ManageState extends MemberState {
         List<Registration> result = new ArrayList<>();
         for (Registration r : groupRegistrations()) if (r.classId.equals(classId)) result.add(r);
         return result;
+    }
+
+    // Ghi -------------------------------------------------------------------------------------------
+
+    /** Lý do tối thiểu khi khoá/mở khoá/đổi quyền (rules kiểm tra 5–500 ký tự). */
+    public static final int MIN_REASON = 5, MAX_REASON = 500;
+
+    /** Cấp hoặc thu hồi quyền quản trị. Không áp dụng cho chính mình và tài khoản đang bị khoá. */
+    public String setAdmin(User user, boolean admin, String reason) {
+        String me = uid();
+        if (me == null || busy) return "Đang xử lý, vui lòng đợi.";
+        if (user.id.equals(me)) return "Không thể tự thay đổi quyền của chính bạn.";
+        if (user.banned()) return "Hãy mở khoá tài khoản trước khi đổi quyền.";
+        if (user.admin() == admin) return admin ? "Tài khoản đã là quản trị viên." : "Tài khoản không có quyền quản trị.";
+        String why = reason == null ? "" : reason.trim();
+        if (why.length() < MIN_REASON) return "Nhập lý do ít nhất " + MIN_REASON + " ký tự.";
+        write(user, "vai_tro", user.role, admin ? "ADMIN" : "STUDENT", admin ? "GRANT_ADMIN" : "REVOKE_ADMIN", why,
+                admin ? "Đã cấp quyền quản trị cho " + user.name + "." : "Đã thu hồi quyền quản trị của " + user.name + ".");
+        return null;
+    }
+    private void write(User user, String field, String before, String after, String action, String reason, String success) {
+        busy = true; notifyUi();
+        DocumentReference ref = db.collection("users").document(user.id);
+        Map<String, Object> update = new HashMap<>();
+        update.put(field, after); update.put("updated_at", FieldValue.serverTimestamp());
+        Map<String, Object> log = new HashMap<>();
+        log.put("actor_id", uid()); log.put("target_id", user.id); log.put("action", action);
+        log.put("before", before); log.put("after", after); log.put("reason", reason);
+        log.put("created_at", FieldValue.serverTimestamp());
+        WriteBatch batch = db.batch();
+        batch.update(ref, update);
+        batch.set(db.collection("admin_audit_logs").document(), log);
+        batch.commit().addOnCompleteListener(task -> { if (task.isSuccessful()) done(success); else failed(task.getException()); });
+    }
+
+    /** Ẩn gia sư khỏi danh sách tìm gia sư (nhan_lop = false) hoặc hiện lại. Chỉ gia sư đã duyệt. */
+    public String setTutorVisible(Tutor tutor, boolean visible) {
+        if (uid() == null || busy) return "Đang xử lý, vui lòng đợi.";
+        if (!"VERIFIED".equals(tutor.status)) return "Chỉ ẩn/hiện được gia sư đã được duyệt.";
+        if (tutor.visible == visible) return visible ? "Gia sư đang hiển thị." : "Gia sư đang bị ẩn.";
+        busy = true; notifyUi();
+        Map<String, Object> update = new HashMap<>();
+        update.put("nhan_lop", visible); update.put("updated_at", FieldValue.serverTimestamp());
+        db.collection("tutor_profiles").document(tutor.id).update(update).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) done(visible ? "Đã hiện lại " + tutor.name + " trong danh sách gia sư." : "Đã ẩn " + tutor.name + " khỏi danh sách gia sư.");
+            else failed(task.getException());
+        });
+        return null;
     }
 }

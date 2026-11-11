@@ -32,10 +32,13 @@ public final class AccountFragment extends AccountFragmentBase {
         host().exchange.contracts.changes().observe(getViewLifecycleOwner(),ignored->renderContracts());
         binding.rowPayments.setOnClickListener(v->go("payments"));
         binding.rowReviews.setOnClickListener(v->host().exchange.openMyReviews());
+        binding.rowLearners.setOnClickListener(v->host().exchange.openLearners());
         binding.rowReports.setOnClickListener(v->host().exchange.openReports());
         binding.rowReportAdmin.setOnClickListener(v->host().exchange.openReportsAdmin());
         binding.rowStats.setOnClickListener(v->host().exchange.openStats());
         binding.rowClassesAdmin.setOnClickListener(v->host().exchange.openClassesAdmin());
+        binding.rowRoles.setOnClickListener(v->host().exchange.openRoles());
+        binding.rowTutorManage.setOnClickListener(v->host().exchange.openTutorManage());
         binding.rowNotifications.setOnClickListener(soon);
         binding.edit.setOnClickListener(v->{state.clearDraft();go("edit_account");});
         binding.tutorBooks.setImageDrawable(com.example.tmdt.ui.common.TutorDesignAssets.icon(requireContext(),"books"));
@@ -87,6 +90,8 @@ public final class AccountFragment extends AccountFragmentBase {
         binding.rowReportAdmin.setVisibility(templates);binding.reportAdminDivider.setVisibility(templates);
         binding.rowStats.setVisibility(templates);binding.statsDivider.setVisibility(templates);
         binding.rowClassesAdmin.setVisibility(templates);binding.classesAdminDivider.setVisibility(templates);
+        binding.rowRoles.setVisibility(templates);binding.rolesDivider.setVisibility(templates);
+        binding.rowTutorManage.setVisibility(templates);binding.tutorManageDivider.setVisibility(templates);
         renderContracts();
     }
     private void renderContracts(){

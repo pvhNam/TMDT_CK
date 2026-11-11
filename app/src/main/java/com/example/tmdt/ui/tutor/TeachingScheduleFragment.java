@@ -268,7 +268,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
         LinearLayout student = ui.row(); student.setGravity(Gravity.CENTER_VERTICAL);
         student.addView(ui.avatar(lesson.studentId,lesson.studentName,48)); ui.gap(student,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text(lesson.title,17,Ui.INK,true)); ui.space(info,3);
-        ui.add(info,ui.text(lesson.studentName,14,Ui.MUTED,false)); ui.weight(student,info); ui.gap(student,8);
+        ui.add(info,ui.text(lesson.learnerLabel(),14,Ui.MUTED,false)); ui.weight(student,info); ui.gap(student,8);
         student.addView(ui.pill(lesson.mode+(lesson.trial?" · Thử":""),13,lesson.online()?Ui.BLUE:Ui.GREEN,lesson.online()?Ui.PALE:Ui.GREEN_BG),ui.lp(-2,26));
         ui.add(card,student); ui.space(card,12);
 
@@ -377,6 +377,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
             ui.add(view,ui.note(R.drawable.ic_clock,"Đề nghị đổi sang "+lesson.proposalLabel()+" đang chờ học viên.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE)); ui.space(view,12);
         }
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(view,"Người học"); ui.add(view,ui.text(lesson.learnerName+" (tài khoản "+lesson.studentName+" đặt lịch)",15,Ui.INK,false)); ui.space(view,12); }
         ui.label(view,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
         ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(view,goal); ui.space(view,12);
