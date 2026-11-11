@@ -28,17 +28,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Thành viên 4 – UC23 Chốt hợp đồng dạy: màn 40, Hợp đồng của tôi, hợp đồng cộng tác gia sư – hệ thống
- * và mẫu hợp đồng của quản trị viên. MainActivity chỉ chuyển tiếp sang lớp này (giống {@link Classroom}).
- *
  * Luồng: học viên đặt lịch → gia sư chấp nhận → gia sư gửi hợp đồng (theo mẫu của quản trị viên) → học viên xác nhận.
- *
- * UC26 đánh giá hai chiều (sau khi hợp đồng đã chốt và buổi học đầu tiên kết thúc), UC27 gửi và theo dõi báo cáo vi phạm,
- * UC29 quản trị viên xử lý báo cáo vi phạm.
  */
 public final class Exchange {
     public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
-    /** UC26, UC27, UC29 (tiền tố ex_/report_ để không trùng màn "review" của phần lớp nhóm). */
     public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews", REPORT = "ex_report", REPORTS = "ex_reports",
             REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
     /** Thống kê cho quản trị viên (mở từ trang Cá nhân). */
@@ -61,7 +54,6 @@ public final class Exchange {
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
     private String reviewContractId, reviewsTarget, reviewsName, reviewsRole, reportType, reportSubject, adminReportId;
-    /** Màn đã mở từng màn của phần này, để nút quay lại trở về đúng chỗ. */
     private final Map<String, String> origins = new HashMap<>();
 
     Exchange(MainActivity host, Bundle state) {
@@ -108,7 +100,7 @@ public final class Exchange {
                 || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || ADMIN_ROLES.equals(destination) || ADMIN_TUTOR_MANAGE.equals(destination) || LEARNERS.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
                 || REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination);
     }
-    /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
+    /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; thiếu hợp đồng thì về danh sách. */
     String redirect(String destination) {
         if (!owns(destination)) return destination;
         if (REVIEWS.equals(destination) && reviewsTarget != null && Review.TUTOR.equals(reviewsRole)) return destination; // Khách xem được đánh giá gia sư.
@@ -156,8 +148,6 @@ public final class Exchange {
         if (!destination.equals(current) && !(owns(current) && destination.equals(origins.get(current)))) origins.put(destination, current);
         host.hideKeyboard(); host.show(destination);
     }
-
-    // Thông tin người đang đăng nhập -----------------------------------------------------------------
 
     public boolean isAdmin() { UserProfile p = host.account.profile(); return p != null && "ADMIN".equals(p.role); }
     /** Gia sư đã được duyệt (VERIFIED), giống điều kiện của chế độ gia sư. */

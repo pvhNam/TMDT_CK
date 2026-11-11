@@ -4,11 +4,15 @@ import android.view.View;
 import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.fragment.app.Fragment;
 import com.example.tmdt.PaymentState;
 import com.example.tmdt.R;
+import com.example.tmdt.TutorRevenue;
 import com.example.tmdt.TutorWallet;
+import com.example.tmdt.ui.admin.AdminMonthPicker;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
+import com.google.android.material.tabs.TabLayout;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -25,14 +29,157 @@ public final class TutorIncomeFragment extends PaymentScreen {
     }
     @Override protected boolean updateContent(){if(body==null)return false;render();return true;}
     @Override public void onDestroyView(){super.onDestroyView();body=null;}
-    private void render(){
-        StableViews rows=StableViews.at(body);rows.begin();
-        if(!state().error.isEmpty()||!state().notice.isEmpty()||state().busy)
-            rows.add("feedback",java.util.Arrays.asList(state().error,state().notice,state().busy),()->{LinearLayout box=ui.column();feedback(box);return box;},0);
+    private void render() {
+        StableViews rows = StableViews.at(body);
+        rows.begin();
+        PaymentState state = state();
+
+        if (!state.tutor || state.owner.isEmpty()) {
+            rows.add("income-access", true,
+                    () -> ui.text("Tài khoản hiện chưa có quyền xem thu nhập gia sư.", 15, Ui.MUTED, false),
+                    0);
+            rows.commit();
+            return;
+        }
+
+        if (!state.error.isEmpty() || !state.notice.isEmpty() || state.busy) {
+            rows.add("feedback", Arrays.asList(state.error, state.notice, state.busy), () -> {
+                LinearLayout box = ui.column();
+                feedback(box);
+                return box;
+            }, 0);
+        }
+        if (state.sandbox()) {
+            rows.add("sandbox", true, () -> ui.text("Dữ liệu VNPay thử nghiệm", 13, Ui.ORANGE, true),
+                    ui.dp(12));
+        }
+        rows.add("income-tabs", state.tutorIncomeTab, () -> {
+            LinearLayout tabs = ui.column();
+            ui.tabs(tabs, new String[]{"Doanh thu", "Thu nhập và chi trả"}, state.tutorIncomeTab, tab -> {
+                state.tutorIncomeTab = tab;
+                scrollToTop();
+                refresh();
+            });
+            return tabs;
+        }, ui.dp(16));
+
+        if (state.tutorIncomeTab == 0) renderRevenue(rows, state);
+        else renderPayouts(rows);
+        rows.commit();
+    }
+
+    private void renderRevenue(StableViews rows, PaymentState state) {
+        String period = state.tutorRevenuePeriod;
+        YearMonth month = period.isEmpty() ? null : YearMonth.parse(period);
+        rows.add("revenue-period", Arrays.asList(period, state.busy), () -> {
+            LinearLayout filters = ui.column();
+            if (month == null) {
+                action(filters, "Xem theo tháng", Ui.OUTLINE,
+                        () -> selectRevenuePeriod(TutorRevenue.currentMonth().toString()));
+            } else {
+                AdminMonthPicker.add(ui, filters, period, this::selectRevenuePeriod);
+                action(filters, "Xem tất cả các tháng", Ui.OUTLINE, () -> selectRevenuePeriod(""));
+            }
+            return filters;
+        }, 0);
+
+        if (state.tutorPaymentsStatus == PaymentState.TutorPaymentsStatus.LOADING) {
+            revenueNotice(rows, "Đang tải giao dịch đã thanh toán…");
+            return;
+        }
+        if (state.tutorPaymentsStatus == PaymentState.TutorPaymentsStatus.UNAVAILABLE) {
+            revenueNotice(rows, "Chưa tải được doanh thu từ giao dịch.");
+            return;
+        }
+
+        boolean cached = state.tutorPaymentsStatus == PaymentState.TutorPaymentsStatus.CACHED;
+        if (cached) {
+            rows.add("revenue-cache", true, () -> ui.text("Đang hiển thị dữ liệu đã lưu.", 13, Ui.MUTED, false),
+                    ui.dp(10));
+        }
+        TutorRevenue revenue = new TutorRevenue(state.payments.values(), state.owner, month);
+        if (cached && revenue.transactions.isEmpty()) {
+            revenueNotice(rows, "Chưa có giao dịch trong dữ liệu đã lưu của kỳ này.");
+            return;
+        }
+
+        rows.add("revenue-total", Arrays.asList(revenue.collected, revenue.refunded, revenue.transactions.size()),
+                () -> revenueTotal(revenue), ui.dp(16));
+        rows.add("revenue-heading", true, () -> ui.text("Giao dịch đã thanh toán", 18, Ui.INK, true), ui.dp(10));
+        if (revenue.transactions.isEmpty()) {
+            revenueNotice(rows, "Chưa có giao dịch đã thanh toán trong kỳ này.");
+            return;
+        }
+        for (TutorRevenue.Transaction transaction : revenue.transactions) {
+            rows.add("revenue-payment/" + transaction.payment.id, transaction.payment,
+                    () -> transactionCard(transaction), ui.dp(12));
+        }
+    }
+
+    private void revenueNotice(StableViews rows, String message) {
+        rows.add("revenue-notice", message, () -> ui.text(message, 15, Ui.MUTED, false), 0);
+    }
+
+    private void selectRevenuePeriod(String period) {
+        state().tutorRevenuePeriod = period;
+        scrollToTop();
+        refresh();
+    }
+
+    private LinearLayout revenueTotal(TutorRevenue revenue) {
+        LinearLayout card = ui.card();
+        String label = revenue.refunded > 0 ? "Học phí sau hoàn tiền" : "Học phí đã thu";
+        ui.add(card, ui.text(label, 17, Ui.INK, true));
+        ui.space(card, 8);
+        ui.add(card, ui.text(PaymentState.money(revenue.net()), 25, Ui.BLUE, true));
+        ui.space(card, 6);
+        ui.add(card, ui.text(revenue.transactions.size() + " giao dịch đã thanh toán", 14, Ui.MUTED, false));
+        if (revenue.refunded > 0) {
+            ui.space(card, 10);
+            fact(card, "Học phí đã thu", PaymentState.money(revenue.collected));
+            fact(card, "Đã hoàn tiền", PaymentState.money(revenue.refunded));
+        }
+        return card;
+    }
+
+    private LinearLayout transactionCard(TutorRevenue.Transaction transaction) {
+        PaymentState.Row payment = transaction.payment;
+        String title = payment.text("title");
+        if (title.isEmpty()) title = "Thanh toán học phí";
+        LinearLayout card = ui.card();
+        LinearLayout top = ui.row();
+        ui.weight(top, ui.text(title, 17, Ui.INK, true));
+        ui.gap(top, 8);
+        top.addView(ui.text("›", 25, Ui.BLUE, false));
+        ui.add(card, top);
+        ui.space(card, 6);
+        String paidDate = transaction.paidAt > 0 ? date(transaction.paidAt) : "Chưa có ngày thanh toán";
+        ui.add(card, ui.text(paymentType(payment.text("type")) + " · " + paidDate, 13, Ui.MUTED, false));
+        ui.space(card, 8);
+        ui.add(card, ui.text(PaymentState.money(transaction.net()), 20, Ui.BLUE, true));
+        if (transaction.refunded > 0) {
+            ui.space(card, 6);
+            fact(card, "Đã hoàn tiền", PaymentState.money(transaction.refunded));
+        }
+        ui.clickable(card, () -> state().openExisting(payment.id, "tutor_income"));
+        card.setContentDescription("Xem giao dịch " + title);
+        return card;
+    }
+
+    private static String paymentType(String type) {
+        switch (type) {
+            case "LESSON": return "Buổi học riêng";
+            case "CONTRACT": return "Hợp đồng";
+            case "GROUP": return "Lớp nhóm";
+            default: return "Học phí";
+        }
+    }
+
+    private void renderPayouts(StableViews rows) {
         rows.add("period",state().incomePeriod,this::monthSelector,ui.dp(14));
         long total=0,paid=0;int count=0;
         for(PaymentState.Row earning:state().earnings.values())if(earning.text("tutor_id").equals(state().owner)&&earning.text("period").equals(state().incomePeriod)){
-            total+=earning.number("amount");count++;PaymentState.Row payout=state().payouts.get(earning.text("payout_id"));if(payout!=null&&TutorWallet.salaryPaid(payout.text("status")))paid+=earning.number("amount");
+            total+=earning.number("amount");count++;PaymentState.Row payout=state().payouts.get(earning.text("payout_id"));if(payout!=null&&state().owner.equals(payout.text("tutor_id"))&&TutorWallet.salaryPaid(payout.text("status")))paid+=earning.number("amount");
         }
         final long earned=total,received=paid;final int sessions=count;
         rows.add("totals",Arrays.asList(state().incomePeriod,total,paid,count),()->{
@@ -49,7 +196,7 @@ public final class TutorIncomeFragment extends PaymentScreen {
             card.addView(ui.icon(R.drawable.ic_wallet,22,Ui.BLUE));ui.gap(card,12);
             TextView label=ui.text("Ví nhận lương",14,Ui.INK,true);label.setMinHeight(ui.dp(40));label.setGravity(Gravity.CENTER_VERTICAL);
             ui.weight(card,label);card.addView(ui.icon(R.drawable.ic_right,18,Ui.MUTED));
-            ui.clickable(card,()->host().show("tutor_wallet"));return card;
+            ui.clickable(card,this::openWallet);return card;
         },ui.dp(20));
         List<PaymentState.Row> payouts=new ArrayList<>();
         for(PaymentState.Row payout:newest(state().payouts.values()))
@@ -58,6 +205,10 @@ public final class TutorIncomeFragment extends PaymentScreen {
             LinearLayout heading=ui.row();ui.weight(heading,ui.text("Chi trả kỳ này",16,Ui.INK,true));
             heading.addView(ui.pill(String.valueOf(payouts.size()),12,Ui.BLUE,Ui.PALE));return heading;
         },ui.dp(12));
+        if (payouts.isEmpty()) {
+            rows.add("payout-empty", true,
+                    () -> ui.text("Chưa có khoản chi trả trong kỳ này.", 15, Ui.MUTED, false), 0);
+        }
         for(PaymentState.Row payout:payouts){
             rows.add("payout/"+payout.id,payout,()->{
             LinearLayout card=ui.card(),top=ui.row();boolean completed=TutorWallet.salaryPaid(payout.text("status"));
@@ -70,7 +221,19 @@ public final class TutorIncomeFragment extends PaymentScreen {
             ui.clickable(card,()->{state().selectedPayout=payout.id;state().origin="tutor_income";host().show("payout_detail");});return card;
             },ui.dp(12));
         }
-        rows.commit();
+    }
+
+    private void openWallet() {
+        Fragment parent = getParentFragment();
+        if (parent instanceof TutorFinanceFragment && parent.getView() != null) {
+            TabLayout tabs = parent.getView().findViewById(R.id.section_tabs);
+            TabLayout.Tab wallet = tabs == null ? null : tabs.getTabAt(0);
+            if (wallet != null) {
+                wallet.select();
+                return;
+            }
+        }
+        host().show("tutor_wallet");
     }
 
     private LinearLayout metric(String label,long amount,int color){
