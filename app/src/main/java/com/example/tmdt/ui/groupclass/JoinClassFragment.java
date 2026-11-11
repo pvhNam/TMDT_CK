@@ -59,6 +59,7 @@ public final class JoinClassFragment extends ScreenFragment {
         if (!item.description.isEmpty()) { ui.add(body,ui.text(item.description,15,Ui.MUTED,false)); ui.space(body,12); }
 
         ClassQuestionEntry.add(this,ui,body,item.id);
+        com.example.tmdt.ui.groupclass.GroupAssignmentEntry.add(this,ui,body,item,classroom.me());
 
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());

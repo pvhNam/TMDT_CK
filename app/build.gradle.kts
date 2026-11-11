@@ -106,6 +106,8 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.android.gms:play-services-auth:22.0.0")
+    implementation("androidx.browser:browser:1.10.0")
     implementation(libs.appcompat)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.material)
@@ -114,6 +116,8 @@ dependencies {
     implementation(libs.navigation.ui)
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
+    testImplementation("org.json:json:20250517")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }
