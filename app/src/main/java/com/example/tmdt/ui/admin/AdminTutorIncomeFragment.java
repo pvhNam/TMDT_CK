@@ -25,6 +25,7 @@ public final class AdminTutorIncomeFragment extends AdminScreen {
     @Override protected Object dataSnapshot(){return RenderSnapshot.of(super.dataSnapshot(),section,visibleEntries);}
     private void render(){
         StableViews rows=StableViews.at(body);rows.begin();if(!feedback(rows)){rows.commit();return;}
+        incomeFeedback(rows);
         String uid=state().selectedIncomeTutor;if(uid.isEmpty()){rows.add("empty",true,()->ui.link("Chọn gia sư để xem thu nhập",14,()->open("admin_income")),0);rows.commit();return;}
         TutorIncomeReport report=new TutorIncomeReport(uid,money().incomePeriod,money().earnings,money().payouts);
         String tutorName=name(uid,report.name.isEmpty()?state().incomeTutorName:report.name);PaymentState.Row person=person(uid);
@@ -34,7 +35,9 @@ public final class AdminTutorIncomeFragment extends AdminScreen {
             if(person!=null){top.addView(ui.icon(R.drawable.ic_right,18,Ui.BLUE));ui.clickable(card,()->{if("admin_user".equals(state().incomeOrigin))host().back();else user(uid);});}ui.add(card,top);return card;
         },ui.dp(14));
         rows.add("period",money().incomePeriod,()->AdminMonthPicker.create(ui,money().incomePeriod,value->{visibleEntries=30;money().incomePeriod=value;money().changed();}),ui.dp(14));
-        if(!money().incomeLoaded&&report.earnings.isEmpty()&&report.payouts.isEmpty())rows.add("loading",true,()->ui.text("Đang tải thu nhập…",14,Ui.MUTED,false),ui.dp(12));
+        if(!money().incomeLoaded&&report.earnings.isEmpty()&&report.payouts.isEmpty()){
+            if(money().incomeError().isEmpty())rows.add("loading",true,()->ui.text("Đang tải thu nhập…",14,Ui.MUTED,false),ui.dp(12));
+        }
         else{
             rows.add("summary",Arrays.asList(report.total,report.paid,report.waiting,report.sessions),()->{
                 LinearLayout card=ui.card();ui.cardSurface(card,Ui.PALE,Ui.BORDER);ui.add(card,ui.text("Thu nhập trong tháng",13,Ui.MUTED,false));ui.space(card,10);

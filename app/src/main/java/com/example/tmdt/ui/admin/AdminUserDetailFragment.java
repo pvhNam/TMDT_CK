@@ -26,14 +26,18 @@ public final class AdminUserDetailFragment extends AdminScreen {
         ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",r.text("dia_chi"));ui.tableRow(table,R.drawable.ic_file,"Cấp học / lớp",r.text("cap_hoc")+(r.text("lop").isEmpty()?"":" · "+r.text("lop")));return table;
         },ui.dp(18));
         if(!"ADMIN".equals(r.text("vai_tro")))rows.add("status-action",Arrays.asList(r,state().busy),()->{LinearLayout box=ui.column();action(box,"BANNED".equals(r.text("trang_thai"))?"Mở khóa tài khoản":"Khóa tài khoản","BANNED".equals(r.text("trang_thai"))?Ui.OUTLINE:Ui.DANGER,()->ban(r));return box;},0);
-        if(r.flag("la_gia_su"))rows.add("contracts",r.id,()->{LinearLayout box=ui.column();action(box,"Xem hợp đồng đã ký",Ui.OUTLINE,()->{state().selectTutor(r.id);open("admin_contracts");});return box;},0);
+        boolean tutor=r.flag("la_gia_su")||state().tutorProfiles.containsKey(r.id)||state().agreements.containsKey(r.id);
+        if(tutor)rows.add("contracts",r.id,()->{
+            LinearLayout box=ui.column();action(box,"Hợp đồng giảng dạy",Ui.OUTLINE,()->{state().contractTab=0;state().selectTutor(r.id);open("admin_contracts");});
+            action(box,"Hợp đồng với hệ thống",Ui.OUTLINE,()->agreement(r.id));return box;
+        },0);
         else {
             List<PaymentState.Row> contracts=state().contractsFor(r.id);int signed=0;for(PaymentState.Row c:contracts)if(state().signedContract(c))signed++;
             final int signedCount=signed;rows.add("contracts-heading",Arrays.asList(signed,contracts.size()),()->ui.text("Hợp đồng · "+signedCount+" / "+contracts.size()+" đã ký",16,Ui.INK,true),ui.dp(12));
             for(PaymentState.Row c:contracts)rows.add("contract/"+c.id,c,()->{LinearLayout box=ui.column();contractCard(box,c);return box;},0);
             if(state().moreContracts)rows.add("more-contracts",state().loadingContracts,()->{LinearLayout box=ui.column();action(box,"Tải thêm hợp đồng",Ui.OUTLINE,()->state().moreContracts());return box;},0);
         }
-        if(r.flag("la_gia_su")){
+        if(tutor){
             long earned=0,paid=0;for(PaymentState.Row e:money().earnings.values())if(r.id.equals(e.text("tutor_id")))earned+=e.number("amount");
             for(PaymentState.Row p:money().payouts.values())if(r.id.equals(p.text("tutor_id"))&&TutorWallet.salaryPaid(p.text("status")))paid+=p.number("amount");
             final long totalEarned=earned,totalPaid=paid;rows.add("income",Arrays.asList(r.id,r.text("ho_ten"),earned,paid,money().incomeLoaded),()->{

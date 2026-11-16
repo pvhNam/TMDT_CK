@@ -21,6 +21,7 @@ import com.example.tmdt.ui.home.HomeFragment;
 import com.example.tmdt.ui.profile.AccountFragment;
 import com.example.tmdt.ui.profile.EditAccountFragment;
 import com.example.tmdt.ui.common.NavigationAssets;
+import com.example.tmdt.ui.admin.AdminNavigation;
 import com.example.tmdt.ui.common.FloatingHelpDrag;
 import com.example.tmdt.ui.schedule.ScheduleFragment;
 import com.example.tmdt.ui.messages.ChatFragment;
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private String requestManagementOrigin="home";
     private String postRequestOrigin="home";
     private String requestSearchOrigin="home";
+    private String helpOrigin="settings";
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
     private boolean adminMenuIcons;
@@ -94,8 +96,9 @@ public class MainActivity extends AppCompatActivity {
         exchange=new Exchange(this,savedInstanceState);
         payments=new ViewModelProvider(this).get(PaymentState.class);
         administration=new ViewModelProvider(this).get(AdminState.class);
-        if(savedInstanceState!=null){administration.userOrigin=savedInstanceState.getString("admin_user_origin","admin_users");administration.contractOrigin=savedInstanceState.getString("admin_contract_origin","admin_contracts");administration.selectedTutor=savedInstanceState.getString("admin_tutor","");administration.selectedUser=savedInstanceState.getString("admin_user","");administration.selectedContract=savedInstanceState.getString("admin_contract","");}
+        if(savedInstanceState!=null){administration.userOrigin=savedInstanceState.getString("admin_user_origin","admin_users");administration.contractOrigin=savedInstanceState.getString("admin_contract_origin","admin_contracts");administration.selectedTutor=savedInstanceState.getString("admin_tutor","");administration.selectedUser=savedInstanceState.getString("admin_user","");administration.selectedContract=savedInstanceState.getString("admin_contract","");administration.financeTab=savedInstanceState.getInt("admin_finance_tab",0);}
         if(savedInstanceState!=null){administration.selectedIncomeTutor=savedInstanceState.getString("admin_income_tutor","");administration.incomeTutorName=savedInstanceState.getString("admin_income_name","");administration.incomeOrigin=savedInstanceState.getString("admin_income_origin","admin_income");payments.incomePeriod=savedInstanceState.getString("admin_income_period",payments.incomePeriod);}
+        if(savedInstanceState!=null){administration.selectedAgreement=savedInstanceState.getString("admin_agreement","");administration.agreementOrigin=savedInstanceState.getString("admin_agreement_origin","admin_contracts");administration.contractTab=savedInstanceState.getInt("admin_contract_tab",0);}
         if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
         if(savedInstanceState!=null)payments.payrollOrigin=savedInstanceState.getString("payroll_origin","admin_finance");
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
@@ -139,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
             requestManagementOrigin=savedInstanceState.getString("request_origin","home");
             postRequestOrigin=savedInstanceState.getString("post_request_origin","home");
             requestSearchOrigin=savedInstanceState.getString("request_search_origin","home");
+            helpOrigin=savedInstanceState.getString("help_origin","settings");
         }
         if(savedInstanceState==null&&getIntent()!=null&&getIntent().hasExtra("screen")){
             screen=getIntent().getStringExtra("screen");
@@ -228,7 +232,10 @@ public class MainActivity extends AppCompatActivity {
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
-        if("help_chat".equals(destination))closeFloatingHelp();
+        if("help_chat".equals(destination)){
+            if(!"help_chat".equals(screen))helpOrigin="account".equals(screen)?"account":"settings";
+            closeFloatingHelp();
+        }
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
         if(fragment==null)fragment=exchange.fragment(destination);
@@ -239,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
             case "admin_user":fragment=new com.example.tmdt.ui.admin.AdminUserDetailFragment();break;
             case "admin_contracts":fragment=new com.example.tmdt.ui.admin.AdminContractsFragment();break;
             case "admin_contract":fragment=new com.example.tmdt.ui.admin.AdminContractDetailFragment();break;
+            case "admin_agreement":fragment=new com.example.tmdt.ui.admin.AdminAgreementDetailFragment();break;
             case "admin_income":fragment=new com.example.tmdt.ui.admin.AdminIncomeFragment();break;
             case "admin_tutor_income":fragment=new com.example.tmdt.ui.admin.AdminTutorIncomeFragment();break;
             case "admin_finance":fragment=new com.example.tmdt.ui.admin.AdminFinanceFragment();break;
@@ -263,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
             case "register":fragment=new RegisterFragment();break;
             case "email_verification":fragment=new com.example.tmdt.ui.auth.EmailVerificationFragment();break;
             case "forgot":fragment=new ForgotPasswordFragment();break;
-            case "account":fragment=new AccountFragment();break;
+            case "account":fragment=isAdmin()?new com.example.tmdt.ui.admin.AdminAccountFragment():new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
             case "favorites":fragment=new com.example.tmdt.ui.profile.FavoritesFragment();break;
             case "settings":fragment=new com.example.tmdt.ui.profile.SettingsFragment();break;
@@ -287,8 +295,8 @@ public class MainActivity extends AppCompatActivity {
         // Its first render uses the latest data; queueing another replacement causes a flash.
         if(screen.equals(navigatingTo)){renderNavigation();return;}
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
-        if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
-        if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
+        if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())&&current.getClass().equals(fragment.getClass())){((ScreenFragment)current).refresh();renderNavigation();return;}
+        if(navigatingTo!=null||current==null||!screen.equals(current.getTag())||!current.getClass().equals(fragment.getClass())){
             androidx.fragment.app.FragmentTransaction transaction=getSupportFragmentManager().beginTransaction().setReorderingAllowed(true);
             if(current!=null && com.example.tmdt.ui.common.Motion.enabled())
                 transaction.setCustomAnimations(R.animator.page_enter,R.animator.page_exit);
@@ -314,9 +322,9 @@ public class MainActivity extends AppCompatActivity {
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
         if(isAdmin()){
-            destination=itemId==R.id.nav_schedule?"admin_management":itemId==R.id.nav_messages?"admin_contracts":itemId==R.id.nav_account?"admin_finance":"admin_dashboard";
+            destination=AdminNavigation.destination(itemId);
             administration.notice="";
-            if(itemId==R.id.nav_messages)administration.selectTutor("");
+            if("admin_contracts".equals(destination)&&!screen.equals(destination))administration.selectTutor("");
         }
         destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
@@ -332,33 +340,33 @@ public class MainActivity extends AppCompatActivity {
     private void renderNavigation(){
         updatingNavigation=true;
         android.view.Menu menu=binding.bottomNavigation.getMenu();
-        menu.findItem(R.id.nav_messages).setTitle(isAdmin()?"Hợp đồng":"Tin nhắn");
-        menu.findItem(R.id.nav_account).setTitle(isAdmin()?"Tài chính":"Cá nhân");
-        if(adminMenuIcons!=isAdmin()){
-            adminMenuIcons=isAdmin();
+        boolean admin=isAdmin();
+        if(adminMenuIcons!=admin){
+            for(int i=0;i<menu.size();i++)binding.bottomNavigation.removeBadge(menu.getItem(i).getItemId());
+            menu.clear();binding.bottomNavigation.inflateMenu(admin?R.menu.menu_bottom_admin:R.menu.menu_bottom_navigation);
+            adminMenuIcons=admin;
             if(adminMenuIcons)NavigationAssets.applyAdmin(binding.bottomNavigation);else NavigationAssets.apply(binding.bottomNavigation);
         }
         for(int i=0;i<menu.size();i++)menu.getItem(i).setEnabled(!account.isBusy()&&!account.isSendingCode());
-        int selected=R.id.nav_home;
-        if("schedule".equals(screen))selected=R.id.nav_schedule;
-        else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
-        else if(!"home".equals(screen))selected=R.id.nav_account;
-        if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
-        if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
-        selected=classroom.navigationItem(menu,screen,selected);
-        if(isAdmin()){
-            menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Quản lý");
-            menu.findItem(R.id.nav_account).setTitle("Tài chính");
-            selected=java.util.Arrays.asList("admin_management","admin_users","admin_user","admin_tutors","report_admin","report_handle").contains(screen)?R.id.nav_schedule:
-                java.util.Arrays.asList("admin_contracts","admin_contract","contract_templates").contains(screen)?R.id.nav_messages:
-                java.util.Arrays.asList("admin_finance","admin_income","admin_tutor_income","admin_payroll","admin_withdrawals","withdrawal_detail","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
+        int selected;
+        if(admin)selected=AdminNavigation.item(screen);
+        else{
+            menu.findItem(R.id.nav_messages).setTitle("Tin nhắn");menu.findItem(R.id.nav_account).setTitle("Cá nhân");
+            selected=R.id.nav_home;
+            if("schedule".equals(screen))selected=R.id.nav_schedule;
+            else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
+            else if(!"home".equals(screen))selected=R.id.nav_account;
+            if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
+            if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
+            selected=classroom.navigationItem(menu,screen,selected);
         }
         menu.findItem(selected).setChecked(true);
+        renderMessageBadge();renderContractBadge();
         updateNavigationVisibility();
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_management".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||AdminNavigation.mainScreen(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
@@ -367,7 +375,8 @@ public class MainActivity extends AppCompatActivity {
         android.widget.FrameLayout.LayoutParams glassParams=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
         int margin=getResources().getDimensionPixelSize(R.dimen.navigation_bottom_gap)+systemBottomInset;
         int available=binding.appRoot.getWidth()-binding.appRoot.getPaddingLeft()-binding.appRoot.getPaddingRight();
-        int width=available>0?Math.max(1,Math.round(available*com.example.tmdt.ui.common.UiScale.NAVIGATION_WIDTH_FACTOR)-glassParams.leftMargin-glassParams.rightMargin):glassParams.width;
+        float widthFactor=isAdmin()?1f:com.example.tmdt.ui.common.UiScale.NAVIGATION_WIDTH_FACTOR;
+        int width=available>0?Math.max(1,Math.round(available*widthFactor)-glassParams.leftMargin-glassParams.rightMargin):glassParams.width;
         if(glassParams.bottomMargin!=margin||glassParams.width!=width){glassParams.bottomMargin=margin;glassParams.width=width;binding.navigationGlass.setLayoutParams(glassParams);}
         binding.bottomNavigation.setVisibility(visibility);
         binding.navigationGlass.setVisibility(visibility);
@@ -507,6 +516,7 @@ public class MainActivity extends AppCompatActivity {
         switch(screen){
             case "admin_user":show(administration.userOrigin);break;
             case "admin_contract":show(administration.contractOrigin);break;
+            case "admin_agreement":show(administration.agreementOrigin);break;
             case "admin_contracts":if(!administration.selectedTutor.isEmpty()){administration.selectTutor("");show("admin_contracts");}else show("admin_dashboard");break;
             case "admin_users":show("admin_management");break;
             case "admin_management":case "admin_finance":show("admin_dashboard");break;
@@ -531,7 +541,8 @@ public class MainActivity extends AppCompatActivity {
             case "otp":account.clearFeedback();show("account");break;
             case "email_verification":account.leaveEmailVerification();break;
             case "favorites":case "settings":account.clearFeedback();show("account");break;
-            case "help_chat":show("settings");break;
+            case "help_chat":show(helpOrigin);break;
+            case "messages":show(isAdmin()?"account":"home");break;
             case "register_tutor":account.clearFeedback();show("account");break;
             case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
             case "tutor_evidence":show("register_tutor");break;
@@ -600,6 +611,7 @@ public class MainActivity extends AppCompatActivity {
     }
     /** Huy hiệu số tin chưa đọc trên mục Tin nhắn của thanh điều hướng. */
     private void renderMessageBadge(){
+        if(binding.bottomNavigation.getMenu().findItem(R.id.nav_messages)==null)return;
         int unread=account.signedIn()?chat.unreadTotal():0;
         if(unread<=0){binding.bottomNavigation.removeBadge(R.id.nav_messages);return;}
         BadgeDrawable badge=binding.bottomNavigation.getOrCreateBadge(R.id.nav_messages);
@@ -608,6 +620,7 @@ public class MainActivity extends AppCompatActivity {
     }
     /** UC23: số hợp đồng đang chờ người dùng xác nhận, hiện trên mục Cá nhân. */
     private void renderContractBadge(){
+        if(binding.bottomNavigation.getMenu().findItem(R.id.nav_account)==null)return;
         int waiting=account.signedIn()?exchange.contracts.awaitingMe():0;
         if(waiting<=0){binding.bottomNavigation.removeBadge(R.id.nav_account);return;}
         BadgeDrawable badge=binding.bottomNavigation.getOrCreateBadge(R.id.nav_account);
@@ -645,6 +658,7 @@ public class MainActivity extends AppCompatActivity {
         out.putString("request_origin",requestManagementOrigin);
         out.putString("post_request_origin",postRequestOrigin);
         out.putString("request_search_origin",requestSearchOrigin);
+        out.putString("help_origin",helpOrigin);
         classroom.save(out);
         exchange.save(out);
         out.putString("payment_id",payments.selected);
@@ -656,6 +670,10 @@ public class MainActivity extends AppCompatActivity {
         out.putString("admin_tutor",administration.selectedTutor);
         out.putString("admin_user_origin",administration.userOrigin);
         out.putString("admin_contract_origin",administration.contractOrigin);
+        out.putString("admin_agreement",administration.selectedAgreement);
+        out.putString("admin_agreement_origin",administration.agreementOrigin);
+        out.putInt("admin_contract_tab",administration.contractTab);
+        out.putInt("admin_finance_tab",administration.financeTab);
         out.putString("admin_income_tutor",administration.selectedIncomeTutor);
         out.putString("admin_income_name",administration.incomeTutorName);
         out.putString("admin_income_origin",administration.incomeOrigin);

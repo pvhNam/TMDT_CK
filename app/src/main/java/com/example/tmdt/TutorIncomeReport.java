@@ -36,4 +36,14 @@ public final class TutorIncomeReport {
         for(String id:ids)result.add(new TutorIncomeReport(id,period,earnedByTutor.getOrDefault(id,java.util.Collections.emptyMap()),paidByTutor.getOrDefault(id,java.util.Collections.emptyMap())));
         result.sort(Comparator.comparingLong((TutorIncomeReport row)->row.total).reversed().thenComparing(row->row.name,String.CASE_INSENSITIVE_ORDER));return result;
     }
+    /** The directory remains selectable even when a teacher has no ledger entries in this month. */
+    public static List<TutorIncomeReport> month(String period,Map<String,PaymentState.Row> earnings,Map<String,PaymentState.Row> payouts,Map<String,PaymentState.Row> directory){
+        Map<String,TutorIncomeReport> reports=new LinkedHashMap<>();
+        for(TutorIncomeReport report:month(period,earnings,payouts))if(!report.tutorId.isEmpty())reports.put(report.tutorId,report);
+        for(String uid:directory.keySet())if(!uid.isEmpty()&&!reports.containsKey(uid))reports.put(uid,new TutorIncomeReport(uid,period,earnings,payouts));
+        List<TutorIncomeReport> result=new ArrayList<>(reports.values());
+        result.sort(Comparator.comparingLong((TutorIncomeReport row)->row.total).reversed().thenComparing(row->{
+            PaymentState.Row tutor=directory.get(row.tutorId);return tutor==null||tutor.text("ho_ten").isEmpty()?row.name:tutor.text("ho_ten");
+        },String.CASE_INSENSITIVE_ORDER));return result;
+    }
 }

@@ -26,11 +26,9 @@ abstract class AdminScreen extends ScreenFragment {
     @Override protected Object dataSnapshot(){return com.example.tmdt.ui.common.RenderSnapshot.of(state(),money());}
     @Override public void onDestroyView(){liveSearch=null;super.onDestroyView();}
     protected LinearLayout root(String title){
-        LinearLayout root=ui.column();root.setBackgroundColor(0xFFF7F9FD);
-        boolean dashboard="admin_dashboard".equals(host().currentScreen());
-        boolean main=java.util.Arrays.asList("admin_dashboard","admin_management","admin_contracts","admin_finance").contains(host().currentScreen());
-        View trailing=dashboard?ui.iconButton(R.drawable.ic_pf_user,Ui.BLUE,"Tài khoản quản trị",()->open("account")):
-            ui.link("Làm mới",12,this::reload);
+        LinearLayout root=ui.column();root.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.background(requireContext()));
+        boolean main=AdminNavigation.mainScreen(host().currentScreen());
+        View trailing="account".equals(host().currentScreen())?null:ui.link("Làm mới",12,this::reload);
         ui.header(root,title,main?null:host()::back,trailing);return root;
     }
     protected void reload(){if(state().busy||money().busy)return;state().retry();money().retry();}
@@ -49,6 +47,24 @@ abstract class AdminScreen extends ScreenFragment {
         if(!badge.isEmpty()){row.addView(ui.pill(badge,12,Ui.BLUE,Ui.PALE));ui.gap(row,6);}
         row.addView(ui.text("›",24,Ui.MUTED,false));ui.add(card,row);card.setContentDescription(title);
         ui.clickable(card,()->{if(!state().busy)run.run();});ui.add(body,card);ui.space(body,10);
+    }
+    protected LinearLayout menuGroup(LinearLayout body,String title){
+        ui.section(body,title,17);ui.space(body,10);
+        LinearLayout card=ui.card();ui.pad(card,0,0);card.setClipToOutline(true);ui.add(body,card);return card;
+    }
+    /** Related actions share one surface, with comfortable touch targets and a consistent arrow. */
+    protected void menuItem(LinearLayout card,int icon,String title,String badge,Runnable run){
+        if(card.getChildCount()>0){
+            View divider=new View(requireContext());divider.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.border(requireContext(),Ui.BORDER));
+            LinearLayout.LayoutParams params=ui.lp(-1,1);params.leftMargin=ui.dp(64);params.rightMargin=ui.dp(14);card.addView(divider,params);
+        }
+        LinearLayout row=ui.row(),symbol=ui.row();ui.pad(row,14,12);row.setMinimumHeight(ui.dp(66));
+        symbol.setGravity(android.view.Gravity.CENTER);ui.surface(symbol,Ui.PALE,12,0);
+        symbol.addView(ui.icon(icon,21,Ui.BLUE));row.addView(symbol,ui.lp(38,38));ui.gap(row,12);
+        android.widget.TextView label=ui.text(title,15,Ui.INK,true);label.setMaxLines(2);ui.weight(row,label);ui.gap(row,8);
+        if(!badge.isEmpty()){row.addView(ui.pill(badge,11,Ui.BLUE,Ui.PALE));ui.gap(row,6);}
+        row.addView(ui.text("›",23,Ui.MUTED,false));row.setContentDescription(title+(badge.isEmpty()?"":", "+badge));
+        ui.clickable(row,()->{if(!state().busy)run.run();});ui.add(card,row);
     }
     protected View shortcut(int icon,String title,Runnable run){
         LinearLayout card=ui.card();card.setMinimumHeight(ui.dp(106));
@@ -107,12 +123,34 @@ abstract class AdminScreen extends ScreenFragment {
         String origin=host().currentScreen();if("admin_user".equals(origin)&&"admin_tutor_income".equals(state().userOrigin))origin=state().incomeOrigin;
         state().selectedIncomeTutor=uid;state().incomeTutorName=tutorName;state().incomeOrigin=origin;open("admin_tutor_income");
     }
-    protected void contract(String id){state().contractOrigin=host().currentScreen();state().selectedContract=id;host().show("admin_contract");}
-    protected PaymentState.Row person(String uid){PaymentState.Row row=state().users.get(uid);return row==null?state().tutors.get(uid):row;}
+    protected void contract(String id){state().contractOrigin=host().currentScreen();state().selectContract(id);host().show("admin_contract");}
+    protected void agreement(String uid){state().agreementOrigin=host().currentScreen();state().selectAgreement(uid);open("admin_agreement");}
+    protected PaymentState.Row person(String uid){PaymentState.Row row=state().users.get(uid);return row==null?state().tutorDirectory().get(uid):row;}
     protected String name(String uid,String fallback){PaymentState.Row user=person(uid);String value=user==null?fallback:user.text("ho_ten");return value==null||value.isEmpty()?"Gia sư":value;}
     protected View metric(String title,long value,int color){
         LinearLayout box=ui.column();ui.add(box,ui.text(title,12,Ui.MUTED,false));ui.space(box,6);
         android.widget.TextView text=ui.text(PaymentState.money(value),17,color,true);text.setMaxLines(1);text.setAutoSizeTextTypeUniformWithConfiguration(11,17,1,android.util.TypedValue.COMPLEX_UNIT_SP);ui.add(box,text);return box;
+    }
+    protected void detailField(LinearLayout card,String label,String value){
+        if(card.getChildCount()>0){ui.space(card,12);ui.line(card);ui.space(card,12);}
+        ui.add(card,ui.text(label,12,Ui.MUTED,false));ui.space(card,5);
+        android.widget.TextView text=ui.text(value.isEmpty()?"Chưa cập nhật":value,15,Ui.INK,false);text.setTextIsSelectable(true);ui.add(card,text);
+    }
+    protected View incomeCard(TutorIncomeReport report){
+        String tutorName=name(report.tutorId,report.name);PaymentState.Row person=person(report.tutorId);
+        LinearLayout card=ui.card(),top=ui.row(),copy=ui.column();top.addView(ui.avatar(report.tutorId,tutorName,44));ui.gap(top,12);
+        ui.add(copy,ui.text(tutorName,16,Ui.INK,true));ui.space(copy,5);ui.add(copy,ui.text(money().incomeLoaded?report.sessions+" buổi · "+PaymentState.money(report.total):money().incomeError().isEmpty()?"Đang tải thu nhập…":"Chưa tải được thu nhập",14,Ui.BLUE,true));ui.weight(top,copy);
+        top.addView(ui.icon(R.drawable.ic_right,18,Ui.BLUE));ui.add(card,top);ui.space(card,12);
+        if(money().incomeLoaded){LinearLayout stats=ui.row();ui.weight(stats,metric("Đã trả",report.paid,Ui.GREEN));ui.gap(stats,12);ui.weight(stats,metric("Chưa trả",report.waiting,Ui.ORANGE));ui.add(card,stats);}
+        if(person!=null&&"BANNED".equals(person.text("trang_thai"))){ui.space(card,10);ui.add(card,ui.pill("Tạm dừng chi trả",11,Ui.RED,0xFFFFE9EC));}
+        card.setContentDescription("Xem thu nhập của "+tutorName);ui.clickable(card,()->{money().incomePeriod=report.period;income(report.tutorId,tutorName);});return card;
+    }
+    protected void incomeFeedback(StableViews rows){
+        String error=money().incomeError();if(error.isEmpty())return;
+        rows.add("income-error",error,()->{
+            LinearLayout box=ui.column();ui.add(box,ui.note(R.drawable.ic_info,error,0xFFFFF0F0,Ui.RED,Ui.RED));ui.space(box,10);
+            ui.addAction(box,ui.action("Tải lại thu nhập",0,Ui.OUTLINE,this::reload),46);return box;
+        },ui.dp(14));
     }
     protected void contractCard(LinearLayout body,PaymentState.Row row){
         card(body,row.text("code").isEmpty()?"Hợp đồng":row.text("code"),row.text("subject"),

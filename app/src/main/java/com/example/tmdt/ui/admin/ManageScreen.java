@@ -41,6 +41,10 @@ abstract class ManageScreen extends AdminScreen {
         manage.start();
     }
     @Override protected Object dataSnapshot() { return RenderSnapshot.of(super.dataSnapshot(), manage().version()); }
+    @Override protected void reload() {
+        if (state().busy || money().busy) return;
+        super.reload(); manage().retry();
+    }
 
     /** Đang tải hoặc lỗi thì hiện ghi chú và trả về true (màn dừng dựng phần còn lại). */
     protected boolean waiting(LinearLayout body, String... keys) {
