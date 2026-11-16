@@ -26,11 +26,24 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         LinearLayout body = ui.page(root); ui.space(body,4);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(10),ui.dp(12),ui.dp(10),ui.dp(12));
-        ui.cardSurface(card,Ui.PALE,0); card.addView(ui.art(item.smallArt(),77,86)); ui.gap(card,12);
+        ui.cardSurface(card,Ui.PALE,0); card.addView(ui.photo(item.art(),null,77,86,12)); ui.gap(card,12);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,21,Ui.INK,true)); ui.space(info,10);
         summary = ui.text("",18,Ui.INK,false); ui.add(info,summary); ui.space(info,8);
         ui.add(info,ui.text("▣ "+item.sessions+" buổi · "+item.mode,16,Ui.INK,false)); ui.space(info,6);
         ui.add(info,ui.text("▦ "+item.scheduleLabel(),15,Ui.INK,false)); ui.weight(card,info); ui.add(body,card); ui.space(body,16);
+        com.example.tmdt.ui.groupclass.ClassQuestionEntry.add(this,ui,body,item.id);
+        com.example.tmdt.ui.groupclass.GroupAssignmentEntry.add(this,ui,body,item,classroom.me());
+        if (item.cancelled()) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Lớp đã hủy · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
+        }
+        if (item.active() && item.online()) {
+            ui.section(body,"Phòng học trực tuyến",18); ui.space(body,8);
+            ui.add(body,TeachingScheduleFragment.linkRow(ui,item.roomLink,item.roomHost(),
+                    ()->TeachingScheduleFragment.editClassLink(classroom,item,()->classroom.show("review")))); ui.space(body,10);
+            ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                    :ui.action("Phòng mở trước giờ học 10 phút",0,Ui.DISABLED,null),44);
+            ui.space(body,16);
+        }
 
         LinearLayout titleRow = ui.row(); heading = ui.text("",20,Ui.INK,true); ui.weight(titleRow,heading);
         sort = ui.link("",14,()->{newestFirst=!newestFirst;render();com.example.tmdt.ui.common.Motion.reveal(list);}); sort.setTextColor(Ui.MUTED); titleRow.addView(sort);
@@ -45,6 +58,10 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
             ui.weightAction(actions,ui.action("Chỉnh sửa lớp",R.drawable.ic_edit,Ui.OUTLINE,()->classroom.openClass(item,"openClass")),42); ui.gap(actions,10);
             ui.weightAction(actions,ui.action("⊘  Đóng tuyển",0,Ui.DANGER,()->OpenedClassesFragment.close(classroom,item)),42);
             ui.add(body,actions);
+        }
+        if (item.cancellable()) {
+            TextView cancel = ui.link("Hủy lớp học",16,()->classroom.openClass(item,"cancelClass")); cancel.setTextColor(Ui.RED);
+            cancel.setGravity(Gravity.CENTER); ui.space(body,10); ui.add(body,cancel);
         }
         render();
         return root;
@@ -68,6 +85,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
         top.addView(ui.avatar(registration.studentId,registration.studentName,71)); ui.gap(top,15);
         LinearLayout info = ui.column(); LinearLayout nameRow = ui.row(); ui.weight(nameRow,ui.text(registration.studentName,20,Ui.INK,true));
         nameRow.addView(ui.pill("Chờ duyệt",14,Ui.ORANGE,Ui.ORANGE_BG)); ui.add(info,nameRow); ui.space(info,4);
+        if (!registration.learnerName.isEmpty()) { ui.add(info,ui.text("Người học: "+registration.learnerName,15,Ui.BLUE,true)); ui.space(info,5); }
         ui.add(info,ui.text("Mục tiêu học",14,Ui.MUTED,false)); ui.space(info,5);
         ui.add(info,ui.text(registration.goal,16,Ui.INK,false)); ui.space(info,7);
         ui.add(info,ui.text("▦ Gửi ngày "+LocalDate.parse(registration.date).format(Lesson.DATE),15,Ui.INK,false));
@@ -85,7 +103,7 @@ public final class ReviewRegistrationsFragment extends ScreenFragment {
     }
     private void reject(GroupClass.Registration registration) {
         classroom.ui.dialog().setTitle("Từ chối "+registration.studentName+"?")
-                .setMessage("Tiền ký quỹ của học viên sẽ được hoàn theo quy định (Thành viên 4 xử lý).")
+                .setMessage("Đăng ký này chưa thu học phí nên học viên không mất khoản phí nào.")
                 .setNegativeButton("Hủy",null)
                 .setPositiveButton("Từ chối",(dialog,which)->{
                     String error = classroom.store.reject(registration);

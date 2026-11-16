@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     tools:context="com.example.tmdt.ui.profile.EditAccountFragment">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"

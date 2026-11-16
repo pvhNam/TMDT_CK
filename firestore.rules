@@ -19,9 +19,22 @@ service cloud.firestore {
           && d.anh_dai_dien is string && d.anh_dai_dien.size() <= 90000
           && d.updated_at == request.time;
       }
-      allow get: if owner();
-      allow list, delete: if false;
-      allow create: if owner() && validProfile()
+      allow get: if owner() || admin();
+      allow list: if admin();
+      allow delete: if false;
+      // Admin may change only the account status; roles and profile data are not elevated here.
+      allow update: if admin() && request.auth.uid != userId && resource.data.vai_tro != 'ADMIN'
+        && resource.data.trang_thai in ['ACTIVE','BANNED']
+        && request.resource.data.trang_thai in ['ACTIVE','BANNED']
+        && request.resource.data.trang_thai != resource.data.trang_thai
+        && changed(['trang_thai','updated_at']) && stamped();
+      allow update: if admin() && request.auth.uid != userId
+        && resource.data.trang_thai == 'ACTIVE'
+        && resource.data.vai_tro in ['STUDENT','ADMIN']
+        && request.resource.data.vai_tro in ['STUDENT','ADMIN']
+        && request.resource.data.vai_tro != resource.data.vai_tro
+        && changed(['vai_tro','updated_at']) && stamped();
+      allow create: if owner() && request.auth.token.email_verified == true && validProfile()
         && request.resource.data.vai_tro == 'STUDENT'
         && request.resource.data.la_gia_su == false
         && request.resource.data.trang_thai == 'ACTIVE'
@@ -33,6 +46,23 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ho_ten','so_dien_thoai','la_gia_su','updated_at'])
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.trang_thai_xac_minh == 'PENDING'
             && getAfter(/databases/$(database)/documents/tutor_profiles/$(userId)).data.created_at == request.time));
+      match /learners/{learnerId} {
+        function validLearner() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['ho_ten','lop','cap_hoc','quan_he','ghi_chu','updated_at'])
+            && d.keys().hasOnly(['ho_ten','lop','cap_hoc','quan_he','ghi_chu','created_at','updated_at'])
+            && d.ho_ten is string && d.ho_ten.size() >= 2 && d.ho_ten.size() <= 100
+            && d.lop is string && d.lop.size() <= 40
+            && d.cap_hoc is string && d.cap_hoc.size() <= 40
+            && d.quan_he is string && d.quan_he.size() <= 40
+            && d.ghi_chu is string && d.ghi_chu.size() <= 200
+            && d.updated_at == request.time;
+        }
+        allow read: if owner() || admin();
+        allow create: if owner() && activeUser() && validLearner() && request.resource.data.created_at == request.time;
+        allow update: if owner() && activeUser() && validLearner() && request.resource.data.created_at == resource.data.created_at;
+        allow delete: if owner() && activeUser();
+      }
     }
     // Display images only. Private names/contact details remain in the existing profile collections.
     match /profile_avatars/{userId} {
@@ -64,13 +94,148 @@ service cloud.firestore {
           && d.hinh_thuc_day in ['TRUC_TUYEN','TAI_NHA','CA_HAI'] && d.nhan_lop == true
           && d.trang_thai_xac_minh == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
       }
-      allow get: if (request.auth != null && request.auth.uid == tutorId) || resource.data.trang_thai_xac_minh == 'VERIFIED';
-      allow list: if resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow get: if (request.auth != null && request.auth.uid == tutorId) || admin() || resource.data.trang_thai_xac_minh == 'VERIFIED';
+      allow list: if admin() || resource.data.trang_thai_xac_minh == 'VERIFIED';
       allow create: if signedIn() && request.auth.uid == tutorId && account().trang_thai == 'ACTIVE'
         && account().la_gia_su == false && validRegistration()
+        && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.created_at == request.time
+        && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == 'PENDING'
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.la_gia_su == true
         && getAfter(/databases/$(database)/documents/users/$(tutorId)).data.ho_ten == request.resource.data.ho_ten;
+      allow update: if stamped() && (
+        (admin() && resource.data.trang_thai_xac_minh == 'VERIFIED'
+          && request.resource.data.nhan_lop is bool && changed(['nhan_lop','updated_at']))
+        || (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
+          && request.resource.data.trang_thai_xac_minh in ['IN_REVIEW','VERIFIED','NEEDS_REVISION','REJECTED']
+          && changed(['trang_thai_xac_minh','updated_at'])
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == request.resource.data.trang_thai_xac_minh
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.nguoi_duyet_id == request.auth.uid
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.reviewed_at == request.time)
+        || (signedIn() && request.auth.uid == tutorId && account().trang_thai == 'ACTIVE'
+          && resource.data.trang_thai_xac_minh == 'NEEDS_REVISION' && request.resource.data.trang_thai_xac_minh == 'PENDING'
+          && changed(['trang_thai_xac_minh','truong','chuyen_nganh','updated_at'])
+          && request.resource.data.truong is string && request.resource.data.truong.size() <= 150
+          && request.resource.data.chuyen_nganh is string && request.resource.data.chuyen_nganh.size() <= 150
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.trang_thai_xac_minh == 'PENDING'
+          && getAfter(/databases/$(database)/documents/tutor_applications/$(tutorId)).data.submitted_at == request.time));
+      allow delete: if false;
+    }
+     // Public tutor-profile comments are questions/discussion, never star ratings.
+    match /tutor_profiles/{tutorId}/comments/{commentId} {
+      function publicTutor() {
+        return exists(/databases/$(database)/documents/tutor_profiles/$(tutorId))
+          && get(/databases/$(database)/documents/tutor_profiles/$(tutorId)).data.trang_thai_xac_minh == 'VERIFIED';
+      }
+      function canComment() {
+        return signedIn() && account().trang_thai == 'ACTIVE' && publicTutor()
+          && getAfter(/databases/$(database)/documents/tutor_profiles/$(tutorId)).data.trang_thai_xac_minh == 'VERIFIED';
+      }
+      function validComment(data, reply) {
+        let keys = ['tutor_id','author_id','author_name','content','created_at'];
+        let allowed = reply ? keys.concat(['comment_id']) : keys;
+        return data.keys().hasAll(allowed) && data.keys().hasOnly(allowed)
+          && data.tutor_id == tutorId && data.author_id == request.auth.uid
+          && data.author_name is string && data.author_name.trim().size() > 0 && data.author_name.size() <= 100
+          && data.author_name == account().ho_ten
+          && data.content is string && data.content.trim().size() > 0 && data.content.size() <= 1000
+          && data.created_at == request.time;
+      }
+      // Missing deterministic comment IDs are readable for retry-safe creation.
+      allow read: if publicTutor();
+      allow create: if canComment() && validComment(request.resource.data, false);
       allow update, delete: if false;
+      match /replies/{replyId} {
+        allow read: if publicTutor()
+          && exists(/databases/$(database)/documents/tutor_profiles/$(tutorId)/comments/$(commentId));
+        allow create: if canComment() && validComment(request.resource.data, true)
+          && request.resource.data.comment_id == commentId
+          && exists(/databases/$(database)/documents/tutor_profiles/$(tutorId)/comments/$(commentId))
+          && get(/databases/$(database)/documents/tutor_profiles/$(tutorId)/comments/$(commentId)).data.tutor_id == tutorId;
+        allow update, delete: if false;
+      }
+    }
+    // Application evidence is private; never store it in the public tutor catalog.
+    match /tutor_applications/{uid} {
+      function evidence(f) {
+        let image = get(/databases/$(database)/documents/tutor_applications/$(uid)/evidence_images/$(f.path.split('/')[3])).data;
+        return f is map && f.keys().hasAll(['name','path','type','size','kind'])
+          && f.keys().hasOnly(['name','path','type','size','kind'])
+          && f.name is string && f.name.size() > 0 && f.name.size() <= 150
+          && f.path is string && f.path.matches('tutor_applications/' + uid + '/evidence_images/[a-zA-Z0-9-]+')
+          && f.type == 'image/jpeg'
+          && f.size is int && f.size > 0 && f.size <= 307200 && f.kind in ['diploma','certificate']
+          && image.user_id == uid && image.name == f.name
+          && image.type == f.type && image.size == f.size && image.kind == f.kind;
+      }
+      function validEvidence() {
+        let d=request.resource.data;let f=d.minh_chung;
+        return d.user_id == uid && d.truong is string && d.truong.size() > 0 && d.truong.size() <= 150
+          && d.chuyen_nganh is string && d.chuyen_nganh.size() > 0 && d.chuyen_nganh.size() <= 150
+          && d.ghi_chu is string && d.ghi_chu.size() <= 500 && f is list && f.size() >= 1 && f.size() <= 4
+          && evidence(f[0]) && (f.size() < 2 || evidence(f[1])) && (f.size() < 3 || evidence(f[2])) && (f.size() < 4 || evidence(f[3]))
+          && (f[0].kind == 'diploma' || (f.size() >= 2 && f[1].kind == 'diploma') || (f.size() >= 3 && f[2].kind == 'diploma') || (f.size() == 4 && f[3].kind == 'diploma'));
+      }
+      function imageForApproval(){
+        let f=request.resource.data.get('minh_chung',[]);
+        return f is list && f.size() > 0 && (
+          (f[0].kind == 'diploma' && evidence(f[0]))
+          || (f.size() > 1 && f[1].kind == 'diploma' && evidence(f[1]))
+          || (f.size() > 2 && f[2].kind == 'diploma' && evidence(f[2]))
+          || (f.size() > 3 && f[3].kind == 'diploma' && evidence(f[3])));
+      }
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create: if (signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE' && validEvidence()
+          && request.resource.data.keys().hasOnly(['user_id','ho_ten','truong','chuyen_nganh','ghi_chu','minh_chung','mon_hoc','cap_lop','hoc_phi','trang_thai_xac_minh','submitted_at','created_at','updated_at'])
+          && request.resource.data.ho_ten is string && request.resource.data.ho_ten.size() <= 100
+          && request.resource.data.mon_hoc is string && request.resource.data.mon_hoc.size() <= 150
+          && request.resource.data.cap_lop is string && request.resource.data.cap_lop.size() <= 150
+          && request.resource.data.hoc_phi is int && request.resource.data.hoc_phi >= 50000 && request.resource.data.hoc_phi <= 2000000
+          && request.resource.data.trang_thai_xac_minh == 'PENDING' && stamped()
+          && request.resource.data.created_at == request.time && request.resource.data.submitted_at == request.time
+          && getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'PENDING')
+        || (admin() && stamped() && request.resource.data.user_id == uid
+          && request.resource.data.nguoi_duyet_id == request.auth.uid && request.resource.data.reviewed_at == request.time
+          && request.resource.data.keys().hasOnly(['user_id','ho_ten','created_at','updated_at','reviewed_at','nguoi_duyet_id','ly_do','trang_thai_xac_minh'])
+          && request.resource.data.ly_do is string && request.resource.data.ly_do.size() <= 500
+          && request.resource.data.trang_thai_xac_minh != 'VERIFIED'
+          && (request.resource.data.trang_thai_xac_minh == 'IN_REVIEW' || request.resource.data.ly_do.size() > 0)
+          && request.resource.data.trang_thai_xac_minh == getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh);
+      allow update: if stamped() && request.resource.data.user_id == uid && (
+        (admin() && resource.data.trang_thai_xac_minh in ['PENDING','IN_REVIEW']
+          && changed(['trang_thai_xac_minh','nguoi_duyet_id','reviewed_at','ly_do','updated_at'])
+          && request.resource.data.trang_thai_xac_minh in ['IN_REVIEW','VERIFIED','NEEDS_REVISION','REJECTED']
+          && (request.resource.data.trang_thai_xac_minh != 'VERIFIED' || imageForApproval())
+          && request.resource.data.nguoi_duyet_id == request.auth.uid && request.resource.data.reviewed_at == request.time
+          && request.resource.data.ly_do is string && request.resource.data.ly_do.size() <= 500
+          && (request.resource.data.trang_thai_xac_minh in ['VERIFIED','IN_REVIEW'] || request.resource.data.ly_do.size() > 0)
+          && request.resource.data.trang_thai_xac_minh == getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh)
+        || (signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE' && validEvidence()
+          && resource.data.trang_thai_xac_minh == 'NEEDS_REVISION' && request.resource.data.trang_thai_xac_minh == 'PENDING'
+          && changed(['truong','chuyen_nganh','ghi_chu','minh_chung','trang_thai_xac_minh','submitted_at','updated_at'])
+          && request.resource.data.submitted_at == request.time
+          && getAfter(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'PENDING'));
+      allow delete: if false;
+      // One compressed image per document; the parent application contains metadata only.
+      match /evidence_images/{imageId} {
+        function ownerCanUpload() {
+          return signedIn() && request.auth.uid == uid && account().trang_thai == 'ACTIVE'
+            && ((!exists(/databases/$(database)/documents/tutor_profiles/$(uid)) && account().la_gia_su == false)
+              || get(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'NEEDS_REVISION');
+        }
+        allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (request.auth.uid == uid || admin());
+        allow list: if false;
+        allow create: if ownerCanUpload() && imageId.matches('[a-zA-Z0-9-]+')
+          && request.resource.data.keys().hasAll(['user_id','name','type','size','kind','anh','created_at'])
+          && request.resource.data.keys().hasOnly(['user_id','name','type','size','kind','anh','created_at'])
+          && request.resource.data.user_id == uid
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 150
+          && request.resource.data.type == 'image/jpeg' && request.resource.data.kind in ['diploma','certificate']
+          && request.resource.data.anh is bytes && request.resource.data.anh.size() > 0 && request.resource.data.anh.size() <= 307200
+          && request.resource.data.size is int && request.resource.data.size == request.resource.data.anh.size()
+          && request.resource.data.created_at == request.time;
+        allow update, delete: if false;
+      }
     }
     match /tutor_subjects/{offeringId} {
       allow read: if true;
@@ -87,9 +252,154 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.created_at == request.time;
       allow update, delete: if false;
     }
+    // UC11–15: active owners manage posts and select one applicant; deleted posts retain hidden applications.
+    match /tutor_requests/{requestId} {
+      function activeAccount() {
+        return signedIn() && account().trang_thai == 'ACTIVE';
+      }
+      function owner() {
+        return resource.data.student_id == request.auth.uid;
+      }
+      function ownRequestId() {
+        let suffix = requestId.replace('^.*_', '');
+        return requestId == request.auth.uid + '_' + suffix
+          && suffix.matches('[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
+      }
+      function nonblank(value, maximum) {
+        return value is string && value.trim().size() > 0 && value.size() <= maximum;
+      }
+      function validSubject(data) {
+        let subject = get(/databases/$(database)/documents/subjects/$(data.subject_id)).data;
+        return subject.dang_su_dung == true && subject.ten_mon == data.mon_hoc;
+      }
+      function validRequest() {
+        let d = request.resource.data;
+        let keys = ['student_id','ten_hoc_vien','tieu_de','subject_id','mon_hoc','cap_hoc',
+          'ngan_sach','lich_hoc','mo_ta','trang_thai','created_at','updated_at'];
+        return d.keys().hasAll(keys) && d.keys().hasOnly(keys.concat(['deleted_at','selected_tutor_id','selected_at']))
+          && d.student_id is string && nonblank(d.ten_hoc_vien, 100)
+          && nonblank(d.tieu_de, 120) && nonblank(d.subject_id, 150) && nonblank(d.mon_hoc, 100)
+          && d.cap_hoc in ['TIEU_HOC','THCS','THPT','LUYEN_THI','KHAC']
+          && d.ngan_sach is int && d.ngan_sach >= 1 && d.ngan_sach <= 10000000
+          && nonblank(d.lich_hoc, 300) && nonblank(d.mo_ta, 2000)
+          && d.created_at is timestamp && d.updated_at == request.time
+          && d.trang_thai in ['OPEN','CLOSED','DELETED']
+          && ((!('selected_tutor_id' in d) && !('selected_at' in d))
+            || (nonblank(d.selected_tutor_id, 150) && d.selected_tutor_id != d.student_id
+              && d.selected_at is timestamp && d.trang_thai in ['CLOSED','DELETED']))
+          && ((d.trang_thai == 'DELETED' && d.deleted_at == request.time)
+            || (d.trang_thai != 'DELETED' && !('deleted_at' in d)));
+      }
+      function edited() {
+        let d = request.resource.data;
+        return resource.data.trang_thai in ['OPEN','CLOSED']
+          && d.trang_thai == resource.data.trang_thai
+          && changed(['tieu_de','subject_id','mon_hoc','cap_hoc','ngan_sach','lich_hoc','mo_ta','updated_at'])
+          && ((d.subject_id == resource.data.subject_id && d.mon_hoc == resource.data.mon_hoc)
+            || validSubject(d));
+      }
+      function closed() {
+        return resource.data.trang_thai == 'OPEN' && request.resource.data.trang_thai == 'CLOSED'
+          && changed(['trang_thai','updated_at']);
+      }
+      function removed() {
+        return resource.data.trang_thai in ['OPEN','CLOSED'] && request.resource.data.trang_thai == 'DELETED'
+          && changed(['trang_thai','deleted_at','updated_at']);
+      }
+      function selected() {
+        let d = request.resource.data;
+        let application = /databases/$(database)/documents/tutor_requests/$(requestId)/applications/$(d.selected_tutor_id);
+        return resource.data.trang_thai in ['OPEN','CLOSED'] && !('selected_tutor_id' in resource.data)
+          && d.trang_thai == 'CLOSED' && d.selected_at == request.time
+          && changed(['trang_thai','selected_tutor_id','selected_at','updated_at'])
+          && get(/databases/$(database)/documents/users/$(d.selected_tutor_id)).data.trang_thai == 'ACTIVE'
+          && verifiedTutor(d.selected_tutor_id)
+          && get(application).data.tutor_id == d.selected_tutor_id
+          && get(application).data.trang_thai == 'PENDING'
+          && getAfter(application).data.trang_thai == 'ACCEPTED'
+          && getAfter(application).data.updated_at == request.time;
+      }
+      // An owner's missing deterministic ID is readable for the UC11 idempotent transaction.
+      allow get: if activeAccount() && ((resource == null && ownRequestId())
+        || (resource != null && (owner() || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid)))));
+      allow list: if activeAccount()
+        && (owner() || (resource.data.trang_thai == 'OPEN' && verifiedTutor(request.auth.uid)));
+      allow create: if activeAccount() && ownRequestId() && validRequest()
+        && request.resource.data.student_id == request.auth.uid
+        && request.resource.data.ten_hoc_vien == account().ho_ten
+        && request.resource.data.trang_thai == 'OPEN'
+        && request.resource.data.created_at == request.time && validSubject(request.resource.data);
+      allow update: if activeAccount() && owner() && validRequest() && (edited() || closed() || removed() || selected());
+      allow delete: if false;
+
+      match /applications/{tutorId} {
+        function parentRequest() {
+          return get(/databases/$(database)/documents/tutor_requests/$(requestId)).data;
+        }
+        function visibleParent() {
+          return exists(/databases/$(database)/documents/tutor_requests/$(requestId))
+            && parentRequest().trang_thai in ['OPEN','CLOSED'];
+        }
+        function validApplication() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['tutor_id','ten_gia_su','gioi_thieu','trang_thai','created_at','updated_at'])
+            && d.keys().hasOnly(['tutor_id','ten_gia_su','gioi_thieu','trang_thai','created_at','updated_at'])
+            && tutorId == request.auth.uid && d.tutor_id == request.auth.uid
+            && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(request.auth.uid)).data.ho_ten
+            && nonblank(d.ten_gia_su, 100) && nonblank(d.gioi_thieu, 2000)
+            && d.trang_thai == 'PENDING' && d.created_at == request.time && d.updated_at == request.time;
+        }
+        // An applicant may read their absent UID document to recover an idempotent UC14 submission.
+        allow get: if activeAccount() && visibleParent()
+          && (parentRequest().student_id == request.auth.uid
+            || (tutorId == request.auth.uid && (resource == null || resource.data.tutor_id == request.auth.uid)));
+        allow list: if activeAccount() && visibleParent() && parentRequest().student_id == request.auth.uid;
+        allow create: if activeAccount() && visibleParent() && verifiedTutor(request.auth.uid)
+          && parentRequest().trang_thai == 'OPEN' && parentRequest().student_id != request.auth.uid
+          && validApplication();
+        // UC15 accepts one child only when the parent selects that tutor in the same commit.
+        allow update: if activeAccount() && visibleParent() && parentRequest().student_id == request.auth.uid
+          && !('selected_tutor_id' in parentRequest())
+          && resource.data.tutor_id == tutorId && resource.data.trang_thai == 'PENDING'
+          && changed(['trang_thai','updated_at'])
+          && request.resource.data.trang_thai == 'ACCEPTED' && stamped()
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.trang_thai == 'CLOSED'
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.selected_tutor_id == tutorId
+          && getAfter(/databases/$(database)/documents/tutor_requests/$(requestId)).data.selected_at == request.time;
+        allow delete: if false;
+      }
+    }
     // Lessons, group classes and class registrations (member 3).
     function signedIn() { return request.auth != null; }
-    // UC21: tài khoản bị khóa (users/{uid}.trang_thai == 'BANNED') không tạo được hội thoại, tin nhắn.
+    function admin() { return signedIn() && account().vai_tro == 'ADMIN' && account().trang_thai == 'ACTIVE'; }
+    function activeUser() { return signedIn() && account().trang_thai == 'ACTIVE'; }
+    function activeRecipient(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.trang_thai == 'ACTIVE';
+    }
+    match /admin_audit_logs/{logId} {
+      function auditField(action) { return action in ['BAN_USER','UNBAN_USER'] ? 'trang_thai' : 'vai_tro'; }
+      function validAudit() {
+        let d = request.resource.data;
+        let field = auditField(d.action);
+        return d.keys().hasAll(['actor_id','target_id','action','before','after','reason','created_at'])
+          && d.keys().hasOnly(['actor_id','target_id','action','before','after','reason','created_at'])
+          && d.actor_id == request.auth.uid
+          && d.target_id != request.auth.uid
+          && d.action in ['BAN_USER','UNBAN_USER','GRANT_ADMIN','REVOKE_ADMIN']
+          && d.reason is string && d.reason.size() >= 5 && d.reason.size() <= 500
+          && d.before == get(/databases/$(database)/documents/users/$(d.target_id)).data[field]
+          && d.after == getAfter(/databases/$(database)/documents/users/$(d.target_id)).data[field]
+          && d.before != d.after
+          && ((d.action == 'BAN_USER' && d.after == 'BANNED')
+            || (d.action == 'UNBAN_USER' && d.after == 'ACTIVE')
+            || (d.action == 'GRANT_ADMIN' && d.after == 'ADMIN')
+            || (d.action == 'REVOKE_ADMIN' && d.after == 'STUDENT'))
+          && d.created_at == request.time;
+      }
+      allow read: if admin();
+      allow create: if admin() && validAudit();
+      allow update, delete: if false;
+    }
     function notBanned() {
       return request.auth != null
         && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -102,37 +412,48 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/tutor_profiles/$(uid))
         && get(/databases/$(database)/documents/tutor_profiles/$(uid)).data.trang_thai_xac_minh == 'VERIFIED';
     }
+    function ownLearner(d) {
+      return !('ten_nguoi_hoc' in d)
+        || (d.ten_nguoi_hoc is string && d.nguoi_hoc_id is string
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)/learners/$(d.nguoi_hoc_id)).data.ho_ten == d.ten_nguoi_hoc);
+    }
     match /lessons/{lessonId} {
       function validLesson() {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','student_id','ten_hoc_vien','tieu_de','bat_dau','thoi_luong','hinh_thuc','dia_chi','muc_tieu',
           'hoc_thu','hoc_phi','trang_thai','da_hoan_thanh','noi_dung','ly_do_huy','doi_lich_bat_dau','doi_lich_ly_do','created_at','updated_at'];
         let link = d.get('link_phong_hoc', '');
-        return d.keys().hasOnly(keys.concat(['link_phong_hoc'])) && d.keys().hasAll(keys)
+        return d.keys().hasOnly(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi', 'payment_id', 'nguoi_hoc_id', 'ten_nguoi_hoc'])) && d.keys().hasAll(keys)
           && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
+          && d.get('doi_lich_phan_hoi', '') in ['', 'DONG_Y', 'GIU_LICH']
           && d.tutor_id is string && d.student_id is string && d.tutor_id != d.student_id
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100 && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.tieu_de is string && d.tieu_de.size() <= 100
-          && d.bat_dau is timestamp && d.thoi_luong in [30, 45, 60, 90, 120] && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
+          && d.bat_dau is timestamp && d.thoi_luong is int && d.thoi_luong >= 30 && d.thoi_luong % 15 == 0 && d.thoi_luong <= 1440
+          && d.hinh_thuc in ['Trực tuyến', 'Tại nhà']
           && d.dia_chi is string && d.dia_chi.size() <= 255 && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 300
-          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 10000000
+          && d.hoc_thu is bool && d.hoc_phi is int && d.hoc_phi >= 0 && d.hoc_phi <= 50000000
           && d.trang_thai in ['PENDING', 'CONFIRMED', 'CANCELLED', 'REJECTED'] && d.da_hoan_thanh is bool
           && d.noi_dung is string && d.noi_dung.size() <= 500 && d.ly_do_huy is string && d.ly_do_huy.size() <= 150
           && (d.doi_lich_bat_dau == null || d.doi_lich_bat_dau is timestamp) && d.doi_lich_ly_do is string && d.doi_lich_ly_do.size() <= 120
           && stamped();
       }
       function lessonChanged(keys) {
-        return changed(keys.concat(['link_phong_hoc']))
-          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '');
+        return changed(keys.concat(['link_phong_hoc', 'doi_lich_phan_hoi']))
+          && request.resource.data.get('link_phong_hoc', '') == resource.data.get('link_phong_hoc', '')
+          && (keys.hasAny(['doi_lich_phan_hoi'])
+            || request.resource.data.get('doi_lich_phan_hoi', '') == resource.data.get('doi_lich_phan_hoi', ''));
       }
       function requested() {
         let d = request.resource.data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten
+          && d.get('payment_id', '') == ''
           && verifiedTutor(d.tutor_id) && d.ten_gia_su == get(/databases/$(database)/documents/tutor_profiles/$(d.tutor_id)).data.ho_ten
           && d.trang_thai == 'PENDING' && d.da_hoan_thanh == false && d.noi_dung == '' && d.ly_do_huy == ''
-          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == ''
+          && d.doi_lich_bat_dau == null && d.doi_lich_ly_do == '' && d.get('link_phong_hoc', '') == '' && d.get('doi_lich_phan_hoi', '') == ''
           && d.bat_dau > request.time && d.created_at == request.time
-          && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'));
+          && (!d.hoc_thu || (d.hoc_phi == 50000 && d.thoi_luong in [30, 45] && d.hinh_thuc == 'Trực tuyến'))
+          && ownLearner(d);
       }
       function answered() {
         let d = request.resource.data;
@@ -145,7 +466,8 @@ service cloud.firestore {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau == null && resource.data.bat_dau > request.time
           && d.doi_lich_bat_dau is timestamp && d.doi_lich_bat_dau > request.time && d.doi_lich_bat_dau != resource.data.bat_dau
-          && d.doi_lich_ly_do.size() > 0 && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.doi_lich_ly_do.size() > 0 && d.get('doi_lich_phan_hoi', '') == ''
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function cancelled() {
         let d = request.resource.data;
@@ -158,17 +480,17 @@ service cloud.firestore {
         return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
           && resource.data.doi_lich_bat_dau != null && resource.data.doi_lich_bat_dau > request.time
           && d.bat_dau == resource.data.doi_lich_bat_dau && d.doi_lich_bat_dau == null
-          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && d.get('doi_lich_phan_hoi', '') == 'DONG_Y'
+          && lessonChanged(['bat_dau', 'doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function kept() {
         return resource.data.student_id == request.auth.uid && resource.data.doi_lich_bat_dau != null
-          && request.resource.data.doi_lich_bat_dau == null && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'updated_at']);
+          && request.resource.data.doi_lich_bat_dau == null && request.resource.data.get('doi_lich_phan_hoi', '') == 'GIU_LICH'
+          && lessonChanged(['doi_lich_bat_dau', 'doi_lich_ly_do', 'doi_lich_phan_hoi', 'updated_at']);
       }
       function finished() {
-        return resource.data.student_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
-          && resource.data.da_hoan_thanh == false && request.resource.data.da_hoan_thanh == true
-          && request.time >= resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
-          && lessonChanged(['da_hoan_thanh', 'updated_at']);
+        // Only the payment backend completes a lesson atomically with its earning record.
+        return false;
       }
       function linked() {
         return resource.data.tutor_id == request.auth.uid && resource.data.trang_thai == 'CONFIRMED'
@@ -176,16 +498,24 @@ service cloud.firestore {
           && request.time < resource.data.bat_dau + duration.value(resource.data.thoi_luong, 'm')
           && changed(['link_phong_hoc', 'updated_at']);
       }
-      allow read: if signedIn() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
-      allow create: if signedIn() && validLesson() && requested();
-      allow update: if signedIn() && validLesson() && (answered() || proposed() || cancelled() || moved() || kept() || finished() || linked());
+      function canRead() {
+        return signedIn()
+          && (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) || activeUser());
+      }
+      allow read: if admin() || (canRead() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid));
+      allow create: if activeUser() && validLesson() && requested();
+      allow update: if activeUser() && validLesson() && (answered() || proposed() || cancelled() || moved() || kept() || finished() || linked());
     }
     match /group_classes/{classId} {
       function validClass() {
         let d = request.resource.data;
         let keys = ['tutor_id','ten_gia_su','ten_lop','mon_hoc','cap_hoc','hinh_thuc','dia_chi','mo_ta','ngay_bat_dau','thu','gio','thoi_luong',
           'so_buoi','hoc_phi','tinh_theo_buoi','suc_chua','thanh_vien','trang_thai','hinh_minh_hoa','created_at','updated_at'];
-        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+        let link = d.get('link_phong_hoc', '');
+        let minute = d.get('phut', 0);
+        let proposal = d.get('de_nghi_doi_lich', null);
+        return d.keys().hasOnly(keys.concat(['ly_do_huy', 'link_phong_hoc', 'phut', 'doi_lich', 'de_nghi_doi_lich'])) && d.keys().hasAll(keys) && d.tutor_id == request.auth.uid
+          && link is string && link.size() <= 300 && (link == '' || link.matches('(?i)https?://.+'))
           && d.ten_gia_su is string && d.ten_gia_su.size() <= 100
           && d.ten_lop is string && d.ten_lop.size() > 0 && d.ten_lop.size() <= 60
           && d.mon_hoc is string && d.mon_hoc.size() > 0 && d.mon_hoc.size() <= 50 && d.cap_hoc is string && d.cap_hoc.size() <= 40
@@ -194,28 +524,89 @@ service cloud.firestore {
           && d.mo_ta is string && d.mo_ta.size() > 0 && d.mo_ta.size() <= 200
           && d.ngay_bat_dau is string && d.ngay_bat_dau.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
           && d.thu is list && d.thu.size() >= 1 && d.thu.size() <= 7
-          && d.gio is int && d.gio >= 0 && d.gio <= 23 && d.thoi_luong in [60, 90, 120]
+          && d.gio is int && d.gio >= 0 && d.gio <= 23 && minute is int && minute >= 0 && minute < 60
+          && d.thoi_luong is int && d.thoi_luong >= 30 && d.thoi_luong % 30 == 0 && d.gio * 60 + minute + d.thoi_luong <= 1440
           && d.so_buoi is int && d.so_buoi >= 1 && d.so_buoi <= 12
           && d.hoc_phi is int && d.hoc_phi >= 50000 && d.hoc_phi <= 10000000 && d.tinh_theo_buoi is bool
           && d.suc_chua is int && d.suc_chua >= 2 && d.suc_chua <= 10 && d.thanh_vien is list && d.thanh_vien.size() <= d.suc_chua
-          && d.trang_thai in ['OPEN', 'RUNNING', 'ENDED'] && d.hinh_minh_hoa is int
+          && d.trang_thai in ['OPEN', 'RUNNING', 'ENDED', 'CANCELLED'] && d.hinh_minh_hoa is int
+          && d.get('ly_do_huy', '') is string && d.get('ly_do_huy', '').size() <= 150
+          && d.get('doi_lich', {}) is map && d.get('doi_lich', {}).size() <= d.so_buoi
+          && (proposal == null || proposal is map)
           && stamped();
       }
+      // The tutor cancels a class still recruiting or running; only the status and the reason change.
+      function cancelledClass() {
+        return resource.data.trang_thai in ['OPEN', 'RUNNING'] && request.resource.data.trang_thai == 'CANCELLED'
+          && request.resource.data.get('ly_do_huy', '').size() > 0
+          && changed(['trang_thai', 'ly_do_huy', 'updated_at', 'phut', 'doi_lich', 'de_nghi_doi_lich']);
+      }
+      // A member answers whether they can come at the time the tutor proposed; only their own answer changes, before the deadline.
+      function answeredMove() {
+        let before = resource.data.get('de_nghi_doi_lich', null);
+        let after = request.resource.data.get('de_nghi_doi_lich', null);
+        return before != null && after != null && request.auth.uid in resource.data.thanh_vien
+          && resource.data.trang_thai in ['OPEN', 'RUNNING'] && request.time < before.han
+          && changed(['de_nghi_doi_lich', 'updated_at']) && stamped()
+          && after.diff(before).affectedKeys().hasOnly(['phan_hoi'])
+          && after.phan_hoi.diff(before.get('phan_hoi', {})).affectedKeys().hasOnly([request.auth.uid])
+          && after.phan_hoi[request.auth.uid] in ['THAM_GIA', 'BAN'];
+      }
       allow read: if true;
-      allow create: if signedIn() && validClass() && verifiedTutor(request.auth.uid)
+      allow create: if activeUser() && validClass() && verifiedTutor(request.auth.uid)
         && request.resource.data.trang_thai == 'OPEN' && request.resource.data.thanh_vien.size() == 0
+        && request.resource.data.get('ly_do_huy', '') == ''
         && request.resource.data.created_at == request.time;
-      allow update: if signedIn() && validClass() && resource.data.tutor_id == request.auth.uid && resource.data.trang_thai != 'ENDED'
-        && !('created_at' in request.resource.data.diff(resource.data).affectedKeys())
-        && (request.resource.data.trang_thai == resource.data.trang_thai || resource.data.trang_thai == 'OPEN'
-          || request.resource.data.trang_thai == 'ENDED')
-        && request.resource.data.thanh_vien.hasAll(resource.data.thanh_vien);
+      allow update: if activeUser() && validClass() && resource.data.tutor_id == request.auth.uid
+        && !(resource.data.trang_thai in ['ENDED', 'CANCELLED'])
+        && (cancelledClass()
+          || (request.resource.data.trang_thai != 'CANCELLED'
+            && request.resource.data.get('ly_do_huy', '') == resource.data.get('ly_do_huy', '')
+            && !('created_at' in request.resource.data.diff(resource.data).affectedKeys())
+            && (request.resource.data.trang_thai == resource.data.trang_thai || resource.data.trang_thai == 'OPEN'
+              || request.resource.data.trang_thai == 'ENDED')
+            && request.resource.data.thanh_vien.hasAll(resource.data.thanh_vien)));
+      allow update: if activeUser() && answeredMove();
+    }
+    // Public class Q&A: questions and replies are separate from ratings/reviews.
+    match /group_classes/{classId}/questions/{questionId} {
+      function visibleClass() {
+        return exists(/databases/$(database)/documents/group_classes/$(classId));
+      }
+      function canDiscuss() {
+        return signedIn() && account().trang_thai == 'ACTIVE' && visibleClass()
+          && get(/databases/$(database)/documents/group_classes/$(classId)).data.trang_thai in ['OPEN','RUNNING']
+          && getAfter(/databases/$(database)/documents/group_classes/$(classId)).data.trang_thai in ['OPEN','RUNNING'];
+      }
+      function validDiscussion(data, reply) {
+        let keys = ['class_id','author_id','author_name','content','created_at'];
+        let allowed = reply ? keys.concat(['question_id']) : keys;
+        return data.keys().hasAll(allowed) && data.keys().hasOnly(allowed)
+          && data.class_id == classId && data.author_id == request.auth.uid
+          && data.author_name is string && data.author_name.trim().size() > 0 && data.author_name.size() <= 100
+          && data.author_name == account().ho_ten
+          && data.content is string && data.content.trim().size() > 0 && data.content.size() <= 1000
+          && data.created_at == request.time;
+      }
+      // Reading an absent deterministic ID is allowed for retry-safe create transactions.
+      allow read: if visibleClass();
+      allow create: if canDiscuss() && validDiscussion(request.resource.data, false);
+      allow update, delete: if false;
+      match /replies/{replyId} {
+        allow read: if visibleClass()
+          && exists(/databases/$(database)/documents/group_classes/$(classId)/questions/$(questionId));
+        allow create: if canDiscuss() && validDiscussion(request.resource.data, true)
+          && request.resource.data.question_id == questionId
+          && exists(/databases/$(database)/documents/group_classes/$(classId)/questions/$(questionId))
+          && get(/databases/$(database)/documents/group_classes/$(classId)/questions/$(questionId)).data.class_id == classId;
+        allow update, delete: if false;
+      }
     }
     match /class_registrations/{registrationId} {
       function validRegistration() {
         let d = request.resource.data;
         let keys = ['class_id','tutor_id','student_id','ten_hoc_vien','muc_tieu','ngay_gui','trang_thai','created_at','updated_at'];
-        return d.keys().hasOnly(keys) && d.keys().hasAll(keys) && registrationId == d.class_id + '_' + d.student_id
+        return d.keys().hasOnly(keys.concat(['nguoi_hoc_id','ten_nguoi_hoc'])) && d.keys().hasAll(keys) && registrationId == d.class_id + '_' + d.student_id
           && d.ten_hoc_vien is string && d.ten_hoc_vien.size() <= 100
           && d.muc_tieu is string && d.muc_tieu.size() > 0 && d.muc_tieu.size() <= 200
           && d.ngay_gui is string && d.ngay_gui.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
@@ -226,7 +617,8 @@ service cloud.firestore {
         let c = get(/databases/$(database)/documents/group_classes/$(d.class_id)).data;
         return d.student_id == request.auth.uid && d.ten_hoc_vien == account().ho_ten && d.trang_thai == 'PENDING'
           && d.tutor_id == c.tutor_id && c.tutor_id != request.auth.uid && c.trang_thai == 'OPEN'
-          && c.thanh_vien.size() < c.suc_chua && !(request.auth.uid in c.thanh_vien);
+          && c.thanh_vien.size() < c.suc_chua && !(request.auth.uid in c.thanh_vien)
+          && ownLearner(d);
       }
       function reviewed() {
         let d = request.resource.data;
@@ -235,19 +627,18 @@ service cloud.firestore {
           && (d.trang_thai == 'REJECTED'
             || d.student_id in getAfter(/databases/$(database)/documents/group_classes/$(d.class_id)).data.thanh_vien);
       }
-      allow read: if signedIn() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid);
-      allow create: if signedIn() && validRegistration() && applied() && request.resource.data.created_at == request.time;
-      allow update: if signedIn() && validRegistration()
-        && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at']))
+      function canRead() {
+        return signedIn()
+          && (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) || activeUser());
+      }
+      allow read: if admin() || (canRead() && (resource.data.student_id == request.auth.uid || resource.data.tutor_id == request.auth.uid));
+      allow create: if activeUser() && validRegistration() && applied() && request.resource.data.created_at == request.time;
+      allow update: if activeUser() && validRegistration()
+        && ((applied() && resource.data.trang_thai == 'REJECTED' && changed(['ten_hoc_vien', 'muc_tieu', 'ngay_gui', 'trang_thai', 'updated_at', 'nguoi_hoc_id', 'ten_nguoi_hoc']))
           || reviewed());
     }
-
-    // ---------------------------------------------------------------------------------------------
-    // UC21 – Trao đổi qua tin nhắn (màn 05, 06). Chỉ thành viên hội thoại đọc/ghi; tin nhắn không sửa, không xóa.
-    // Mã hội thoại = uidA + '__' + uidB (đã sắp xếp); một bên phải là gia sư (tutor_profiles/{uid}).
-    // ---------------------------------------------------------------------------------------------
     match /conversations/{conversationId} {
-      function isMember(data) { return request.auth != null && data.member_ids is list && request.auth.uid in data.member_ids; }
+      function isMember(data) { return activeUser() && data.member_ids is list && request.auth.uid in data.member_ids; }
       function peerOf(data) { return data.member_ids[0] == request.auth.uid ? data.member_ids[1] : data.member_ids[0]; }
       function isTutor(uid) { return exists(/databases/$(database)/documents/tutor_profiles/$(uid)); }
       function validMember(m) {
@@ -304,8 +695,8 @@ service cloud.firestore {
       }
 
       allow get: if request.auth != null && (resource == null || isMember(resource.data));
-      // Truy vấn danh sách (where member_ids array-contains uid): điều kiện phải chứng minh được từ chính truy vấn.
-      allow list: if request.auth != null && request.auth.uid in resource.data.member_ids;
+      allow list: if isMember(resource.data);
+      allow list: if activeUser() && request.auth.uid in resource.data.member_ids;
       allow create: if notBanned() && validNew(request.resource.data);
       allow update: if isMember(resource.data) && validUpdate(resource.data, request.resource.data);
       allow delete: if false;
@@ -313,8 +704,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         function conversationBefore() { return get(/databases/$(database)/documents/conversations/$(conversationId)).data; }
         function conversationAfter() { return getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data; }
-        allow read: if request.auth != null && request.auth.uid in conversationBefore().member_ids;
-        // Tin phải được ghi cùng batch với phần tóm tắt hội thoại (last_message_at = request.time).
+        allow read: if activeUser() && request.auth.uid in conversationBefore().member_ids;
         allow create: if notBanned()
           && request.auth.uid in conversationAfter().member_ids
           && conversationAfter().last_message_at == request.time
@@ -329,15 +719,493 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
-    // Trạng thái "Đang hoạt động" ở màn 06: ai đăng nhập cũng xem được, chỉ chủ tài khoản ghi.
     match /presence/{userId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == userId
+      allow create, update: if activeUser() && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['online','last_seen'])
         && request.resource.data.online is bool
         && request.resource.data.last_seen == request.time;
       allow delete: if false;
     }
-    // All other collections, including the removed flows, are denied by default.
+    match /contract_templates/{kind} {
+      allow read: if signedIn();
+      allow create, update: if admin() && kind in ['HOC_VIEN_GIA_SU', 'GIA_SU_HE_THONG']
+        && request.resource.data.keys().hasAll(['tieu_de','noi_dung','phien_ban','updated_by','updated_at'])
+        && request.resource.data.keys().hasOnly(['tieu_de','noi_dung','phien_ban','updated_by','updated_at'])
+        && request.resource.data.tieu_de is string && request.resource.data.tieu_de.size() >= 2 && request.resource.data.tieu_de.size() <= 120
+        && request.resource.data.noi_dung is string && request.resource.data.noi_dung.size() >= 20 && request.resource.data.noi_dung.size() <= 8000
+        && request.resource.data.phien_ban == (resource == null ? 1 : resource.data.phien_ban + 1)
+        && request.resource.data.updated_by == request.auth.uid
+        && request.resource.data.updated_at == request.time;
+      allow delete: if false;
+    }
+
+    match /tutor_agreements/{uid} {
+      function platformTemplate() { return get(/databases/$(database)/documents/contract_templates/GIA_SU_HE_THONG).data; }
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create, update: if signedIn() && request.auth.uid == uid && notBanned() && verifiedTutor(uid)
+        && request.resource.data.keys().hasAll(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
+        && request.resource.data.keys().hasOnly(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
+        && request.resource.data.user_id == uid
+        && request.resource.data.ho_ten is string && request.resource.data.ho_ten.size() > 0 && request.resource.data.ho_ten.size() <= 100
+        && request.resource.data.tieu_de == platformTemplate().tieu_de
+        && request.resource.data.noi_dung == platformTemplate().noi_dung
+        && request.resource.data.phien_ban == platformTemplate().phien_ban
+        && (resource == null || resource.data.phien_ban < request.resource.data.phien_ban)
+        && request.resource.data.trang_thai == 'DA_KY'
+        && request.resource.data.signed_at == request.time;
+      allow delete: if false;
+    }
+
+    match /contracts/{contractId} {
+      function isParty(data) { return activeUser() && request.auth.uid in [data.student_id, data.tutor_id]; }
+      function validContract(d) {
+        let lesson = get(/databases/$(database)/documents/lessons/$(d.lesson_id)).data;
+        let template = get(/databases/$(database)/documents/contract_templates/HOC_VIEN_GIA_SU).data;
+        let me = request.auth.uid;
+        return d.keys().hasOnly(['code','lesson_id','student_id','tutor_id','member_ids','student_name','tutor_name',
+                                 'subject','sessions','minutes','schedule','start_date','start_at','mode','fee','total','terms',
+                                 'base_terms','template_version',
+                                 'proposed_by','student_confirmed','tutor_confirmed','status','reject_reason','confirmed_at',
+                                 'created_at','updated_at'])
+          && d.student_id is string && d.tutor_id is string && d.student_id != d.tutor_id
+          && d.member_ids == [d.student_id, d.tutor_id]
+          && me == d.tutor_id && d.proposed_by == me
+          && verifiedTutor(d.tutor_id)
+          && get(/databases/$(database)/documents/tutor_agreements/$(d.tutor_id)).data.trang_thai == 'DA_KY'
+          && d.lesson_id is string
+          && lesson.tutor_id == d.tutor_id && lesson.student_id == d.student_id
+          && lesson.trang_thai == 'CONFIRMED' && lesson.hoc_thu == false
+          && d.start_at == lesson.bat_dau && d.minutes == lesson.thoi_luong && d.mode == lesson.hinh_thuc
+          && d.base_terms == template.noi_dung && d.template_version == template.phien_ban
+          && d.code is string && d.code.size() <= 12
+          && d.student_name is string && d.student_name.size() <= 100
+          && d.tutor_name is string && d.tutor_name.size() <= 100
+          && d.subject is string && d.subject.size() >= 2 && d.subject.size() <= 120
+          && d.sessions is int && d.sessions >= 1 && d.sessions <= 60
+          && d.fee is int && d.fee >= 10000 && d.fee <= 50000000
+          && d.total == d.fee * d.sessions
+          && d.schedule is string && d.schedule.size() <= 80
+          && d.start_date is string && d.start_date.size() <= 20
+          && d.terms is string && d.terms.size() <= 1000
+          && d.student_confirmed == false && d.tutor_confirmed == true
+          && d.status == 'CHO_XAC_NHAN' && d.reject_reason == '' && d.confirmed_at == null
+          && d.created_at == request.time && d.updated_at == request.time;
+      }
+      function contractChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function confirming() {
+        return request.auth.uid == resource.data.student_id
+          && contractChanged().hasOnly(['student_confirmed', 'status', 'confirmed_at', 'updated_at'])
+          && request.resource.data.student_confirmed == true
+          && request.resource.data.status == 'CHO_KY_QUY'
+          && request.resource.data.confirmed_at == request.time;
+      }
+      function rejecting() {
+        return request.auth.uid == resource.data.student_id
+          && contractChanged().hasOnly(['status', 'reject_reason', 'updated_at'])
+          && request.resource.data.status == 'TU_CHOI'
+          && request.resource.data.reject_reason is string && request.resource.data.reject_reason.size() <= 300;
+      }
+      function cancelling() {
+        return request.auth.uid == resource.data.proposed_by
+          && contractChanged().hasOnly(['status', 'updated_at']) && request.resource.data.status == 'DA_HUY';
+      }
+
+      allow get: if isParty(resource.data) || admin();
+      allow list: if admin() || (activeUser() && request.auth.uid in resource.data.member_ids);
+      allow create: if notBanned() && validContract(request.resource.data);
+      allow update: if isParty(resource.data) && notBanned()
+        && resource.data.status == 'CHO_XAC_NHAN'
+        && request.resource.data.updated_at == request.time
+        && (confirming() || rejecting() || cancelling());
+      allow delete: if false;
+    }
+    // Payment records can only be changed by the trusted payment backend.
+    function financialMember(data) {
+      return signedIn() && account().trang_thai == 'ACTIVE'
+        && (admin() || request.auth.uid == data.student_id || request.auth.uid == data.tutor_id);
+    }
+    match /payments/{paymentId} {
+      allow read: if financialMember(resource.data);
+      allow write: if false;
+      match /sessions/{number} {
+        allow read: if financialMember(get(/databases/$(database)/documents/payments/$(paymentId)).data);
+        allow write: if false;
+      }
+    }
+    match /tutor_earnings/{earningId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
+    match /tutor_payouts/{payoutId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
+    match /payout_accounts/{tutorId} {
+      allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == tutorId);
+      allow list, write: if false;
+    }
+    match /tutor_wallets/{tutorId} {
+      allow get: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == tutorId);
+      allow list: if admin();
+      allow write: if false;
+    }
+    match /wallet_withdrawals/{withdrawalId} {
+      allow read: if signedIn() && account().trang_thai == 'ACTIVE' && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow write: if false;
+    }
+    match /refund_requests/{refundId} {
+      allow read: if financialMember(resource.data);
+      allow write: if false;
+    }
+    // Native VNPay TEST (LTMobile-style). Client results are NEVER trusted for real money.
+    // These rules only authorize the isolated sandbox_* ledger. Production collections above stay read-only.
+    function sandboxActive() { return signedIn() && account().trang_thai == 'ACTIVE'; }
+    function walletBefore(uid) {
+      let path = /databases/$(database)/documents/sandbox_tutor_wallets/$(uid);
+      return exists(path) ? get(path).data : {'available_balance':0,'reserved_balance':0,'total_credited':0,'total_withdrawn':0,'created_at':request.time};
+    }
+    function walletDelta(before, after, available, reserved, credited, withdrawn) {
+      return after.available_balance == before.available_balance + available
+        && after.reserved_balance == before.reserved_balance + reserved
+        && after.total_credited == before.total_credited + credited
+        && after.total_withdrawn == before.total_withdrawn + withdrawn;
+    }
+    function walletLink(uid, reference, operation) {
+      let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(uid)).data;
+      return after.tutor_id == uid && after.updated_at == request.time
+        && after.last_reference == reference && after.last_operation == operation;
+    }
+    function salaryWalletCredit(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_tutor_payouts/$(after.last_reference);
+      let payout = get(path).data;
+      let next = getAfter(path).data;
+      return admin() && payout.tutor_id == uid && payout.status == 'READY' && next.status == 'CREDITED'
+        && next.tutor_id == uid && next.amount == payout.amount
+        && next.credited_by == request.auth.uid && next.credited_at == request.time
+        && get(/databases/$(database)/documents/users/$(uid)).data.trang_thai == 'ACTIVE'
+        && payout.due_at is timestamp && request.time >= payout.due_at
+        && walletDelta(before,after,payout.amount,0,payout.amount,0);
+    }
+    function walletAutomaticWithdrawal(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_wallet_withdrawals/$(after.last_reference);
+      let next = getAfter(path).data;
+      return request.auth.uid == uid && account().la_gia_su == true && !exists(path)
+        && next.is_sandbox == true && next.status == 'PAID' && next.tutor_id == uid
+        && next.created_at == request.time && next.processed_at == request.time && next.processed_by == uid
+        && next.bank_reference == 'TEST_' + after.last_reference
+        && next.amount is int && next.amount >= 50000 && next.amount <= 100000000
+        && walletDelta(before,after,-next.amount,0,0,next.amount);
+    }
+    function walletFinish(uid, before, after) {
+      let path = /databases/$(database)/documents/sandbox_wallet_withdrawals/$(after.last_reference);
+      let previous = get(path).data;
+      let next = getAfter(path).data;
+      return request.auth.uid == uid && previous.is_sandbox == true
+        && previous.tutor_id == uid && next.tutor_id == uid && next.amount == previous.amount
+        && previous.amount is int && previous.amount >= 50000 && previous.amount <= 100000000
+        && previous.status in ['PENDING','PROCESSING'] && next.processed_at == request.time && next.processed_by == request.auth.uid
+        && ((after.last_operation == 'WITHDRAW_PAID' && account().la_gia_su == true && next.status == 'PAID'
+              && next.bank_reference == 'TEST_' + after.last_reference
+              && walletDelta(before,after,0,-previous.amount,0,previous.amount))
+          || (after.last_operation == 'WITHDRAW_RELEASE' && next.status == 'CANCELLED'
+              && walletDelta(before,after,previous.amount,-previous.amount,0,0)));
+    }
+    function validWallet(uid) {
+      let d = request.resource.data;
+      let before = walletBefore(uid);
+      let fields = ['is_sandbox','tutor_id','currency','available_balance','reserved_balance','total_credited','total_withdrawn','created_at','updated_at','last_operation','last_reference'];
+      return sandboxActive() && d.keys().hasAll(fields) && d.keys().hasOnly(fields)
+        && d.is_sandbox == true && d.tutor_id == uid && d.currency == 'VND'
+        && d.available_balance is int && d.available_balance >= 0 && d.reserved_balance is int && d.reserved_balance >= 0
+        && d.total_credited is int && d.total_credited >= 0 && d.total_withdrawn is int && d.total_withdrawn >= 0
+        && d.available_balance + d.reserved_balance == d.total_credited - d.total_withdrawn
+        && d.created_at == before.created_at && d.updated_at == request.time
+        && d.last_reference is string && d.last_reference.matches('[A-Za-z0-9_-]{1,180}')
+        && ((d.last_operation == 'SALARY_CREDIT' && salaryWalletCredit(uid,before,d))
+          || (d.last_operation == 'WITHDRAW_AUTO' && walletAutomaticWithdrawal(uid,before,d))
+          || (d.last_operation in ['WITHDRAW_PAID','WITHDRAW_RELEASE'] && walletFinish(uid,before,d)));
+    }
+    function sandboxPayment(id) { return get(/databases/$(database)/documents/sandbox_payments/$(id)).data; }
+    function sandboxSource(d) {
+      let name = d.type == 'LESSON' ? 'lessons' : (d.type == 'CONTRACT' ? 'contracts' : 'class_registrations');
+      let s = get(/databases/$(database)/documents/$(name)/$(d.source_id)).data;
+      return d.student_id == s.student_id && d.tutor_id == s.tutor_id && activeRecipient(d.tutor_id)
+        && ((d.type == 'LESSON' && s.trang_thai == 'CONFIRMED' && s.da_hoan_thanh == false
+              && d.amount == s.hoc_phi && d.session_count == 1)
+          || (d.type == 'CONTRACT' && s.status in ['CHO_KY_QUY','HIEU_LUC']
+              && s.student_confirmed == true && s.tutor_confirmed == true
+              && d.amount == s.fee * s.sessions && d.session_count == s.sessions)
+          || (d.type == 'GROUP' && s.trang_thai == 'CONFIRMED' && sandboxGroup(d,s)));
+    }
+    function sandboxGroup(d,s) {
+      let c = get(/databases/$(database)/documents/group_classes/$(s.class_id)).data;
+      return c.tutor_id == d.tutor_id && c.trang_thai in ['OPEN','RUNNING']
+        && d.student_id in c.thanh_vien && d.session_count == c.so_buoi
+        && d.amount == c.hoc_phi * (c.tinh_theo_buoi ? c.so_buoi : 1);
+    }
+    function sandboxShare(p,n) { return int(p.amount / p.session_count) + (n <= p.amount % p.session_count ? 1 : 0); }
+    match /sandbox_payments/{paymentId} {
+      allow get: if sandboxActive() && (resource == null || financialMember(resource.data));
+      allow list: if financialMember(resource.data);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && request.resource.data.student_id == request.auth.uid && request.resource.data.student_id != request.resource.data.tutor_id
+        && request.resource.data.provider == 'VNPAY' && request.resource.data.status == 'WAITING'
+        && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 120000000
+        && request.resource.data.session_count is int && request.resource.data.session_count >= 1 && request.resource.data.session_count <= 60
+        && request.resource.data.received_amount == 0 && request.resource.data.earned_amount == 0 && request.resource.data.refund_total == 0
+        && request.resource.data.created_at == request.time && stamped() && sandboxSource(request.resource.data);
+      allow update: if sandboxActive() && resource.data.is_sandbox == true && request.resource.data.is_sandbox == true
+        && (admin() || request.auth.uid == resource.data.student_id) && stamped()
+        && changed(['status','order_code','checkout_url','expires_at','updated_at','received_amount','earned_amount','refund_total',
+                    'paid_at','provider_transaction_no','return_url','response_code','refund_request_id'])
+        && request.resource.data.status in ['WAITING','PAID','FAILED','CANCELLED','GATEWAY_REVIEW','REFUND_REQUESTED','CLOSED_REFUNDED']
+        && request.resource.data.earned_amount >= 0 && request.resource.data.earned_amount <= resource.data.amount
+        && request.resource.data.received_amount in [0,resource.data.amount]
+        && request.resource.data.refund_total >= 0 && request.resource.data.refund_total <= resource.data.amount;
+      allow delete: if false;
+      match /sessions/{number} {
+        function p() { return sandboxPayment(paymentId); }
+        allow read: if financialMember(p());
+        allow create: if sandboxActive() && request.auth.uid == p().tutor_id && p().status == 'PAID'
+          && request.resource.data.is_sandbox == true && request.resource.data.status == 'PROPOSED'
+          && request.resource.data.number is int && number == string(request.resource.data.number)
+          && request.resource.data.number >= 1 && request.resource.data.number <= p().session_count
+          && request.resource.data.amount == sandboxShare(p(),request.resource.data.number)
+          && request.resource.data.created_at == request.time && stamped();
+        allow update: if sandboxActive() && p().status == 'PAID' && stamped()
+          && changed(['status','reason','confirmed_at','admin_note','reviewer_id','updated_at'])
+          && ((request.auth.uid == p().student_id && resource.data.status == 'PROPOSED'
+                && request.resource.data.status in ['COMPLETED','DISPUTED']
+                && (request.resource.data.status != 'COMPLETED'
+                  || existsAfter(/databases/$(database)/documents/sandbox_tutor_earnings/$(paymentId + '_' + number))))
+              || (admin() && resource.data.status == 'DISPUTED' && request.resource.data.status == 'PROPOSED'));
+        allow delete: if false;
+      }
+    }
+    match /sandbox_tutor_earnings/{earningId} {
+      allow get: if sandboxActive() && (resource == null || financialMember(resource.data));
+      allow list: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && request.auth.uid == request.resource.data.student_id
+        && request.resource.data.student_id == sandboxPayment(request.resource.data.payment_id).student_id
+        && request.resource.data.tutor_id == sandboxPayment(request.resource.data.payment_id).tutor_id
+        && sandboxPayment(request.resource.data.payment_id).status == 'PAID'
+        && earningId == request.resource.data.payment_id + '_' + string(request.resource.data.session_number)
+        && request.resource.data.amount == sandboxShare(sandboxPayment(request.resource.data.payment_id),request.resource.data.session_number)
+        && getAfter(/databases/$(database)/documents/sandbox_payments/$(request.resource.data.payment_id)/sessions/$(string(request.resource.data.session_number))).data.status == 'COMPLETED'
+        && request.resource.data.period.matches('20[0-9]{2}-(0[1-9]|1[0-2])')
+        && request.resource.data.payout_id == null && request.resource.data.created_at == request.time;
+      allow update: if admin() && resource.data.is_sandbox == true && changed(['payout_id']);
+      allow delete: if false;
+    }
+    match /sandbox_payout_accounts/{tutorId} {
+      allow get: if sandboxActive() && (admin() || request.auth.uid == tutorId);
+      allow create, update: if sandboxActive() && request.auth.uid == tutorId && verifiedTutor(tutorId)
+        && request.resource.data.keys().hasOnly(['is_sandbox','bank_name','account_number','account_name','updated_at'])
+        && request.resource.data.is_sandbox == true && request.resource.data.bank_name is string
+        && request.resource.data.bank_name.size() >= 2 && request.resource.data.bank_name.size() <= 100
+        && request.resource.data.account_number.matches('[0-9]{6,30}')
+        && request.resource.data.account_name is string && request.resource.data.account_name.size() >= 2 && request.resource.data.account_name.size() <= 100
+        && stamped();
+      allow list, delete: if false;
+    }
+    match /sandbox_tutor_payouts/{payoutId} {
+      allow read: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if admin() && activeRecipient(request.resource.data.tutor_id)
+        && request.resource.data.is_sandbox == true && request.resource.data.created_by == request.auth.uid
+        && request.resource.data.status == 'READY' && request.resource.data.amount is int && request.resource.data.amount > 0
+        && request.resource.data.session_count >= 1 && request.resource.data.session_count <= 100
+        && request.resource.data.earning_ids is list && request.resource.data.earning_ids.size() == request.resource.data.session_count
+        && request.resource.data.created_at == request.time && stamped();
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'READY'
+        && request.resource.data.status in ['PAID','CANCELLED'] && stamped()
+        && (request.resource.data.status == 'CANCELLED'
+          || (activeRecipient(resource.data.tutor_id) && resource.data.due_at <= request.time
+            && request.resource.data.paid_by == request.auth.uid && request.resource.data.paid_at == request.time
+            && request.resource.data.bank_reference is string && request.resource.data.bank_reference.size() >= 3
+            && request.resource.data.bank_reference.size() <= 150))
+        && changed(['status','bank_reference','paid_by','paid_at','cancel_reason','cancelled_by','updated_at']);
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'READY'
+        && request.resource.data.status == 'CREDITED' && stamped()
+        && changed(['status','credited_by','credited_at','updated_at'])
+        && request.resource.data.credited_by == request.auth.uid && request.resource.data.credited_at == request.time
+        && resource.data.due_at is timestamp && request.time >= resource.data.due_at
+        && walletLink(resource.data.tutor_id,payoutId,'SALARY_CREDIT')
+        && walletDelta(walletBefore(resource.data.tutor_id),getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(resource.data.tutor_id)).data,resource.data.amount,0,resource.data.amount,0);
+      allow delete: if false;
+    }
+    match /sandbox_tutor_wallets/{tutorId} {
+      allow get: if sandboxActive() && (admin() || request.auth.uid == tutorId);
+      allow list: if admin();
+      allow create, update: if validWallet(tutorId);
+      allow delete: if false;
+    }
+    match /sandbox_wallet_withdrawals/{withdrawalId} {
+      function validRequest() {
+        let d = request.resource.data;
+        let bank = get(/databases/$(database)/documents/sandbox_payout_accounts/$(request.auth.uid)).data;
+        let before = walletBefore(d.tutor_id);
+        let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(d.tutor_id)).data;
+        let fields = ['is_sandbox','tutor_id','tutor_name','amount','currency','bank','status','processing_by','processing_at','processed_by','processed_at','bank_reference','review_note','created_at','updated_at'];
+        return d.keys().hasAll(fields) && d.keys().hasOnly(fields) && d.is_sandbox == true
+          && d.tutor_id == request.auth.uid && account().la_gia_su == true && d.tutor_name == account().ho_ten
+          && withdrawalId.matches(request.auth.uid + '_[0-9a-f-]{36}')
+          && d.amount is int && d.amount >= 50000 && d.amount <= 100000000 && d.currency == 'VND'
+          && d.bank is map && d.bank.keys().hasAll(['bank_name','account_number','account_name'])
+          && d.bank.keys().hasOnly(['bank_name','account_number','account_name'])
+          && d.bank.bank_name == bank.bank_name && d.bank.account_number == bank.account_number && d.bank.account_name == bank.account_name
+          && d.status == 'PAID' && d.processing_by == '' && d.processing_at == null
+          && d.processed_by == request.auth.uid && d.processed_at == request.time
+          && d.bank_reference == 'TEST_' + withdrawalId && d.review_note == ''
+          && d.created_at == request.time && stamped()
+          && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_AUTO') && walletDelta(before,after,-d.amount,0,0,d.amount);
+      }
+      function validFinish() {
+        let d = request.resource.data;
+        let before = walletBefore(resource.data.tutor_id);
+        let after = getAfter(/databases/$(database)/documents/sandbox_tutor_wallets/$(resource.data.tutor_id)).data;
+        return resource.data.is_sandbox == true && resource.data.status in ['PENDING','PROCESSING'] && stamped()
+          && d.tutor_id == request.auth.uid && d.amount is int && d.amount >= 50000 && d.amount <= 100000000
+          && changed(['status','processed_by','processed_at','bank_reference','review_note','updated_at'])
+          && d.processed_by == request.auth.uid && d.processed_at == request.time
+          && d.review_note is string && d.review_note.size() <= 500
+          && d.bank_reference is string && d.bank_reference.size() <= 185
+          && ((account().la_gia_su == true && d.status == 'PAID' && d.bank_reference == 'TEST_' + withdrawalId && d.review_note == ''
+                && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_PAID') && walletDelta(before,after,0,-d.amount,0,d.amount))
+            || (d.status == 'CANCELLED'
+                && d.review_note.size() >= 5 && d.bank_reference == '' && walletLink(d.tutor_id,withdrawalId,'WITHDRAW_RELEASE')
+                && walletDelta(before,after,d.amount,-d.amount,0,0)));
+      }
+      allow get: if sandboxActive() && (admin() || (resource == null && withdrawalId.matches(request.auth.uid + '_[0-9a-f-]{36}')) || request.auth.uid == resource.data.tutor_id);
+      allow list: if sandboxActive() && (admin() || request.auth.uid == resource.data.tutor_id);
+      allow create: if sandboxActive() && validRequest();
+      allow update: if sandboxActive() && validFinish();
+      allow delete: if false;
+    }
+    match /sandbox_refund_requests/{refundId} {
+      allow read: if financialMember(resource.data);
+      allow create: if sandboxActive() && request.resource.data.is_sandbox == true
+        && (admin() || request.auth.uid == request.resource.data.student_id)
+        && request.resource.data.student_id == sandboxPayment(request.resource.data.payment_id).student_id
+        && request.resource.data.tutor_id == sandboxPayment(request.resource.data.payment_id).tutor_id
+        && request.resource.data.amount > 0 && request.resource.data.amount <= sandboxPayment(request.resource.data.payment_id).amount
+        && request.resource.data.status == 'PENDING' && request.resource.data.created_at == request.time && stamped();
+      allow update: if admin() && resource.data.is_sandbox == true && resource.data.status == 'PENDING'
+        && request.resource.data.status in ['REFUNDED','REJECTED'] && stamped()
+        && changed(['status','bank_reference','refunded_by','refunded_at','review_note','reviewed_by','updated_at']);
+      allow delete: if false;
+    }
+    match /reviews/{reviewId} {
+      function validReview(d) {
+        let contract = get(/databases/$(database)/documents/contracts/$(d.contract_id)).data;
+        let me = request.auth.uid;
+        let target = me == contract.student_id ? contract.tutor_id : contract.student_id;
+        return reviewId == d.contract_id + '__' + me
+          && d.keys().hasOnly(['contract_id','author_id','author_name','target_id','target_name','target_role',
+                               'rating','tags','comment','subject','created_at'])
+          && me in contract.member_ids
+          && contract.status in ['CHO_KY_QUY', 'HIEU_LUC', 'HOAN_THANH']
+          && request.time > contract.start_at + duration.value(contract.minutes, 'm')
+          && d.author_id == me && d.target_id == target
+          && d.target_role == (target == contract.tutor_id ? 'TUTOR' : 'STUDENT')
+          && d.rating is int && d.rating >= 1 && d.rating <= 5
+          && d.tags is list && d.tags.size() <= 5
+          && d.comment is string && d.comment.size() <= 500
+          && d.author_name is string && d.author_name.size() <= 100
+          && d.target_name is string && d.target_name.size() <= 100
+          && d.subject is string && d.subject.size() <= 120
+          && d.created_at == request.time;
+      }
+      allow read: if resource.data.target_role == 'TUTOR'
+        || (request.auth != null && resource.data.target_id == request.auth.uid)
+        || (request.auth != null && resource.data.author_id == request.auth.uid)
+        || admin();
+      allow get: if resource == null && request.auth != null && reviewId.matches('.*__' + request.auth.uid);
+      allow create: if notBanned() && validReview(request.resource.data);
+      allow update, delete: if false;
+    }
+    match /reports/{reportId} {
+      function subjectMembers(d) {
+        return d.subject_type == 'CONTRACT'
+          ? get(/databases/$(database)/documents/contracts/$(d.subject_id)).data.member_ids
+          : (d.subject_type == 'LESSON'
+            ? [get(/databases/$(database)/documents/lessons/$(d.subject_id)).data.student_id,
+               get(/databases/$(database)/documents/lessons/$(d.subject_id)).data.tutor_id]
+            : get(/databases/$(database)/documents/conversations/$(d.subject_id)).data.member_ids);
+      }
+      function validReport(d) {
+        let me = request.auth.uid;
+        return d.keys().hasOnly(['code','reporter_id','reporter_name','reporter_role','target_id','target_name','target_role',
+                                 'subject_type','subject_id','subject_label','reason','description','evidence_count','status',
+                                 'admin_note','outcome','conclusion','refund_amount','created_at','updated_at'])
+          && d.reporter_id == me && d.target_id != me
+          && d.subject_type in ['CONTRACT', 'CONVERSATION', 'LESSON'] && d.subject_id is string
+          && subjectMembers(d).hasAll([me, d.target_id])
+          && d.reason is string && d.reason.size() >= 3 && d.reason.size() <= 120
+          && d.description is string && d.description.size() >= 10 && d.description.size() <= 500
+          && d.evidence_count is int && d.evidence_count >= 0 && d.evidence_count <= 5
+          && d.status == 'DA_TIEP_NHAN' && d.admin_note == '' && d.outcome == '' && d.conclusion == '' && d.refund_amount == 0
+          && d.reporter_role in ['STUDENT','TUTOR'] && d.target_role in ['STUDENT','TUTOR']
+          && d.code is string && d.code.size() <= 12
+          && d.reporter_name is string && d.reporter_name.size() <= 100
+          && d.target_name is string && d.target_name.size() <= 100
+          && d.subject_label is string && d.subject_label.size() <= 160
+          && d.created_at == request.time && d.updated_at == request.time;
+      }
+      function reportChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function isOpen() { return resource.data.status in ['DA_TIEP_NHAN', 'DANG_KIEM_TRA', 'CAN_BO_SUNG']; }
+      function reporterUpdate() {
+        let after = request.resource.data;
+        return reportChanged().hasOnly(['evidence_count', 'status', 'updated_at'])
+          && after.evidence_count > resource.data.evidence_count && after.evidence_count <= 5
+          && (after.status == resource.data.status || (resource.data.status == 'CAN_BO_SUNG' && after.status == 'DANG_KIEM_TRA'))
+          && after.updated_at == request.time;
+      }
+      function adminUpdate() {
+        let after = request.resource.data;
+        return reportChanged().hasOnly(['status','handler_id','reviewing_at','admin_note','outcome','conclusion','refund_amount','decided_at','updated_at'])
+          && after.handler_id == request.auth.uid
+          && after.status in ['DANG_KIEM_TRA', 'CAN_BO_SUNG', 'DA_XU_LY', 'BAC_BO']
+          && after.updated_at == request.time
+          && (!(after.status in ['DA_XU_LY', 'BAC_BO'])
+              || (after.decided_at == request.time
+                  && after.outcome in ['CANH_CAO', 'KHOA_TAI_KHOAN', 'HOAN_TIEN', 'BAC_BO']
+                  && after.conclusion is string && after.conclusion.size() <= 500))
+          && (after.get('refund_amount', 0) == 0
+              || (after.outcome == 'HOAN_TIEN' && after.refund_amount is int && after.refund_amount > 0
+                  && ((resource.data.subject_type == 'CONTRACT'
+                      && after.refund_amount <= get(/databases/$(database)/documents/contracts/$(resource.data.subject_id)).data.total)
+                    || (resource.data.subject_type == 'LESSON'
+                      && after.refund_amount <= get(/databases/$(database)/documents/lessons/$(resource.data.subject_id)).data.hoc_phi))));
+      }
+
+      allow get: if (request.auth != null && resource.data.reporter_id == request.auth.uid) || admin();
+      allow list: if (request.auth != null && resource.data.reporter_id == request.auth.uid) || admin();
+      allow create: if notBanned() && validReport(request.resource.data);
+      allow update: if isOpen() && ((request.auth != null && resource.data.reporter_id == request.auth.uid && reporterUpdate())
+                                  || (admin() && adminUpdate()));
+      allow delete: if false;
+
+      match /evidence/{evidenceId} {
+        function report() { return get(/databases/$(database)/documents/reports/$(reportId)).data; }
+        function reportAfter() { return getAfter(/databases/$(database)/documents/reports/$(reportId)).data; }
+        allow read: if (request.auth != null && report().reporter_id == request.auth.uid) || admin();
+        allow create: if request.auth != null
+          && reportAfter().reporter_id == request.auth.uid
+          && reportAfter().status in ['DA_TIEP_NHAN', 'DANG_KIEM_TRA', 'CAN_BO_SUNG']
+          && evidenceId.matches('e[1-5]')
+          && int(evidenceId.replace('e', '')) <= reportAfter().evidence_count
+          && request.resource.data.keys().hasOnly(['name','size','data','uploaded_by','created_at'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 120
+          && request.resource.data.size is int && request.resource.data.size <= 600000
+          && request.resource.data.data is string && request.resource.data.data.size() <= 700000
+          && request.resource.data.uploaded_by == request.auth.uid
+          && request.resource.data.created_at == request.time;
+        allow update, delete: if false;
+      }
+    }
+    // Payment attempts and all other undeclared collections are denied to clients.
   }
 }

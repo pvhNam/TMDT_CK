@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     android:orientation="vertical"
     tools:context="com.example.tmdt.ui.messages.ChatFragment">
 
@@ -34,7 +34,7 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_chat_avatar_circle"
                 android:gravity="center"
-                android:textColor="@color/chat_blue"
+                android:textColor="@color/app_accent"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -115,7 +115,7 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="12dp"
         android:visibility="gone"
-        app:cardBackgroundColor="@android:color/white"
+        app:cardBackgroundColor="@color/app_surface"
         app:cardCornerRadius="16dp"
         app:cardElevation="0dp"
         app:strokeColor="@color/chat_border"
@@ -138,7 +138,7 @@
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_chat_avatar_rounded"
                     android:gravity="center"
-                    android:textColor="@color/chat_blue"
+                    android:textColor="@color/app_accent"
                     android:textSize="26sp"
                     android:textStyle="bold" />
 

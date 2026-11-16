@@ -1,0 +1,6 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {"collectionGroup": "evidence_images", "fieldPath": "anh", "indexes": []}
+  ]
+}

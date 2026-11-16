@@ -51,7 +51,7 @@ public final class ChatFragment extends Fragment {
         layout.setStackFromEnd(true);  // Tin mới nhất ở cuối, sát ô soạn thảo.
         binding.messages.setLayoutManager(layout);
         binding.messages.setAdapter(adapter);
-        binding.messages.setItemAnimator(null);
+        com.example.tmdt.ui.common.Motion.list(binding.messages);
         // Bàn phím mở làm danh sách thấp lại: giữ tin cuối trong tầm nhìn.
         binding.messages.addOnLayoutChangeListener((v, l, t, r, bottom, ol, ot, or, oldBottom) -> {
             if (bottom < oldBottom && adapter.getItemCount() > 0) binding.messages.post(this::scrollToEnd);
@@ -60,7 +60,7 @@ public final class ChatFragment extends Fragment {
         binding.back.setOnClickListener(v -> host.back());
         binding.video.setOnClickListener(v -> snack(getString(R.string.chat_video_info)));
         binding.attach.setOnClickListener(this::showTemplates);
-        // Nút ⋮ (Hợp đồng dạy, Xem đánh giá, Báo cáo vi phạm) thuộc UC23/UC26/UC27, sẽ bật khi push các UC đó.
+        // Nút ⋮ ẩn: hợp đồng dạy (UC23) đi theo luồng đặt lịch học; Xem đánh giá (UC26), Báo cáo (UC27) sẽ bật khi push các UC đó.
         binding.more.setVisibility(View.GONE);
 
         binding.input.setText(chat.draft());
@@ -118,7 +118,7 @@ public final class ChatFragment extends Fragment {
         if (chat.openId() == null || conversation == null) return;  // Đang rời màn hình.
 
         // Đầu trang
-        ChatFormat.avatar(binding.avatarPhoto, binding.avatarInitials, conversation.peerName);
+        ChatFormat.avatar(binding.avatarPhoto, binding.avatarInitials, conversation.peerId, conversation.peerName);
         binding.name.setText(conversation.peerName);
         boolean online = chat.peerOnline();
         binding.onlineDot.setVisibility(online ? View.VISIBLE : View.GONE);
@@ -132,7 +132,7 @@ public final class ChatFragment extends Fragment {
         // Buổi học liên quan
         binding.lessonCard.setVisibility(conversation.hasLesson() ? View.VISIBLE : View.GONE);
         if (conversation.hasLesson()) {
-            ChatFormat.avatar(binding.lessonPhoto, binding.lessonInitials, conversation.peerName);
+            ChatFormat.avatar(binding.lessonPhoto, binding.lessonInitials, conversation.peerId, conversation.peerName);
             binding.lessonTitle.setText(conversation.lessonTitle);
             binding.lessonTime.setText(conversation.lessonTime);
             binding.lessonStatus.setText(conversation.lessonStatus);
@@ -141,7 +141,7 @@ public final class ChatFragment extends Fragment {
 
         // Tin nhắn
         List<ChatMessage> messages = chat.messages();
-        adapter.submit(messages, conversation.peerName);
+        adapter.submit(messages, conversation.peerName, conversation.peerId);
         if (messages.size() != shownCount) { shownCount = messages.size(); scrollToEnd(); }
 
         boolean loading = chat.messagesLoading() && messages.isEmpty();

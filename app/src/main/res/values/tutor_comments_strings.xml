@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tutor_comments_title">Bình luận</string>
+    <string name="tutor_comments_caption">Đặt câu hỏi và trao đổi với gia sư.</string>
+    <string name="tutor_comments_input_hint">Nhập bình luận hoặc câu hỏi của bạn</string>
+    <string name="tutor_comments_reply_hint">Nhập câu trả lời của bạn</string>
+    <string name="tutor_comments_send">Gửi bình luận</string>
+    <string name="tutor_comments_send_reply">Gửi trả lời</string>
+    <string name="tutor_comments_empty">Chưa có bình luận. Bạn có thể đặt câu hỏi với gia sư tại đây.</string>
+    <string name="tutor_comments_loading">Đang tải bình luận</string>
+    <string name="tutor_comments_offline">Đang hiển thị nội dung đã lưu. Kết nối mạng để gửi hoặc tải thêm bình luận; bản nháp vẫn được giữ.</string>
+    <string name="tutor_comments_unavailable">Chưa thể tải bình luận hoặc hồ sơ gia sư không còn công khai.</string>
+    <string name="tutor_comments_account_blocked">Tài khoản hiện chưa được phép gửi bình luận. Vui lòng kiểm tra thông tin tài khoản rồi thử lại.</string>
+    <string name="tutor_comments_sign_in_caption">Đăng nhập để bình luận hoặc trả lời.</string>
+    <string name="tutor_comments_sign_in">Đăng nhập để bình luận</string>
+    <string name="tutor_comments_retry">Thử lại</string>
+    <string name="tutor_comments_load_more">Xem thêm bình luận</string>
+    <string name="tutor_comments_reply">Trả lời</string>
+    <string name="tutor_comments_view_replies">Xem trả lời</string>
+    <string name="tutor_comments_collapse_replies">Thu gọn trả lời</string>
+    <string name="tutor_comments_reply_target">Đang trả lời %1$s</string>
+    <string name="tutor_comments_new_question">Bình luận mới</string>
+    <string name="tutor_comments_question_label">Bình luận của bạn</string>
+    <string name="tutor_comments_tutor_badge">Gia sư</string>
+    <string name="tutor_comments_reply_empty">Chưa có câu trả lời cho bình luận này.</string>
+    <string name="tutor_comments_load_more_replies">Xem câu trả lời trước</string>
+    <string name="tutor_comments_counter">%1$d/1.000 ký tự</string>
+    <string name="tutor_comments_required">Vui lòng nhập nội dung trước khi gửi.</string>
+    <string name="tutor_comments_just_sent">Vừa gửi</string>
+</resources>

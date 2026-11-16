@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/app_surface" app:cardCornerRadius="18dp" app:cardElevation="0dp" app:strokeColor="@color/app_border" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+        <TextView android:id="@+id/assignment_row_status" style="@style/AssignmentBody" android:textColor="@color/app_accent" android:fontFamily="sans-serif-medium" android:textSize="12sp" />
+        <TextView android:id="@+id/assignment_row_title" style="@style/ScreenTitle" android:textColor="@color/app_ink" android:textSize="18sp" />
+        <TextView android:id="@+id/assignment_row_due" style="@style/AssignmentBody" android:textSize="13sp" />
+        <TextView android:id="@+id/assignment_row_description" style="@style/AssignmentBody" android:maxLines="2" android:ellipsize="end" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/assignment_open" style="@style/AssignmentSecondary" android:text="@string/assignments_view" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

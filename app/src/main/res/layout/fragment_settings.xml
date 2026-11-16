@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F9FF"
+    android:background="@color/app_background"
     tools:context="com.example.tmdt.ui.profile.SettingsFragment">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
@@ -55,14 +55,14 @@
                 <LinearLayout android:id="@+id/row_language" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
                     <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_globe" />
                     <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Ngôn ngữ" />
-                    <TextView android:id="@+id/language_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/tutor_blue" android:text="Tiếng Việt" />
+                    <TextView android:id="@+id/language_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/app_accent" android:text="Tiếng Việt" />
                     <ImageView style="@style/ProfileRowChevron" />
                 </LinearLayout>
                 <View style="@style/ProfileDivider" />
                 <LinearLayout android:id="@+id/row_theme" style="@style/ProfileRow" android:layout_height="52dp" android:paddingStart="16dp" android:paddingEnd="16dp">
                     <ImageView style="@style/ProfileRowIcon" android:src="@drawable/ic_pf_sun" />
                     <TextView style="@style/ProfileRowLabel" android:layout_marginStart="14dp" android:textSize="16sp" android:text="Giao diện" />
-                    <TextView android:id="@+id/theme_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/tutor_blue" android:text="Sáng" />
+                    <TextView android:id="@+id/theme_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="6dp" android:textSize="15sp" android:textColor="@color/app_accent" android:text="Sáng" />
                     <ImageView style="@style/ProfileRowChevron" />
                 </LinearLayout>
             </LinearLayout>
@@ -109,8 +109,8 @@
                 android:contentDescription="@string/sign_out"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#D92D20"
-                app:backgroundTint="#FFFFFF"
+                android:textColor="@color/theme_text_d92d20"
+                app:backgroundTint="@color/app_surface"
                 app:strokeColor="#F04438"
                 app:strokeWidth="1.5dp"
                 app:icon="@drawable/ic_pf_logout"

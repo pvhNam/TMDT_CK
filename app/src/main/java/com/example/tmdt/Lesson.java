@@ -13,7 +13,7 @@ import java.util.Map;
 /** One lesson between a tutor and a student: a booking request, a trial or a confirmed session (Firestore "lessons"). */
 public final class Lesson {
     public static final String PENDING = "PENDING", CONFIRMED = "CONFIRMED", CANCELLED = "CANCELLED", REJECTED = "REJECTED";
-    public static final int TRIAL_PRICE = 50000;
+    public static final int TRIAL_PRICE = 50000, MAX_PRICE = 50000000, DAY = 24*60;
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy"), TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     public final String id, tutorId, tutorName, studentId, studentName, title, mode, goal, address;
@@ -24,7 +24,10 @@ public final class Lesson {
     public boolean finished;
     /** A tutor's proposal to move the lesson; the current slot stays until the student agrees (UC24). */
     public String proposedDate, proposalReason = "";
-    public int proposedHour = -1;
+    /** The student's answer to the last proposal, kept after the proposal itself is cleared so the tutor can see it. */
+    public static final String REPLY_ACCEPTED = "DONG_Y", REPLY_KEPT = "GIU_LICH";
+    public String reply = "";
+    public int proposedHour = -1, proposedMinute;
 
     public Lesson(String id, String tutorId, String tutorName, String studentId, String studentName, String title, String date, int hour,
                   int minutes, String mode, String goal, String address, boolean trial, int price, String status) {
@@ -44,15 +47,29 @@ public final class Lesson {
     /** The online room opens ten minutes before the start, as noted on screen 12. */
     public boolean roomOpen() { LocalDateTime now = LocalDateTime.now(); return confirmed() && !now.isBefore(start().minusMinutes(10)) && now.isBefore(end()); }
     public boolean online() { return !"Tại nhà".equals(mode); }
-    public String roomHost() {
-        try { String host = new java.net.URI(roomLink).getHost(); return host == null ? roomLink : host.replaceFirst("^www\\.",""); }
-        catch (java.net.URISyntaxException invalid) { return roomLink; }
+    public String roomHost() { return hostOf(roomLink); }
+    public String roomUrl() { return urlOf(roomLink,"https://meet.jit.si/TMDT-"+id); }
+    /** Domain of a pasted room link without "www.", used to show where the room opens. */
+    static String hostOf(String link) {
+        try { String host = new java.net.URI(link).getHost(); return host == null ? link : host.replaceFirst("^www\\.",""); }
+        catch (java.net.URISyntaxException invalid) { return link; }
     }
-    public String roomUrl() { return roomLink.isEmpty() ? "https://meet.jit.si/TMDT-" + id : roomLink; }
+    /** The pasted link, or the app's own room when none was pasted. */
+    static String urlOf(String link, String fallback) {
+        if (link.isEmpty()) return fallback;
+        return link.matches("(?i)https?://.*") ? link : "https://" + link;
+    }
+    /** An answer the tutor should still see: the lesson has not started and no newer proposal is waiting. */
+    public boolean replied() { return !reply.isEmpty() && !proposal() && !started(); }
+    public boolean kept() { return REPLY_KEPT.equals(reply); }
+    public String replyText() {
+        return kept() ? studentName+" giữ lịch cũ cho buổi "+title+" · "+dateLabel()+" "+timeLabel()+"."
+                : studentName+" đã đồng ý đổi buổi "+title+" sang "+dateLabel()+" "+timeLabel()+".";
+    }
     public boolean needsConfirmation() { return confirmed() && ended() && !finished; }
 
-    public boolean overlaps(String otherDate, int otherHour, int otherMinutes) {
-        int begin = hour*60+minute, finish = begin+minutes, otherBegin = otherHour*60;
+    public boolean overlaps(String otherDate, int otherHour, int otherMinute, int otherMinutes) {
+        int begin = hour*60+minute, finish = begin+minutes, otherBegin = otherHour*60+otherMinute;
         return date.equals(otherDate) && begin < otherBegin+otherMinutes && otherBegin < finish;
     }
 
@@ -62,7 +79,7 @@ public final class Lesson {
     public static String range(int hour, int minute, int minutes) {
         LocalTime start = LocalTime.of(hour,minute); return start.format(TIME)+"–"+start.plusMinutes(minutes).format(TIME);
     }
-    public String proposalLabel() { return LocalDate.parse(proposedDate).format(DATE)+" · "+range(proposedHour,minutes); }
+    public String proposalLabel() { return LocalDate.parse(proposedDate).format(DATE)+" · "+range(proposedHour,proposedMinute,minutes); }
     public int total() { return price; }
     public String statusLabel() {
         if (CANCELLED.equals(status)) return "Đã hủy";
@@ -72,14 +89,21 @@ public final class Lesson {
         return ended() ? "Chờ xác nhận hoàn thành" : "Đã xác nhận";
     }
 
+    /** Người học khi tài khoản đặt lịch cho người khác (users/{uid}/learners); rỗng = chính chủ tài khoản. */
+    public String learnerId = "", learnerName = "";
+    /** "Người học (tài khoản ...)" khi đặt cho người khác, ngược lại là tên tài khoản. */
+    public String learnerLabel() { return learnerName.isEmpty() ? studentName : learnerName + " (TK " + studentName + ")"; }
+
     public Map<String,Object> toMap() {
         Map<String,Object> data = new HashMap<>();
         data.put("tutor_id",tutorId); data.put("ten_gia_su",tutorName); data.put("student_id",studentId); data.put("ten_hoc_vien",studentName);
         data.put("tieu_de",title); data.put("bat_dau",instant(date,hour,minute)); data.put("thoi_luong",minutes); data.put("hinh_thuc",mode);
         data.put("dia_chi",address); data.put("muc_tieu",goal); data.put("hoc_thu",trial); data.put("hoc_phi",price); data.put("trang_thai",status);
         data.put("da_hoan_thanh",finished); data.put("noi_dung",content); data.put("ly_do_huy",cancelReason);
-        data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour):null); data.put("doi_lich_ly_do",proposalReason);
+        data.put("doi_lich_bat_dau",proposal()?instant(proposedDate,proposedHour,proposedMinute):null); data.put("doi_lich_ly_do",proposalReason);
+        data.put("doi_lich_phan_hoi",reply);
         data.put("link_phong_hoc",roomLink);
+        if (!learnerName.isEmpty()) { data.put("nguoi_hoc_id",learnerId); data.put("ten_nguoi_hoc",learnerName); }
         return data;
     }
     /** Null when the document is incomplete, so one bad record never hides the others. */
@@ -87,16 +111,17 @@ public final class Lesson {
         LocalDateTime start = time(data.get("bat_dau"));
         int minutes = number(data,"thoi_luong");
         String tutor = text(data,"tutor_id"), student = text(data,"student_id"), status = text(data,"trang_thai");
-        if (start == null || minutes < 30 || minutes > 120 || tutor.isEmpty() || student.isEmpty() || status.isEmpty()) return null;
+        if (start == null || minutes < 30 || minutes > DAY || tutor.isEmpty() || student.isEmpty() || status.isEmpty()) return null;
         Lesson lesson = new Lesson(id,tutor,text(data,"ten_gia_su"),student,text(data,"ten_hoc_vien"),text(data,"tieu_de"),
                 start.toLocalDate().toString(),start.getHour(),minutes,text(data,"hinh_thuc"),text(data,"muc_tieu"),text(data,"dia_chi"),
                 Boolean.TRUE.equals(data.get("hoc_thu")),number(data,"hoc_phi"),status);
-        lesson.minute = start.getMinute(); lesson.roomLink = text(data,"link_phong_hoc");
+        lesson.minute = start.getMinute(); lesson.roomLink = text(data,"link_phong_hoc"); lesson.reply = text(data,"doi_lich_phan_hoi");
         lesson.finished = Boolean.TRUE.equals(data.get("da_hoan_thanh"));
         lesson.content = text(data,"noi_dung"); lesson.cancelReason = text(data,"ly_do_huy");
+        lesson.learnerId = text(data,"nguoi_hoc_id"); lesson.learnerName = text(data,"ten_nguoi_hoc");
         LocalDateTime proposed = time(data.get("doi_lich_bat_dau"));
         if (proposed != null) {
-            lesson.proposedDate = proposed.toLocalDate().toString(); lesson.proposedHour = proposed.getHour();
+            lesson.proposedDate = proposed.toLocalDate().toString(); lesson.proposedHour = proposed.getHour(); lesson.proposedMinute = proposed.getMinute();
             lesson.proposalReason = text(data,"doi_lich_ly_do");
         }
         return lesson;

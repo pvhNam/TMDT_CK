@@ -28,9 +28,12 @@ import com.example.tmdt.ui.tutor.TeachingScheduleFragment;
 import com.example.tmdt.ui.tutor.TutorHomeFragment;
 import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,11 +44,11 @@ import java.util.Set;
  */
 public final class Classroom {
     private static final Set<String> PRIVATE = new HashSet<>(Arrays.asList("schedule","booking","trial","lesson","confirm","cancel",
-            "reschedule","join","tutorHome","teaching","classes","openClass","review"));
-    private static final Set<String> TUTOR = new HashSet<>(Arrays.asList("tutorHome","teaching","classes","openClass","review"));
+            "reschedule","join","registrations","registration","tutorHome","teaching","classes","openClass","review","cancelClass","matches"));
+    private static final Set<String> TUTOR = new HashSet<>(Arrays.asList("tutorHome","teaching","classes","openClass","review","cancelClass","matches"));
     /** Screens without text fields, rebuilt as soon as Firestore sends new data. */
-    private static final Set<String> LIVE = new HashSet<>(Arrays.asList("schedule","lesson","reschedule","groups","full",
-            "tutorHome","teaching","classes","review"));
+    private static final Set<String> LIVE = new HashSet<>(Arrays.asList("schedule","lesson","reschedule","groups","full","registrations","registration",
+            "tutorHome","teaching","classes","review","matches"));
     private final MainActivity host;
     private final SharedPreferences preferences;
     private final ClassroomCloud cloud;
@@ -57,7 +60,9 @@ public final class Classroom {
     public String tutorKey, lessonId="", classId="";
     public String tutorProfileId;
     public String tutorProfileOrigin="home";
-    public int scheduleTab, classTab;
+    public int scheduleTab, classTab, registrationFilter;
+    /** Where the registration history was opened from (class search or schedule), so back returns there. */
+    private String registrationsOrigin="groups";
     /** Where "Đặt lịch học" was opened from, so back returns there. */
     private String bookingOrigin="home";
     /** Booking form kept while the trial screen is open or the activity is recreated. */
@@ -67,6 +72,10 @@ public final class Classroom {
     /** Day and view (week or month) shown on the tutor's teaching schedule. */
     public LocalDate teachingDay=LocalDate.now();
     public boolean teachingMonth;
+    /** Group of students the next new class is filled in for, set by "Gợi ý ghép nhóm". */
+    public GroupMatch.Group classDraft;
+    /** Where the open class form was opened from, so back returns there. */
+    private String openClassOrigin="classes";
 
     Classroom(MainActivity host,Bundle state){
         this.host=host;ui=new Ui(host);
@@ -81,6 +90,8 @@ public final class Classroom {
             bookingOrigin=state.getString("bookingOrigin","home");bookingDraft=state.getBundle("booking");
             tutorProfileId=state.getString("tutorProfileId",null);
             tutorProfileOrigin=state.getString("tutorProfileOrigin","home");
+            registrationsOrigin=state.getString("registrationsOrigin","groups");registrationFilter=state.getInt("registrationFilter",0);
+            openClassOrigin=state.getString("openClassOrigin","classes");
         }
         cloud.user(host.account.signedIn()?host.account.uid():"");
         cloud.changes().observe(host,ignored->changed());
@@ -90,6 +101,8 @@ public final class Classroom {
         out.putString("lesson",lessonId);out.putString("class",classId);out.putString("bookingOrigin",bookingOrigin);
         out.putString("tutorProfileId",tutorProfileId);
         out.putString("tutorProfileOrigin",tutorProfileOrigin);
+        out.putString("registrationsOrigin",registrationsOrigin);out.putInt("registrationFilter",registrationFilter);
+        out.putString("openClassOrigin",openClassOrigin);
         if(bookingDraft!=null)out.putBundle("booking",bookingDraft);
     }
 
@@ -112,14 +125,74 @@ public final class Classroom {
         CatalogState.Teacher teacher=host.catalog.teacher(me());
         return teacher!=null?teacher.name:myName();
     }
-    /** Registration enables the tutor view; server rules still require VERIFIED for teaching. */
-    public boolean isTutor(){UserProfile profile=host.account.profile();return host.account.signedIn()&&profile!=null&&profile.tutor;}
+    /** A submitted application does not grant teaching access; approval is required. */
+    public boolean isTutor(){UserProfile profile=host.account.profile();return host.account.signedIn()&&profile!=null&&profile.tutor
+            &&"VERIFIED".equals(host.tutorReviews.status());}
     public boolean tutorMode(){return tutorView&&isTutor();}
 
+    /** Last known answer to a proposal per lesson the user teaches, to announce new answers while the app is open. */
+    private final Map<String,String> replies=new HashMap<>();
+    private void announceReplies(){
+        for(Lesson lesson:lessons){
+            if(!lesson.tutorId.equals(me()))continue;
+            String before=replies.put(lesson.id,lesson.reply);
+            if(before!=null&&!before.equals(lesson.reply)&&lesson.replied())notice(lesson.replyText());
+        }
+    }
+    /** Last known status of the classes the user joined or applied to, to announce a cancellation while the app is open. */
+    private final Map<String,String> classStates=new HashMap<>();
+    private void announceClasses(){
+        for(GroupClass item:store.classes){
+            boolean mine=item.members.contains(me());
+            for(GroupClass.Registration registration:item.registrations)mine|=registration.studentId.equals(me());
+            if(!mine)continue;
+            String before=classStates.put(item.id,item.status);
+            if(before!=null&&!before.equals(item.status)&&item.cancelled())notice("Lớp \""+item.title+"\" đã bị gia sư hủy.");
+            String asked=item.members.contains(me())&&item.proposalOpen()?item.proposal.key():"";
+            String previous=classMoves.put(item.id,asked);
+            if(previous!=null&&!asked.isEmpty()&&!asked.equals(previous))
+                notice("Gia sư đề nghị đổi giờ buổi "+item.proposal.number+" của lớp \""+item.title+"\". Mở Lịch học để trả lời.");
+        }
+    }
+    /** The proposal each joined class last asked about, to announce a new one while the app is open. */
+    private final Map<String,String> classMoves=new HashMap<>();
+    /** Open classes with seats that suit one of the user's own tutor requests, each with the request it suits. */
+    public Map<GroupClass,GroupMatch.Request> suggestions(){
+        Map<GroupClass,GroupMatch.Request> map=new LinkedHashMap<>();
+        for(GroupClass item:store.classes){
+            if(!item.recruiting()||item.tutorId.equals(me())||item.attends(me()))continue;
+            GroupMatch.Request request=GroupMatch.suits(item,store.myRequests);
+            if(request!=null)map.put(item,request);
+        }
+        return map;
+    }
+    /** Classes last suggested to the user, to announce a new one while the app is open. */
+    private Set<String> suggested;
+    private String suggestedOwner="";
+    private void announceMatches(){
+        if(!store.matchesReady)return;
+        Map<GroupClass,GroupMatch.Request> now=suggestions();
+        if(suggested!=null&&me().equals(suggestedOwner)&&!tutorMode())
+            for(Map.Entry<GroupClass,GroupMatch.Request> entry:now.entrySet())
+                if(!suggested.contains(entry.getKey().id)){
+                    notice("Lớp \""+entry.getKey().title+"\" hợp với tin đăng \""+entry.getValue().title+"\" của bạn. Mở Lớp học nhóm để xem.");break;
+                }
+        suggested=new HashSet<>();for(GroupClass item:now.keySet())suggested.add(item.id);
+        suggestedOwner=me();
+    }
+    public boolean replySeen(Lesson lesson){
+        return preferences.getStringSet("reply_seen_"+me(),new HashSet<>()).contains(lesson.id+":"+lesson.reply);
+    }
+    public void markReplySeen(Lesson lesson){
+        Set<String> seen=new HashSet<>(preferences.getStringSet("reply_seen_"+me(),new HashSet<>()));
+        seen.add(lesson.id+":"+lesson.reply);preferences.edit().putStringSet("reply_seen_"+me(),seen).apply();
+    }
+
     private void changed(){
+        announceReplies();announceClasses();announceMatches();
         String error=cloud.takeError();
         if(!error.isEmpty())dialog("Lịch học và lớp nhóm",error);
-        if(LIVE.contains(host.screen))show(host.screen);
+        if(LIVE.contains(host.screen))host.refreshClassroomData();
     }
 
     // Navigation hooks used by MainActivity ------------------------------------------------------
@@ -132,13 +205,14 @@ public final class Classroom {
         if(TUTOR.contains(destination)&&!tutorMode())return root();
         if(tutorMode()&&"home".equals(destination))return "tutorHome";
         if(tutorMode()&&"schedule".equals(destination))return "teaching";
+        if("tutorHome".equals(destination)||"classes".equals(destination)||"matches".equals(destination))watchRequests();
         return missingSelection(destination)?root():destination;
     }
     /** Screens of a lesson, class or tutor that no longer exists fall back to the start screen. */
     private boolean missingSelection(String destination){
         switch(destination){
             case "lesson":case "confirm":case "cancel":case "reschedule":return store.lesson(lessonId)==null;
-            case "join":case "full":case "review":return store.groupClass(classId)==null;
+            case "join":case "full":case "review":case "registration":case "cancelClass":return store.groupClass(classId)==null;
             case "booking":case "trial":return Tutor.get(tutorKey)==null;
             default:return false;
         }
@@ -156,18 +230,22 @@ public final class Classroom {
             case "groups":return new GroupSearchFragment();
             case "join":return new JoinClassFragment();
             case "full":return new ClassFullFragment();
+            case "registrations":return new com.example.tmdt.ui.groupclass.RegistrationHistoryFragment();
+            case "registration":return new com.example.tmdt.ui.groupclass.RegistrationDetailFragment();
             case "tutorHome":return new TutorHomeFragment();
             case "teaching":return new TeachingScheduleFragment();
             case "classes":return new OpenedClassesFragment();
             case "openClass":return new OpenClassFragment();
+            case "matches":return new com.example.tmdt.ui.tutor.GroupMatchFragment();
             case "review":return new ReviewRegistrationsFragment();
+            case "cancelClass":return new com.example.tmdt.ui.tutor.CancelClassFragment();
             default:return null;
         }
     }
     boolean mainScreen(String screen){
         switch(screen){
-            case "tutorHome":case "teaching":case "classes":case "groups":
-            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":return true;
+            case "tutorHome":case "teaching":case "classes":case "groups":case "matches":
+            case "lesson":case "confirm":case "cancel":case "reschedule":case "full":case "review":case "registrations":case "registration":case "cancelClass":return true;
             default:return false;
         }
     }
@@ -176,8 +254,9 @@ public final class Classroom {
         menu.findItem(R.id.nav_home).setTitle(tutorMode()?R.string.page_tutor_home:R.string.page_home);
         menu.findItem(R.id.nav_schedule).setTitle(tutorMode()?R.string.page_teaching:R.string.page_schedule);
         switch(screen){
-            case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":return R.id.nav_home;
+            case "tutorHome":case "groups":case "join":case "full":case "classes":case "openClass":case "review":case "cancelClass":case "matches":return R.id.nav_home;
             case "teaching":case "lesson":case "confirm":case "cancel":case "reschedule":return R.id.nav_schedule;
+            case "registrations":case "registration":return "schedule".equals(registrationsOrigin)?R.id.nav_schedule:R.id.nav_home;
             default:return fallback;
         }
     }
@@ -190,7 +269,12 @@ public final class Classroom {
             case "lesson":return "schedule";
             case "confirm":case "cancel":case "reschedule":return "lesson";
             case "join":case "full":return "groups";
-            case "openClass":case "review":return "classes";
+            case "openClass":return openClassOrigin;
+            case "review":return "classes";
+            case "matches":return "tutorHome";
+            case "cancelClass":return "review";
+            case "registrations":return registrationsOrigin;
+            case "registration":return "registrations";
             default:return null;
         }
     }
@@ -230,16 +314,41 @@ public final class Classroom {
         show("booking");
     }
     public void openLesson(Lesson lesson){lessonId=lesson.id;show("lesson");}
-    public void openClass(GroupClass item,String destination){classId=item==null?"":item.id;show(destination);}
+    public void openClass(GroupClass item,String destination){
+        classId=item==null?"":item.id;
+        if("openClass".equals(destination)){openClassOrigin="classes";classDraft=null;}
+        show(destination);
+    }
+    /** Opens the new class form filled in for a group of students who posted the same need. */
+    public void openDraft(GroupMatch.Group group){classId="";classDraft=group;openClassOrigin="matches";show("openClass");}
+    /** Open tutor requests for the group suggestions, read once the account is known to be a verified tutor. */
+    public void watchRequests(){if(tutorMode())cloud.watchRequests(false);}
+    public void retryRequests(){cloud.watchRequests(true);show(host.screen);}
+    /** Lịch sử đăng ký lớp học, opened from the class search or the schedule. */
+    public void openRegistrations(){
+        if(!"registrations".equals(host.screen)&&!"registration".equals(host.screen))registrationsOrigin=host.screen;
+        show("registrations");
+    }
+    public void openRegistration(GroupClass item){classId=item.id;show("registration");}
     /** Tutors switch between their teaching view and their own student view. */
     public void setTutorMode(boolean value){
         if(value&&!isTutor())return;
         tutorView=value;preferences.edit().putBoolean("tutor_mode_"+host.account.uid(),value).apply();show(root());
     }
     public void openRoom(Lesson lesson){
+        if(!host.payments.paid("LESSON",lesson.id)){host.openPayment("LESSON",lesson.id);return;}
         if(!lesson.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
-        try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(lesson.roomUrl())));}
-        catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+lesson.roomUrl());}
+        openUrl(lesson.roomUrl());
+    }
+    /** A group class has one room for its tutor and members, open around each session. */
+    public void openClassRoom(GroupClass item){
+        if(!item.tutorId.equals(me())&&!item.members.contains(me())){dialog("Phòng học trực tuyến","Chỉ gia sư và học viên của lớp mới vào được phòng học.");return;}
+        if(!item.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
+        openUrl(item.roomUrl());
+    }
+    private void openUrl(String url){
+        try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}
+        catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+url);}
     }
     /**
      * "Nhắn tin" (UC21, member 4): mở màn 06 với người có tên này, kèm buổi học còn hiệu lực gần nhất giữa hai người.
@@ -288,8 +397,9 @@ public final class Classroom {
         bar.show();
     }
     /** A booking or trial request from the signed-in student to the tutor chosen on the home screen. */
-    public Lesson request(Tutor tutor,String title,LocalDate date,int hour,int minutes,String mode,String goal,String address,boolean trial,int price){
-        return new Lesson(store.newId("lessons"),tutor.id,tutor.name,me(),myName(),title,date.toString(),hour,minutes,mode,goal,address,trial,price,Lesson.PENDING);
+    public Lesson request(Tutor tutor,String title,LocalDate date,int hour,int minute,int minutes,String mode,String goal,String address,boolean trial,int price){
+        Lesson lesson=new Lesson(store.newId("lessons"),tutor.id,tutor.name,me(),myName(),title,date.toString(),hour,minutes,mode,goal,address,trial,price,Lesson.PENDING);
+        lesson.minute=minute;return lesson;
     }
     /** Saves a new booking or trial request unless a rule refuses it, then shows it under "Chờ xác nhận". */
     public boolean saveRequest(Lesson lesson){

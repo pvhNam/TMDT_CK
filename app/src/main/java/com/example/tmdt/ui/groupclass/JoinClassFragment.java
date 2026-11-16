@@ -15,15 +15,30 @@ import com.example.tmdt.Lesson;
 public final class JoinClassFragment extends ScreenFragment {
     private GroupClass item;
     private EditText goal;
+    /** Người học ("" = bản thân) và mục tiêu đang gõ, giữ lại khi màn vẽ lại. */
+    private String learnerId = "", savedGoal = "";
+
+    private com.example.tmdt.LearnerState learners() { return ((com.example.tmdt.MainActivity) requireActivity()).exchange.learners; }
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, @androidx.annotation.Nullable android.os.Bundle state) {
+        super.onViewCreated(view, state);
+        if (state != null) { learnerId = state.getString("learner", ""); savedGoal = state.getString("goal", ""); }
+        learners().changes().observe(getViewLifecycleOwner(), ignored -> { keepGoal(); refresh(); });
+        learners().start();
+    }
+    @Override public void onSaveInstanceState(@androidx.annotation.NonNull android.os.Bundle out) {
+        super.onSaveInstanceState(out); keepGoal(); out.putString("learner", learnerId); out.putString("goal", savedGoal);
+    }
+    private void keepGoal() { if (goal != null) savedGoal = goal.getText().toString(); }
 
     @Override protected View build() {
+        keepGoal(); goal = null;
         item = classroom.store.groupClass(classroom.classId);
         LinearLayout root = ui.column(); ui.header(root,"Đăng ký tham gia lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
 
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(6),ui.dp(11),ui.dp(8),ui.dp(11));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.art(item.largeArt(),108,112)); ui.gap(card,14);
+        card.addView(ui.photo(item.art(),null,108,112,14)); ui.gap(card,14);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,23,Ui.INK,true)); ui.space(info,4);
         ui.add(info,ui.text(item.subject+" · "+item.level,16,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,48)); ui.gap(teacher,11);
@@ -43,10 +58,16 @@ public final class JoinClassFragment extends ScreenFragment {
         ui.add(body,seats); ui.space(body,14);
         if (!item.description.isEmpty()) { ui.add(body,ui.text(item.description,15,Ui.MUTED,false)); ui.space(body,12); }
 
+        ClassQuestionEntry.add(this,ui,body,item.id);
+        com.example.tmdt.ui.groupclass.GroupAssignmentEntry.add(this,ui,body,item,classroom.me());
+
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());
-        if (!member && sent == null) {
-            ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true);
+        if (!member && sent == null && !item.cancelled()) {
+            com.example.tmdt.ui.exchange.LearnerPicker.add(ui,body,learners(),learnerId,id->{keepGoal();learnerId=id;refresh();},
+                    ()->{keepGoal();((com.example.tmdt.MainActivity)requireActivity()).exchange.openLearners();});
+            ui.space(body,14);
+            ui.label(body,"Mục tiêu học tập"); goal = ui.entry("Ví dụ: Ôn kiến thức và luyện bài tập",true); goal.setText(savedGoal);
             goal.setMinimumHeight(ui.dp(54)); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
             ui.add(body,goal); ui.space(body,16);
         }
@@ -55,14 +76,18 @@ public final class JoinClassFragment extends ScreenFragment {
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,17); price.addView(ui.text(item.priceLabel(),22,Ui.INK,true));
         ui.add(body,price); ui.space(body,20);
 
-        if (member) {
+        if (item.cancelled()) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Gia sư đã hủy lớp · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
+            ui.addAction(body,ui.action("Lớp đã hủy",0,Ui.DISABLED,null),52);
+        } else if (member) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã là thành viên của lớp này.",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(body,16);
-            ui.addAction(body,ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
+            ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                    :ui.action("Đã tham gia lớp",0,Ui.DISABLED,null),52);
         } else if (sent != null) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã gửi đăng ký ngày "+LocalDate.parse(sent.date).format(Lesson.DATE)+". Đăng ký đang chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,16); ui.addAction(body,ui.action("Đã gửi đăng ký",0,Ui.DISABLED,null),52);
         } else {
-            ui.add(body,ui.note(R.drawable.ic_info,"Bước tiếp theo: ký quỹ học phí và gửi đăng ký chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
+            ui.add(body,ui.note(R.drawable.ic_info,"Gửi đăng ký để gia sư duyệt trước. Khi được chấp nhận, bạn thanh toán toàn bộ khóa cho hệ thống qua VNPay.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,24); ui.addAction(body,ui.action("Tiếp tục đăng ký →",0,Ui.PRIMARY,this::submit),52);
         }
         return root;
@@ -76,13 +101,15 @@ public final class JoinClassFragment extends ScreenFragment {
         // A clash is reported before the deposit step, so no money is held for a class the student cannot attend.
         String blocked = classroom.store.registrationError(item,classroom.me());
         if (blocked != null) { classroom.dialog("Chưa gửi được đăng ký",blocked); return; }
-        classroom.ui.dialog().setTitle("Ký quỹ học phí")
-                .setMessage(item.priceLabel()+" sẽ được giữ ký quỹ cho đến khi gia sư duyệt đăng ký.\n\nMàn hình Ví và nạp tiền (41) do Thành viên 4 phụ trách; bản mẫu chỉ ghi nhận đăng ký, chưa trừ tiền.")
+        classroom.ui.dialog().setTitle("Gửi đăng ký khóa học")
+                .setMessage("Gia sư sẽ xét duyệt trước. Sau khi được chấp nhận, bạn thanh toán toàn bộ khóa qua VNPay: "+com.example.tmdt.PaymentState.money((long)item.price*(item.perSession?item.sessions:1))+". Tiền được chuyển về tài khoản hệ thống.")
                 .setNegativeButton("Hủy",null)
-                .setPositiveButton("Xác nhận ký quỹ",(dialog,which)->{
+                .setPositiveButton("Gửi đăng ký",(dialog,which)->{
                     // Seats may have run out while the dialog was open.
                     if (item.full()) { classroom.show("full"); return; }
-                    String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective);
+                    com.example.tmdt.LearnerState.Learner learner = learners().learner(learnerId);
+                    String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective,
+                            learner == null ? "" : learner.id, learner == null ? "" : learner.name);
                     if (error != null) { classroom.dialog("Chưa gửi được đăng ký",error); return; }
                     classroom.show("groups"); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
                 }).show();

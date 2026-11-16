@@ -29,6 +29,7 @@ public final class ClassFullFragment extends ScreenFragment {
         ui.add(card,ui.fact(R.drawable.ic_coin,item.priceLabel(),23,16,Ui.INK,false)); ui.space(card,11);
         ui.add(card,ui.fact(R.drawable.ic_pin,item.address.isEmpty()?"Học trực tuyến":"Học trực tiếp tại "+item.address,23,14,Ui.INK,false));
         ui.add(body,card);
+        ClassQuestionEntry.add(this,ui,body,item.id);
 
         LinearLayout seats = ui.bordered(); seats.setGravity(Gravity.CENTER_HORIZONTAL); seats.setPadding(ui.dp(12),ui.dp(14),ui.dp(12),ui.dp(12));
         seats.addView(ui.pill("♟ Đã đủ "+item.members.size()+"/"+item.capacity+" học viên",14,Ui.ORANGE,Ui.ORANGE_BG),ui.lp(196,36)); ui.space(seats,20);

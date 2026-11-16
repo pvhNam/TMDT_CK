@@ -53,12 +53,12 @@ public final class Ui {
     public void gap(LinearLayout parent, int width) { parent.addView(new View(context),lp(width,1)); }
     public void weight(LinearLayout row, View child) { row.addView(child,new LinearLayout.LayoutParams(0,-2,1)); }
     public void line(LinearLayout parent) {
-        View view = new View(context); view.setBackgroundColor(BORDER); parent.addView(view,lp(-1,1));
+        View view = new View(context); view.setBackgroundColor(ThemeColors.border(context,BORDER)); parent.addView(view,lp(-1,1));
     }
 
     public TextView text(String value, int size, int color, boolean bold) {
         TextView view = new TextView(context);
-        view.setText(value); view.setTextSize(size); view.setTextColor(color);
+        view.setText(value); view.setTextSize(size); view.setTextColor(ThemeColors.text(context,color));
         view.setFontFeatureSettings("kern"); view.setIncludeFontPadding(false);
         view.setLayoutParams(lp(-2,-2));
         // Match ScreenTitle/FieldLabel and FormInput on the student screens.
@@ -68,8 +68,8 @@ public final class Ui {
     }
 
     public GradientDrawable background(int color, int radius, int stroke) {
-        GradientDrawable drawable = new GradientDrawable(); drawable.setColor(color);
-        drawable.setCornerRadius(dp(radius)); if (stroke != 0) drawable.setStroke(dp(1),stroke);
+        GradientDrawable drawable = new GradientDrawable(); drawable.setColor(ThemeColors.fill(context,color));
+        drawable.setCornerRadius(dp(radius)); if (stroke != 0) drawable.setStroke(dp(1),ThemeColors.border(context,stroke));
         return drawable;
     }
     public void surface(View view, int color, int radius, int stroke) { view.setBackground(background(color,radius,stroke)); }
@@ -93,6 +93,7 @@ public final class Ui {
                 AlertDialog dialog = super.show();
                 TextView message = dialog.findViewById(android.R.id.message);
                 if (message != null) message.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+                if(dialog.getWindow()!=null){ThemeColors.apply(dialog.getWindow().getDecorView());Motion.bindControls(dialog.getWindow().getDecorView());}
                 return dialog;
             }
         };
@@ -134,9 +135,9 @@ public final class Ui {
     }
 
     public EditText input(String hint) {
-        EditText input = new EditText(context); input.setTextSize(14); input.setTextColor(INK);
-        input.setHintTextColor(MUTED); input.setHint(hint); input.setSingleLine(true);
-        input.setMinimumHeight(dp(48)); pad(input,13,10); fieldSurface(input,0xFFF8FAFF,BORDER);
+        EditText input = new EditText(context); input.setTextSize(14); input.setTextColor(ThemeColors.text(context,INK));
+        input.setHintTextColor(ThemeColors.text(context,MUTED)); input.setHint(hint); input.setSingleLine(true);
+        input.setMinimumHeight(context.getResources().getDimensionPixelSize(R.dimen.control_height)); pad(input,13,12); fieldSurface(input,0xFFF8FAFF,BORDER);
         return input;
     }
 
@@ -165,7 +166,7 @@ public final class Ui {
 
     public ImageView icon(int drawable, int size, int color) {
         ImageView view = new ImageView(context); view.setImageResource(drawable);
-        view.setImageTintList(NavigationAssets.useOriginalColors(drawable,color)?null:ColorStateList.valueOf(color));
+        view.setImageTintList(NavigationAssets.useOriginalColors(drawable,color)?null:ColorStateList.valueOf(ThemeColors.text(context,color)));
         view.setLayoutParams(lp(size,size));
         view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); return view;
     }
@@ -194,10 +195,10 @@ public final class Ui {
 
     /** Button/Primary, Button/Outline, Button/Danger and Button/Disabled; the icon sits at the start as in the design. */
     public FrameLayout action(String label, int icon, int style, Runnable click) {
-        FrameLayout button = new FrameLayout(context); button.setMinimumHeight(dp(46));
+        FrameLayout button = new FrameLayout(context); button.setMinimumHeight(context.getResources().getDimensionPixelSize(R.dimen.control_height));
         int foreground = style==OUTLINE ? BLUE : style==DANGER ? RED : WHITE;
         surface(button, style==PRIMARY ? BLUE : style==DISABLED ? GRAY : WHITE, radius(R.dimen.soft_button_radius), style==OUTLINE ? BLUE : style==DANGER ? RED : 0);
-        TextView text = text(label,14,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
+        TextView text = text(label,15,foreground,true); text.setGravity(Gravity.CENTER); text.setMaxLines(1);
         text.setPadding(dp(icon!=0 ? 36 : 8),0,dp(8),0);
         button.addView(text,new FrameLayout.LayoutParams(-1,-1));
         if (icon != 0) {
@@ -208,8 +209,8 @@ public final class Ui {
         if (style == DISABLED || click == null) button.setEnabled(false); else clickable(button,click);
         return button;
     }
-    public void addAction(LinearLayout parent, View button, int height) { parent.addView(button,lp(-1,height)); }
-    public void weightAction(LinearLayout row, View button, int height) { row.addView(button,new LinearLayout.LayoutParams(0,dp(height),1)); }
+    public void addAction(LinearLayout parent, View button, int height) { parent.addView(button,new LinearLayout.LayoutParams(-1,Math.max(dp(height),context.getResources().getDimensionPixelSize(R.dimen.control_height)))); }
+    public void weightAction(LinearLayout row, View button, int height) { row.addView(button,new LinearLayout.LayoutParams(0,Math.max(dp(height),context.getResources().getDimensionPixelSize(R.dimen.control_height)),1)); }
 
     /** Nhãn (status pill), e.g. green "Đã xác nhận" or orange "Chờ duyệt". */
     public TextView pill(String label, int size, int color, int fill) {
@@ -222,7 +223,7 @@ public final class Ui {
     }
 
     /** Trường: a bold label above an input or picker. */
-    public void label(LinearLayout parent, String label) { add(parent,text(label,14,INK,true)); space(parent,7); }
+    public void label(LinearLayout parent, String label) { add(parent,text(label,14,INK,true)); space(parent,8); }
     public TextView section(LinearLayout parent, String title, int size) { TextView view = text(title,size,INK,true); add(parent,view); return view; }
 
     /** Ô nhập acting as a picker: optional icon, value and the down chevron. */
@@ -235,10 +236,10 @@ public final class Ui {
     public TextView value(String value) { TextView view = text(value,15,INK,false); view.setMaxLines(2); return view; }
 
     public EditText entry(String hint, boolean multiline) {
-        EditText input = new EditText(context); input.setTextSize(15); input.setTextColor(INK); input.setHintTextColor(MUTED);
+        EditText input = new EditText(context); input.setTextSize(15); input.setTextColor(ThemeColors.text(context,INK)); input.setHintTextColor(ThemeColors.text(context,MUTED));
         input.setHint(hint); input.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));
         input.setSingleLine(!multiline); if (multiline) { input.setMinLines(2); input.setGravity(Gravity.TOP|Gravity.START); }
-        input.setMinimumHeight(dp(multiline ? 61 : 44)); input.setPadding(dp(12),dp(10),dp(12),dp(10)); fieldSurface(input,0xFFF8FAFF,BORDER);
+        input.setMinimumHeight(multiline?dp(72):context.getResources().getDimensionPixelSize(R.dimen.control_height)); input.setPadding(dp(12),dp(12),dp(12),dp(12)); fieldSurface(input,0xFFF8FAFF,BORDER);
         input.setContentDescription(hint); return input;
     }
 
@@ -252,7 +253,7 @@ public final class Ui {
     public LinearLayout table() { LinearLayout table = column(); table.setPadding(dp(11),dp(3),dp(14),dp(3)); cardSurface(table,WHITE,BORDER); return table; }
     public void tableRow(LinearLayout table, int icon, String label, String value) {
         if (table.getChildCount() > 0) {
-            View divider = new View(context); divider.setBackgroundColor(BORDER);
+            View divider = new View(context); divider.setBackgroundColor(ThemeColors.border(context,BORDER));
             LinearLayout.LayoutParams params = lp(-1,1); params.leftMargin = dp(32); table.addView(divider,params);
         }
         LinearLayout row = row(); row.setMinimumHeight(dp(38)); row.addView(icon(icon,21,INK)); gap(row,12);
@@ -298,7 +299,7 @@ public final class Ui {
     }
 
     public CheckBox check(String label, boolean checked, CompoundButton.OnCheckedChangeListener change) {
-        CheckBox box = new CheckBox(context); box.setText(label); box.setTextSize(15); box.setTextColor(INK); box.setChecked(checked);
+        CheckBox box = new CheckBox(context); box.setText(label); box.setTextSize(15); box.setTextColor(ThemeColors.text(context,INK)); box.setChecked(checked);
         box.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL)); box.setButtonTintList(ColorStateList.valueOf(BLUE));
         box.setMinHeight(dp(44)); box.setOnCheckedChangeListener(change); return box;
     }

@@ -14,6 +14,12 @@ import com.example.tmdt.Tutor;
 public final class LessonDetailFragment extends ScreenFragment {
     private Lesson lesson;
 
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, android.os.Bundle state) {
+        super.onViewCreated(view, state);
+        // UC23: thẻ hợp đồng cập nhật ngay khi gia sư gửi hoặc khi học viên xác nhận.
+        ((com.example.tmdt.MainActivity) requireActivity()).exchange.contracts.changes().observe(getViewLifecycleOwner(), ignored -> refresh());
+    }
+
     @Override protected View build() {
         lesson = classroom.store.lesson(classroom.lessonId);
         LinearLayout root = ui.column(); ui.header(root,"Chi tiết buổi học",classroom::back,null);
@@ -42,6 +48,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.tableRow(table,R.drawable.ic_hourglass,"Thời lượng",lesson.minutes+" phút");
         ui.add(body,table); ui.space(body,12);
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(body,"Người học"); ui.add(body,ui.text(lesson.learnerName,16,Ui.INK,false)); ui.space(body,12); }
         ui.label(body,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,16,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));
         goal.setMinHeight(ui.dp(46)); ui.cardSurface(goal,Ui.PALE,Ui.BORDER); ui.add(body,goal); ui.space(body,12);
@@ -50,11 +57,17 @@ public final class LessonDetailFragment extends ScreenFragment {
         price.addView(ui.icon(R.drawable.ic_wallet,22,Ui.INK)); ui.gap(price,12);
         ui.weight(price,ui.text("Học phí",17,Ui.INK,false)); price.addView(ui.text(Tutor.money(lesson.total()),20,Ui.INK,true));
         ui.add(body,price); ui.space(body,10);
+        if(lesson.confirmed()){
+            com.example.tmdt.MainActivity host=(com.example.tmdt.MainActivity)requireActivity();
+            com.example.tmdt.PaymentState.Row payment=host.payments.paymentFor("LESSON",lesson.id);
+            ui.addAction(body,ui.action(payment==null?"Thanh toán học phí":"Thanh toán · "+com.example.tmdt.PaymentState.status(payment.text("status")),R.drawable.ic_wallet,Ui.PRIMARY,()->host.openPayment("LESSON",lesson.id)),48);ui.space(body,12);
+        }
 
         if (lesson.proposal() && lesson.confirmed()) {
             LinearLayout proposal = ui.note(R.drawable.ic_clock,"Gia sư đề nghị đổi lịch sang "+lesson.proposalLabel()+". Chạm để phản hồi.",Ui.ORANGE_BG,Ui.ORANGE,Ui.ORANGE);
             ui.clickable(proposal,()->classroom.show("reschedule")); ui.add(body,proposal); ui.space(body,8);
         }
+        contractNote(body);
         ui.add(body,ui.note(R.drawable.ic_info,hint(),Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,8);
         ui.addAction(body,mainAction(),49); ui.space(body,12);
         ui.addAction(body,ui.action("Nhắn tin gia sư",R.drawable.ic_chat,Ui.OUTLINE,()->classroom.message(lesson.tutorName)),48);
@@ -65,11 +78,25 @@ public final class LessonDetailFragment extends ScreenFragment {
         return root;
     }
 
+    /** UC23: hợp đồng dạy gia sư gửi sau khi chấp nhận lịch học; chờ học viên xác nhận thì nổi bật màu cam. */
+    private void contractNote(LinearLayout body) {
+        if (!com.example.tmdt.Exchange.needsContract(lesson)) return;
+        com.example.tmdt.Exchange exchange = ((com.example.tmdt.MainActivity) requireActivity()).exchange;
+        com.example.tmdt.Contract contract = exchange.contractFor(lesson);
+        boolean mine = contract != null && contract.awaits(classroom.me());
+        String text = contract == null ? "Gia sư sẽ gửi hợp đồng dạy (số buổi, học phí, điều khoản) để bạn xác nhận."
+                : mine ? "Gia sư đã gửi hợp đồng "+contract.code+". Chạm để xem và xác nhận."
+                : "Hợp đồng "+contract.code+": "+contract.statusLabel()+". Chạm để xem.";
+        LinearLayout note = ui.note(R.drawable.ic_file,text,mine?Ui.ORANGE_BG:Ui.PALE,mine?Ui.ORANGE:Ui.BLUE,Ui.INK);
+        if (contract != null) ui.clickable(note,()->exchange.openContract(contract));
+        ui.add(body,note); ui.space(body,8);
+    }
+
     private String hint() {
         if (Lesson.CANCELLED.equals(lesson.status)) return "Buổi học đã hủy"+(lesson.cancelReason.isEmpty()?".":" · Lý do: "+lesson.cancelReason+".");
         if (Lesson.REJECTED.equals(lesson.status)) return "Gia sư đã từ chối yêu cầu này. Bạn có thể chọn thời gian khác.";
         if (lesson.pending()) return "Gia sư sẽ xác nhận yêu cầu của bạn.";
-        if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để giải ngân học phí.";
+        if (lesson.needsConfirmation()) return "Chờ xác nhận hoàn thành.";
         if (lesson.finished) return "Bạn đã xác nhận buổi học này hoàn thành.";
         return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : (lesson.roomLink.isEmpty()?"Phòng học":"Phòng học "+lesson.roomHost())+" mở trước giờ bắt đầu 10 phút.";
     }
@@ -79,6 +106,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.CANCELLED.equals(lesson.status)) return ui.action("Buổi học đã hủy",0,Ui.DISABLED,null);
         if (Lesson.REJECTED.equals(lesson.status)) return ui.action("Yêu cầu bị từ chối",0,Ui.DISABLED,null);
         if (lesson.pending()) return ui.action("Đang chờ gia sư xác nhận",0,Ui.DISABLED,null);
+        if(!lesson.finished&&!((com.example.tmdt.MainActivity)requireActivity()).payments.paid("LESSON",lesson.id))return ui.action("Thanh toán để xác nhận lịch học",0,Ui.PRIMARY,()->((com.example.tmdt.MainActivity)requireActivity()).openPayment("LESSON",lesson.id));
         if (lesson.finished) return ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null);
         if (lesson.needsConfirmation()) return ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,()->classroom.show("confirm"));
         if (lesson.roomOpen()) return lesson.online() ? ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openRoom(lesson))

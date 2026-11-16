@@ -10,54 +10,84 @@ import com.example.tmdt.R;
 import com.example.tmdt.Classroom;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.StableViews;
+import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
 public final class OpenedClassesFragment extends ScreenFragment {
-    private LinearLayout tabContainer, listContainer;
+    private LinearLayout listContainer;
+    private TabLayout tabs;
     private static final String[] STATUSES = {GroupClass.OPEN, GroupClass.RUNNING, GroupClass.ENDED};
+
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view,android.os.Bundle state){
+        super.onViewCreated(view,state);classroom.watchRequests();
+    }
 
     @Override protected View build() {
         LinearLayout root = ui.column();
         View open = ui.action("＋ Mở lớp",0,Ui.PRIMARY,()->classroom.openClass(null,"openClass"));
         open.setLayoutParams(ui.lp(104,37));
         ui.title(root,"Lớp đã mở",open);
-        tabContainer=ui.column();ui.add(root,tabContainer);
-        listContainer=ui.page(root);renderClasses();return root;
-    }
-    private void renderClasses(){
-        tabContainer.removeAllViews();listContainer.removeAllViews();
-        String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
-        for(int i=0;i<3;i++)labels[i]+=" ("+mine(STATUSES[i]).size()+")";
-        ui.tabs(tabContainer,labels,classroom.classTab,index->{
-            if(index==classroom.classTab)return;
-            classroom.classTab=index;renderClasses();
-            ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
-            com.example.tmdt.ui.common.Motion.reveal(listContainer);
+        classroom.classTab=Math.max(0,Math.min(classroom.classTab,STATUSES.length-1));
+        tabs=new TabLayout(requireContext());tabs.setTabMode(TabLayout.MODE_FIXED);
+        for(String title:new String[]{"Đang tuyển","Đang học","Đã kết thúc"})tabs.addTab(tabs.newTab().setText(title),false);
+        tabs.getTabAt(classroom.classTab).select();ui.add(root,tabs);
+        listContainer=ui.page(root);
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){
+            @Override public void onTabSelected(TabLayout.Tab tab){
+                if(tab.getPosition()==classroom.classTab)return;
+                classroom.classTab=tab.getPosition();renderClasses();
+                ((android.widget.ScrollView)listContainer.getParent()).scrollTo(0,0);
+                com.example.tmdt.ui.common.Motion.reveal(listContainer);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab){}
+            @Override public void onTabReselected(TabLayout.Tab tab){}
         });
-        ui.space(listContainer,4);
-        List<GroupClass> list=mine(STATUSES[classroom.classTab]);
-        for(GroupClass item:list){ui.add(listContainer,card(item));ui.space(listContainer,11);}
-        if(list.isEmpty())ui.add(listContainer,ui.note(R.drawable.ic_info,classroom.classTab==0
-                ?"Chưa có lớp đang tuyển sinh. Chọn \"Mở lớp\" để tạo lớp mới.":"Chưa có lớp nào trong mục này.",Ui.PALE,Ui.BLUE,Ui.INK));
+        renderClasses();return root;
     }
+    @Override protected boolean updateContent(){if(listContainer==null)return false;renderClasses();return true;}
+    private void renderClasses(){
+        String[] labels = {"Đang tuyển","Đang học","Đã kết thúc"};
+        for(int i=0;i<3;i++)tabs.getTabAt(i).setText(labels[i]+" ("+mine(STATUSES[i]).size()+")");
+        if(tabs.getSelectedTabPosition()!=classroom.classTab)tabs.getTabAt(classroom.classTab).select();
+        StableViews rows=StableViews.at(listContainer);rows.begin();
+        int groups=GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
+        if(classroom.classTab==0&&groups>0)rows.add("matches",groups,()->matchLink(groups),ui.dp(12));
+        List<GroupClass> list=mine(STATUSES[classroom.classTab]);
+        for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
+        rows.commit();
+    }
+
+    private View matchLink(int groups){
+        LinearLayout row=ui.row();row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE));ui.gap(row,12);
+        LinearLayout copy=ui.column();ui.add(copy,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true));ui.space(copy,2);
+        ui.add(copy,ui.text(groups+" nhóm học viên cùng nhu cầu",13,Ui.MUTED,false));ui.weight(row,copy);ui.gap(row,8);
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));row.setContentDescription("Gợi ý ghép nhóm, "+groups+" nhóm học viên");
+        ui.clickable(row,()->classroom.show("matches"));return row;
+    }
+
+    @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();
-        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && item.status.equals(status)) list.add(item);
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me()) && (item.status.equals(status) || (GroupClass.ENDED.equals(status) && item.cancelled()))) list.add(item);
         return list;
     }
 
     private View card(GroupClass item) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(10),ui.dp(13),ui.dp(10),ui.dp(10));
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.art(item.smallArt(),77,83)); ui.gap(top,11);
+        top.addView(ui.photo(item.art(),null,77,83,12)); ui.gap(top,11);
         LinearLayout info = ui.column(); LinearLayout titleRow = ui.row(); titleRow.setGravity(Gravity.TOP);
         ui.weight(titleRow,ui.text(item.title,item.title.length()>16?16:21,Ui.INK,true)); ui.gap(titleRow,6);
         titleRow.addView(status(item)); ui.add(info,titleRow); ui.space(info,4);
         ui.add(info,ui.fact(R.drawable.ic_users,item.members.size()+"/"+item.capacity+" học viên",18,16,Ui.INK,false));
         if (item.pendingCount() > 0) ui.add(info,ui.fact(R.drawable.ic_clock,item.pendingCount()+" đăng ký chờ duyệt",18,16,Ui.ORANGE,false));
+        if (item.cancelled()) ui.add(info,ui.fact(R.drawable.ic_info,"Lý do: "+item.cancelReason,18,14,Ui.RED,false));
         ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,Tutor.money(item.price)+(item.perSession?" / buổi":" / học viên"),18,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),18,16,Ui.INK,false));
@@ -79,6 +109,7 @@ public final class OpenedClassesFragment extends ScreenFragment {
     private TextView status(GroupClass item) {
         if (GroupClass.OPEN.equals(item.status)) return ui.pill("Đang tuyển",12,Ui.ORANGE,Ui.ORANGE_BG);
         if (GroupClass.RUNNING.equals(item.status)) return ui.pill("Đang học",12,Ui.GREEN,Ui.GREEN_BG);
+        if (item.cancelled()) return ui.pill("Đã hủy",12,Ui.RED,0xFFFFE9EC);
         return ui.pill("Đã kết thúc",12,Ui.MUTED,0xFFEEF2F7);
     }
 

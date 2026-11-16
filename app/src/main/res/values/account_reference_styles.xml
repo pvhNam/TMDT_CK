@@ -64,23 +64,23 @@
         <item name="android:saveEnabled">false</item>
     </style>
     <style name="ReferencePrimary" parent="PrimaryButton">
-        <item name="android:minHeight">48dp</item>
-        <item name="android:layout_height">48dp</item>
+        <item name="android:minHeight">@dimen/control_height</item>
+        <item name="android:layout_height">@dimen/control_height</item>
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">@dimen/control_text_size</item>
         <item name="android:textStyle">bold</item>
         <item name="cornerRadius">@dimen/soft_button_radius</item>
         <item name="backgroundTint">@color/account_blue</item>
     </style>
     <style name="ReferenceOutline" parent="SecondaryButton">
-        <item name="android:layout_height">48dp</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:layout_height">@dimen/control_height</item>
+        <item name="android:minHeight">@dimen/control_height</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
         <item name="android:layout_marginTop">10dp</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/control_text_size</item>
         <item name="cornerRadius">@dimen/soft_button_radius</item>
         <item name="strokeColor">@color/account_blue</item>
     </style>

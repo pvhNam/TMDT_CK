@@ -1,0 +1,15 @@
+<resources>
+    <color name="app_background">#101827</color>
+    <color name="app_surface">#182337</color>
+    <color name="app_surface_variant">#21324B</color>
+    <color name="app_ink">#EDF3FF</color>
+    <color name="app_muted">#B0C0D8</color>
+    <color name="app_accent">#78B0FF</color>
+    <color name="app_border">#344762</color>
+    <color name="app_success">#63DAB0</color>
+    <color name="app_warning">#FFD180</color>
+    <color name="app_error">#FF8795</color>
+    <color name="app_disabled">#8798B3</color>
+    <color name="app_navigation_overlay">#EB182337</color>
+    <bool name="app_light_system_bars">false</bool>
+</resources>

@@ -9,18 +9,17 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
+import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.Lesson;
 import com.example.tmdt.Tutor;
 
 /** Screen 39 · Đặt buổi học thử (UC22): a short online lesson at a fixed trial price. */
 public final class TrialFragment extends ScreenFragment {
-    private static final int[] HOURS = {18, 19, 20}, DURATIONS = {30, 45};
     private Tutor tutor;
     private LocalDate date;
-    private int hour = 19, minutes = 30;
-    private LinearLayout hours;
-    private TextView dateValue, durationValue;
+    private int hour = 19, minute, minutes = 30;
+    private TextView dateValue;
     private EditText goal;
 
     @Override protected View build() {
@@ -28,7 +27,7 @@ public final class TrialFragment extends ScreenFragment {
         if (date == null) {
             // Suggest the first day that is free at the default hour.
             date = LocalDate.now().plusDays(1);
-            while (classroom.store.conflict(tutor.id,classroom.me(),date.toString(),hour,minutes,"") != null) date = date.plusDays(1);
+            while (classroom.store.conflict(tutor.id,classroom.me(),date.toString(),hour,minute,minutes,"") != null) date = date.plusDays(1);
         }
         LinearLayout root = ui.column(); ui.header(root,"Đặt buổi học thử",classroom::back,null);
         LinearLayout body = ui.page(root);
@@ -48,10 +47,9 @@ public final class TrialFragment extends ScreenFragment {
 
         ui.label(body,"Chọn ngày học"); dateValue = ui.value("");
         ui.add(body,ui.picker(R.drawable.ic_calendar,dateValue,this::pickDate)); ui.space(body,14);
-        ui.section(body,"Chọn khung giờ có sẵn",18); ui.space(body,8);
-        hours = ui.row(); ui.add(body,hours); ui.space(body,16);
-        ui.label(body,"Thời lượng buổi học"); durationValue = ui.value("");
-        ui.add(body,ui.picker(R.drawable.ic_clock,durationValue,this::pickDuration)); ui.space(body,14);
+        TimeRange time = new TimeRange(ui,7,23,30,45,15,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;});
+        hour = time.hour(); minute = time.minute(); minutes = time.minutes();
+        ui.add(body,time.view("Chọn giờ học thử")); ui.space(body,14);
         ui.label(body,"Mục tiêu buổi học thử"); goal = ui.entry("Bạn muốn trao đổi điều gì?",false);
         goal.setText("Làm quen phương pháp giảng dạy"); goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
         ui.add(body,goal); ui.space(body,14);
@@ -59,36 +57,25 @@ public final class TrialFragment extends ScreenFragment {
         LinearLayout price = ui.row(); price.setPadding(ui.dp(13),ui.dp(9),ui.dp(13),ui.dp(9)); ui.cardSurface(price,Ui.PALE,0);
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,18); price.addView(ui.text(Tutor.money(Lesson.TRIAL_PRICE),21,Ui.INK,true));
         ui.add(body,price); ui.space(body,6);
-        ui.add(body,ui.note(R.drawable.ic_info,"Buổi học thử cần được gia sư xác nhận.",Ui.WHITE,Ui.BLUE,Ui.MUTED)); ui.space(body,6);
         ui.addAction(body,ui.action("Gửi yêu cầu học thử",R.drawable.ic_send,Ui.PRIMARY,this::submit),51);
         render();
         return root;
     }
 
     private void render() {
-        dateValue.setText(date.format(Lesson.DATE)); durationValue.setText(minutes+" phút");
-        hours.removeAllViews();
-        for (int i = 0; i < HOURS.length; i++) {
-            int value = HOURS[i]; if (i > 0) ui.gap(hours,8);
-            TextView option = ui.choice(value+":00",value==hour,()->{hour=value;render();}); option.setMinHeight(ui.dp(43)); ui.weight(hours,option);
-        }
+        dateValue.setText(date.format(Lesson.DATE));
     }
     private void pickDate() {
         DatePickerDialog dialog = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{date=LocalDate.of(year,month+1,day);render();},
                 date.getYear(),date.getMonthValue()-1,date.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000); dialog.show();
     }
-    private void pickDuration() {
-        classroom.ui.dialog().setTitle("Thời lượng buổi học thử")
-                .setSingleChoiceItems(new String[]{"30 phút","45 phút"},minutes==30?0:1,(dialog,which)->{minutes=DURATIONS[which];render();dialog.dismiss();})
-                .setNegativeButton("Đóng",null).show();
-    }
     private void submit() {
-        if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
+        if (!date.atTime(hour,minute).isAfter(LocalDateTime.now())) { classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai."); return; }
         String objective = goal.getText().toString().trim();
         if (objective.isEmpty()) { goal.setError("Vui lòng nhập mục tiêu buổi học thử"); goal.requestFocus(); return; }
         String used = classroom.store.trialError(tutor.id,classroom.me());
         if (used != null) { classroom.dialog("Đã có buổi học thử",used); return; }
-        classroom.saveRequest(classroom.request(tutor,"Học thử "+tutor.subject,date,hour,minutes,"Trực tuyến",objective,"",true,Lesson.TRIAL_PRICE));
+        classroom.saveRequest(classroom.request(tutor,"Học thử "+tutor.subject,date,hour,minute,minutes,"Trực tuyến",objective,"",true,Lesson.TRIAL_PRICE));
     }
 }

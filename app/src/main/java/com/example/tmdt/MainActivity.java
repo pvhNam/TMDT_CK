@@ -21,6 +21,7 @@ import com.example.tmdt.ui.home.HomeFragment;
 import com.example.tmdt.ui.profile.AccountFragment;
 import com.example.tmdt.ui.profile.EditAccountFragment;
 import com.example.tmdt.ui.common.NavigationAssets;
+import com.example.tmdt.ui.common.FloatingHelpDrag;
 import com.example.tmdt.ui.schedule.ScheduleFragment;
 import com.example.tmdt.ui.messages.ChatFragment;
 import com.example.tmdt.ui.messages.MessagesFragment;
@@ -30,31 +31,73 @@ import java.util.Map;
 
 /** Hosts independent fragments. Layouts, form handling and Firebase access live outside this activity. */
 public class MainActivity extends AppCompatActivity {
+    private static final String FLOATING_HELP_TAG = "floating_help_chat";
     AccountState account;
     CatalogState catalog;
     /** Tin nhắn (member 4, UC21). */
     public ChatState chat;
+    TutorReviewState tutorReviews;
     /** Lessons and group classes (member 3). */
     public Classroom classroom;
+    /** Hợp đồng dạy (member 4, UC23). */
+    public Exchange exchange;
+    public PaymentState payments;
+    public AdminState administration;
+    public boolean isAdmin(){return account!=null&&account.signedIn()&&account.profile()!=null&&"ADMIN".equals(account.profile().role)&&"ACTIVE".equals(account.profile().status);}
     String screen="home";
+    public String currentScreen(){return screen;}
     private String pendingDestination;
     private String authenticatedDestination;
+    private String selectedRequestId="";
+    private String requestManagementOrigin="home";
+    private String postRequestOrigin="home";
+    private String requestSearchOrigin="home";
     private ActivityMainBinding binding;
     private boolean updatingNavigation;
+    private boolean adminMenuIcons;
     private boolean keyboardVisible;
+    private boolean floatingHelpDismissed;
+    private boolean helpPopupOpen;
+    private FloatingHelpDrag floatingHelpDrag;
     private int bottomInset,systemBottomInset;
     private String navigatingTo;
     private final com.example.tmdt.ui.common.FloatingNavigationInsets navigationInsets=new com.example.tmdt.ui.common.FloatingNavigationInsets();
     private final android.view.ViewTreeObserver.OnGlobalLayoutListener navigationLayout=this::updateNavigationPadding;
 
+    @Override protected void attachBaseContext(Context base){
+        super.attachBaseContext(com.example.tmdt.ui.common.UiScale.compact(base));
+    }
+
     @Override public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(),false);
         binding=ActivityMainBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
+        floatingHelpDismissed = savedInstanceState != null && savedInstanceState.getBoolean("floating_help_dismissed");
+        Fragment restoredHelp = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        helpPopupOpen = restoredHelp != null && !restoredHelp.isHidden();
+        setupFloatingHelp();
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
+            @Override public void onFragmentViewCreated(androidx.fragment.app.FragmentManager manager,Fragment fragment,View view,Bundle state){
+                view.setBackgroundColor(com.example.tmdt.ui.common.ThemeColors.background(view.getContext()));
+                com.example.tmdt.ui.common.ThemeColors.apply(view);
+                com.example.tmdt.ui.common.Motion.bindControls(view);
+            }
+        },true);
+        binding.appRoot.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
+            if(right-left!=oldRight-oldLeft||bottom-top!=oldBottom-oldTop)updateNavigationVisibility();
+        });
         account=new ViewModelProvider(this).get(AccountState.class);
         catalog=new ViewModelProvider(this).get(CatalogState.class);
         chat=new ViewModelProvider(this).get(ChatState.class);
+        tutorReviews=new ViewModelProvider(this).get(TutorReviewState.class);
         classroom=new Classroom(this,savedInstanceState);
+        exchange=new Exchange(this,savedInstanceState);
+        payments=new ViewModelProvider(this).get(PaymentState.class);
+        administration=new ViewModelProvider(this).get(AdminState.class);
+        if(savedInstanceState!=null){administration.userOrigin=savedInstanceState.getString("admin_user_origin","admin_users");administration.contractOrigin=savedInstanceState.getString("admin_contract_origin","admin_contracts");administration.selectedTutor=savedInstanceState.getString("admin_tutor","");administration.selectedUser=savedInstanceState.getString("admin_user","");administration.selectedContract=savedInstanceState.getString("admin_contract","");}
+        if(savedInstanceState!=null){administration.selectedIncomeTutor=savedInstanceState.getString("admin_income_tutor","");administration.incomeTutorName=savedInstanceState.getString("admin_income_name","");administration.incomeOrigin=savedInstanceState.getString("admin_income_origin","admin_income");payments.incomePeriod=savedInstanceState.getString("admin_income_period",payments.incomePeriod);}
+        if(savedInstanceState!=null){payments.selected=savedInstanceState.getString("payment_id","");payments.selectedPayout=savedInstanceState.getString("payout_id","");payments.origin=savedInstanceState.getString("payment_origin","account");}
+        if(savedInstanceState!=null)payments.payrollOrigin=savedInstanceState.getString("payroll_origin","admin_finance");
         ViewCompat.setOnApplyWindowInsetsListener(binding.appRoot,(view,insets)->{
             Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
             bottomInset=safe.bottom;
@@ -64,8 +107,9 @@ public class MainActivity extends AppCompatActivity {
             updateNavigationVisibility();
             return WindowInsetsCompat.CONSUMED;
         });
-        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(true);
-        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(true);
+        boolean lightBars=!com.example.tmdt.ui.common.ThemeColors.dark(this);
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightStatusBars(lightBars);
+        WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView()).setAppearanceLightNavigationBars(lightBars);
         getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
         getWindow().setNavigationBarContrastEnforced(false);
         NavigationAssets.apply(binding.bottomNavigation);
@@ -76,48 +120,69 @@ public class MainActivity extends AppCompatActivity {
         binding.navigationGlass.setOutlineAmbientShadowColor(0x246583AD);
         binding.navigationGlass.setOutlineSpotShadowColor(0x246583AD);
         binding.navigationGlass.setupWith(binding.navigationBlurTarget,4f,false)
-                .setFrameClearDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE))
+                .setFrameClearDrawable(new android.graphics.drawable.ColorDrawable(com.example.tmdt.ui.common.ThemeColors.background(this)))
                 .setBlurRadius(8f);
         binding.screenContainer.getViewTreeObserver().addOnGlobalLayoutListener(navigationLayout);
         binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
         binding.bottomNavigation.setOnItemSelectedListener(item->navigateMenu(item.getItemId()));
         binding.bottomNavigation.setOnItemReselectedListener(item->navigateMenu(item.getItemId()));
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
-            @Override public void handleOnBackPressed(){if(classroom.root().equals(screen))finish();else back();}
+            @Override public void handleOnBackPressed(){if(helpPopupOpen)closeFloatingHelp();else if(classroom.root().equals(screen))finish();else back();}
         });
         Onboarding intro=new Onboarding(this);
         if(account.signedIn()&&!intro.introduced())intro.existingAccount();
         String initial=!intro.introduced()?"welcome":intro.pending()&&!account.signedIn()?"register":"home";
         screen=savedInstanceState==null?initial:savedInstanceState.getString("screen",initial);
         authenticatedDestination=savedInstanceState==null?null:savedInstanceState.getString("authenticated_destination");
-        if(getIntent()!=null&&getIntent().hasExtra("screen")){
+        if(savedInstanceState!=null){
+            selectedRequestId=savedInstanceState.getString("request_id","");
+            requestManagementOrigin=savedInstanceState.getString("request_origin","home");
+            postRequestOrigin=savedInstanceState.getString("post_request_origin","home");
+            requestSearchOrigin=savedInstanceState.getString("request_search_origin","home");
+        }
+        if(savedInstanceState==null&&getIntent()!=null&&getIntent().hasExtra("screen")){
             screen=getIntent().getStringExtra("screen");
             if(getIntent().hasExtra("tutor_id")) classroom.tutorProfileId=getIntent().getStringExtra("tutor_id");
         }
         show(screen);
         account.changes().observe(this,ignored->{
+            tutorReviews.account(account);
             classroom.onAccount();
+            payments.account(account);
+            administration.account(account);
             if(account.destination!=null){
-    String destination=account.destination;
-    account.destination=null;
-
-    if(authenticatedDestination!=null
-            &&("home".equals(destination)||"account".equals(destination))
-            &&account.signedIn()
-            &&account.profile()!=null
-            &&"ACTIVE".equals(account.profile().status)){
-        destination=authenticatedDestination;
-        authenticatedDestination=null;
-    }
-    show(destination);
-}
-
-  // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
-  if(account.signedIn())chat.start();
-  else chat.reset();
+                String destination=account.destination;
+                account.destination=null;
+                if(authenticatedDestination!=null
+                        &&("home".equals(destination)||"account".equals(destination))
+                        &&account.signedIn()
+                        &&account.profile()!=null
+                        &&"ACTIVE".equals(account.profile().status)){
+                    destination=authenticatedDestination;
+                    authenticatedDestination=null;
+                }
+                show(destination);
+            }
+            // Tin nhắn theo tài khoản đang đăng nhập; đăng xuất thì bỏ dữ liệu cũ (UC21).
+            if(account.signedIn())chat.start();
+            else chat.reset();
+            // Hợp đồng, mẫu hợp đồng, hợp đồng cộng tác theo tài khoản (UC23).
+            exchange.accountChanged(account.signedIn());
+            renderContractBadge();
+            payments.account(account);
+            renderNavigation();
+        });
+        tutorReviews.changes.observe(this,ignored->{
+            if(tutorReviews.destination!=null){String next=tutorReviews.destination;tutorReviews.destination=null;show(next);}
+            else if(classroom.tutorMode()&&"home".equals(screen))show("tutorHome");
+            else if(!classroom.isTutor()&&java.util.Arrays.asList("tutorHome","teaching","classes","openClass","review").contains(screen))show("tutor_pending");
             renderNavigation();
         });
         chat.changes().observe(this,ignored->renderMessageBadge());
+        exchange.contracts.changes().observe(this,ignored->renderContractBadge());
+        payments.changes.observe(this,ignored->{
+            if(payments.destination!=null){String next=payments.destination;payments.destination=null;show(next);}
+        });
     }
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);
@@ -127,10 +192,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void show(String destination){
+        if(destination.startsWith("admin_")&&!isAdmin())destination=account.signedIn()?"account":"login";
+        if(isAdmin()&&"home".equals(destination))destination="admin_dashboard";
+        if("email_otp".equals(destination))destination="email_verification"; // Older saved navigation state.
+        if(account.requiresEmailVerification())destination="email_verification";
+        if("email_verification".equals(destination)&&!account.requiresEmailVerification())destination="login";
         destination=classroom.redirect(destination);
-        if("post_request".equals(destination)&&!account.signedIn()){
+        destination=exchange.redirect(destination);
+        if(java.util.Arrays.asList("payments","payment_detail","tutor_income","tutor_wallet","withdraw_funds","withdrawal_detail","payout_bank","admin_payroll","payout_detail").contains(destination)&&!account.signedIn())destination="login";
+        if(java.util.Arrays.asList("tutor_wallet","withdraw_funds").contains(destination)&&(account.profile()==null||!account.profile().tutor||"ADMIN".equals(account.profile().role)))destination="account";
+        if("admin_payroll".equals(destination)&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
+        if("post_request".equals(destination)&&!"post_request".equals(screen))
+            postRequestOrigin="my_requests".equals(screen)?"my_requests":"home";
+        if((isRequestScreen(destination)||"search_requests".equals(destination))&&!account.signedIn()){
             authenticatedDestination=destination;destination="login";
         }
+        if(("edit_request".equals(destination)||"request_applicants".equals(destination))&&selectedRequestId.isEmpty())
+            destination="my_requests";
         // Màn 06 cần đăng nhập và một hội thoại đang mở (UC21).
         if("chat".equals(destination)&&(!account.signedIn()||chat.openId()==null))destination=account.signedIn()?"messages":"login";
         if(!account.signedIn()&&(destination.equals("account")
@@ -138,43 +216,82 @@ public class MainActivity extends AppCompatActivity {
                 ||destination.equals("otp")
                 ||destination.equals("register_tutor")
                 ||destination.equals("review_tutor")
+                ||destination.equals("tutor_evidence")||destination.equals("tutor_pending")
+                ||destination.equals("tutor_submitted")||destination.equals("tutor_supplement")||destination.equals("admin_tutors")
                 ||destination.equals("favorites")
-                ||destination.equals("settings")))
+                ||destination.equals("settings")
+                ||destination.equals("help_chat")))
             destination="login";
-        if((destination.equals("register_tutor")||destination.equals("review_tutor"))&&account.profile()!=null&&account.profile().tutor)destination="account";
+        if((destination.equals("register_tutor")||destination.equals("review_tutor")||destination.equals("tutor_evidence"))&&account.profile()!=null&&account.profile().tutor)destination="tutor_pending";
+        if(destination.equals("admin_tutors")&&(account.profile()==null||!"ADMIN".equals(account.profile().role)))destination="account";
+        if(destination.equals("tutor_evidence")&&account.tutorRegistration()==null)destination="register_tutor";
         if(destination.equals("review_tutor")&&account.tutorRegistration()==null)destination="register_tutor";
         if(account.signedIn()&&(destination.equals("login")||destination.equals("register")))destination="account";
         if(getSupportFragmentManager().isStateSaved()){pendingDestination=destination;return;}
+        if("help_chat".equals(destination))closeFloatingHelp();
         if(destination.equals(navigatingTo))return;
         Fragment fragment=classroom.fragment(destination);
+        if(fragment==null)fragment=exchange.fragment(destination);
         if(fragment==null)switch(destination){
+            case "admin_dashboard":fragment=new com.example.tmdt.ui.admin.AdminDashboardFragment();break;
+            case "admin_management":fragment=new com.example.tmdt.ui.admin.AdminManagementFragment();break;
+            case "admin_users":fragment=new com.example.tmdt.ui.admin.AdminUsersFragment();break;
+            case "admin_user":fragment=new com.example.tmdt.ui.admin.AdminUserDetailFragment();break;
+            case "admin_contracts":fragment=new com.example.tmdt.ui.admin.AdminContractsFragment();break;
+            case "admin_contract":fragment=new com.example.tmdt.ui.admin.AdminContractDetailFragment();break;
+            case "admin_income":fragment=new com.example.tmdt.ui.admin.AdminIncomeFragment();break;
+            case "admin_tutor_income":fragment=new com.example.tmdt.ui.admin.AdminTutorIncomeFragment();break;
+            case "admin_finance":fragment=new com.example.tmdt.ui.admin.AdminFinanceFragment();break;
+            case "payments":fragment=payments.tutor&&!payments.admin?new com.example.tmdt.ui.payments.TutorFinanceFragment():new com.example.tmdt.ui.payments.PaymentHistoryFragment();break;
+            case "payment_detail":fragment=new com.example.tmdt.ui.payments.PaymentDetailFragment();break;
+            case "tutor_income":fragment=com.example.tmdt.ui.payments.TutorFinanceFragment.income();break;
+            case "tutor_wallet":fragment=com.example.tmdt.ui.payments.TutorFinanceFragment.wallet();break;
+            case "withdraw_funds":fragment=new com.example.tmdt.ui.payments.WalletWithdrawalFragment();break;
+            case "withdrawal_detail":fragment=new com.example.tmdt.ui.payments.WithdrawalDetailFragment();break;
+            case "admin_withdrawals":fragment=new com.example.tmdt.ui.payments.AdminWithdrawalsFragment();break;
+            case "payout_bank":fragment=new com.example.tmdt.ui.payments.PayoutBankFragment();break;
+            case "admin_payroll":fragment=new com.example.tmdt.ui.payments.AdminPayrollFragment();break;
+            case "payout_detail":fragment=new com.example.tmdt.ui.payments.PayoutDetailFragment();break;
+            case "tutor_evidence":fragment=new com.example.tmdt.ui.profile.TutorEvidenceFragment();break;
+            case "tutor_supplement":fragment=com.example.tmdt.ui.profile.TutorEvidenceFragment.supplementScreen();break;
+            case "tutor_pending":fragment=new com.example.tmdt.ui.profile.PendingTutorFragment();break;
+            case "tutor_submitted":fragment=new com.example.tmdt.ui.profile.SubmittedTutorFragment();break;
+            case "admin_tutors":fragment=new com.example.tmdt.ui.profile.AdminTutorReviewFragment();break;
             case "welcome":fragment=new com.example.tmdt.ui.onboarding.WelcomeFragment();break;
             case "student_intro":fragment=new com.example.tmdt.ui.onboarding.StudentIntroFragment();break;
             case "login":fragment=new LoginFragment();break;
             case "register":fragment=new RegisterFragment();break;
+            case "email_verification":fragment=new com.example.tmdt.ui.auth.EmailVerificationFragment();break;
             case "forgot":fragment=new ForgotPasswordFragment();break;
             case "account":fragment=new AccountFragment();break;
             case "edit_account":fragment=new EditAccountFragment();break;
             case "favorites":fragment=new com.example.tmdt.ui.profile.FavoritesFragment();break;
             case "settings":fragment=new com.example.tmdt.ui.profile.SettingsFragment();break;
+            case "help_chat":fragment=new com.example.tmdt.ui.profile.HelpChatFragment();break;
             case "register_tutor":fragment=new com.example.tmdt.ui.profile.RegisterTutorFragment();break;
             case "review_tutor":fragment=new com.example.tmdt.ui.profile.ReviewTutorFragment();break;
             case "otp":fragment=new PhoneVerificationFragment();break;
             case "schedule":fragment=new ScheduleFragment();break;
             case "messages":fragment=new MessagesFragment();break;
             case "post_request":fragment=new com.example.tmdt.ui.requests.PostTutorRequestFragment();break;
+            case "my_requests":fragment=classroom.isTutor()?new com.example.tmdt.ui.requests.RequestsHubFragment():new com.example.tmdt.ui.requests.ManageTutorRequestsFragment();break;
+            case "search_requests":fragment=new com.example.tmdt.ui.requests.SearchTutorRequestsFragment();break;
+            case "edit_request":fragment=com.example.tmdt.ui.requests.EditTutorRequestFragment.newInstance(selectedRequestId);break;
+            case "request_applicants":fragment=com.example.tmdt.ui.requests.RequestApplicantsFragment.newInstance(selectedRequestId);break;
             case "chat":fragment=new ChatFragment();break;
             case "tutor_profile":fragment=com.example.tmdt.ui.home.TutorProfileFragment.newInstance(classroom.tutorProfileId);break;
             default:destination="home";fragment=new HomeFragment();
         }
         screen=destination;
+        // Duplicate data events can arrive before the queued page has been attached.
+        // Its first render uses the latest data; queueing another replacement causes a flash.
+        if(screen.equals(navigatingTo)){renderNavigation();return;}
         Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
         if(navigatingTo==null&&current instanceof ScreenFragment&&screen.equals(current.getTag())){((ScreenFragment)current).refresh();renderNavigation();return;}
         if(navigatingTo!=null||current==null||!screen.equals(current.getTag())){
             androidx.fragment.app.FragmentTransaction transaction=getSupportFragmentManager().beginTransaction().setReorderingAllowed(true);
-            if(current!=null && com.example.tmdt.ui.common.Motion.enabled()
-                    && (classroom.tutorMode() || current.getClass().getPackage().getName().endsWith(".tutor")))
-                transaction.setCustomAnimations(R.anim.teacher_enter,R.anim.teacher_exit);
+            if(current!=null && com.example.tmdt.ui.common.Motion.enabled())
+                transaction.setCustomAnimations(R.animator.page_enter,R.animator.page_exit);
             final String target=screen;navigatingTo=target;
             transaction.replace(R.id.screen_container,fragment,screen).runOnCommit(()->{
                 if(target.equals(navigatingTo))navigatingTo=null;
@@ -182,14 +299,26 @@ public class MainActivity extends AppCompatActivity {
         }
         renderNavigation();
     }
+    public void refreshClassroomData(){
+        String destination=classroom.redirect(screen);
+        if(!screen.equals(destination)){show(destination);return;}
+        Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+        if(current instanceof ScreenFragment&&screen.equals(current.getTag()))((ScreenFragment)current).refreshData();
+    }
     private boolean navigateMenu(int itemId){
         if(updatingNavigation)return true;
-        if(account.isBusy()||account.isSendingCode())return false;
+        if(account.isBusy()||account.isSendingCode()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
         else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
+        if(isAdmin()){
+            destination=itemId==R.id.nav_schedule?"admin_management":itemId==R.id.nav_messages?"admin_contracts":itemId==R.id.nav_account?"admin_finance":"admin_dashboard";
+            administration.notice="";
+            if(itemId==R.id.nav_messages)administration.selectTutor("");
+        }
+        destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
             account.clearFeedback();
             account.removeDraft("login.password");
@@ -203,35 +332,162 @@ public class MainActivity extends AppCompatActivity {
     private void renderNavigation(){
         updatingNavigation=true;
         android.view.Menu menu=binding.bottomNavigation.getMenu();
+        menu.findItem(R.id.nav_messages).setTitle(isAdmin()?"Hợp đồng":"Tin nhắn");
+        menu.findItem(R.id.nav_account).setTitle(isAdmin()?"Tài chính":"Cá nhân");
+        if(adminMenuIcons!=isAdmin()){
+            adminMenuIcons=isAdmin();
+            if(adminMenuIcons)NavigationAssets.applyAdmin(binding.bottomNavigation);else NavigationAssets.apply(binding.bottomNavigation);
+        }
         for(int i=0;i<menu.size();i++)menu.getItem(i).setEnabled(!account.isBusy()&&!account.isSendingCode());
         int selected=R.id.nav_home;
         if("schedule".equals(screen))selected=R.id.nav_schedule;
         else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
         else if(!"home".equals(screen))selected=R.id.nav_account;
+        if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
+        if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
         selected=classroom.navigationItem(menu,screen,selected);
+        if(isAdmin()){
+            menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Quản lý");
+            menu.findItem(R.id.nav_account).setTitle("Tài chính");
+            selected=java.util.Arrays.asList("admin_management","admin_users","admin_user","admin_tutors","report_admin","report_handle").contains(screen)?R.id.nav_schedule:
+                java.util.Arrays.asList("admin_contracts","admin_contract","contract_templates").contains(screen)?R.id.nav_messages:
+                java.util.Arrays.asList("admin_finance","admin_income","admin_tutor_income","admin_payroll","admin_withdrawals","withdrawal_detail","payments","payment_detail","payout_detail").contains(screen)?R.id.nav_account:R.id.nav_home;
+        }
         menu.findItem(selected).setChecked(true);
         updateNavigationVisibility();
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_management".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
         if(binding.appRoot.getPaddingBottom()!=paddingBottom)
             binding.appRoot.setPadding(binding.appRoot.getPaddingLeft(),binding.appRoot.getPaddingTop(),binding.appRoot.getPaddingRight(),paddingBottom);
         android.widget.FrameLayout.LayoutParams glassParams=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
-        int margin=Math.round(8*getResources().getDisplayMetrics().density)+systemBottomInset;
-        if(glassParams.bottomMargin!=margin){glassParams.bottomMargin=margin;binding.navigationGlass.setLayoutParams(glassParams);}
+        int margin=getResources().getDimensionPixelSize(R.dimen.navigation_bottom_gap)+systemBottomInset;
+        int available=binding.appRoot.getWidth()-binding.appRoot.getPaddingLeft()-binding.appRoot.getPaddingRight();
+        int width=available>0?Math.max(1,Math.round(available*com.example.tmdt.ui.common.UiScale.NAVIGATION_WIDTH_FACTOR)-glassParams.leftMargin-glassParams.rightMargin):glassParams.width;
+        if(glassParams.bottomMargin!=margin||glassParams.width!=width){glassParams.bottomMargin=margin;glassParams.width=width;binding.navigationGlass.setLayoutParams(glassParams);}
         binding.bottomNavigation.setVisibility(visibility);
         binding.navigationGlass.setVisibility(visibility);
         binding.navigationGlass.setBlurAutoUpdate(visibility==View.VISIBLE);
         updateNavigationPadding();
+        updateFloatingHelp();
+    }
+
+    private void setupFloatingHelp() {
+        com.example.tmdt.ui.common.Ui ui = new com.example.tmdt.ui.common.Ui(this);
+        binding.floatingHelp.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(View view, android.graphics.Outline outline) {
+                outline.setOval(0, 0, view.getWidth(), view.getHeight());
+            }
+        });
+        binding.floatingHelp.setClipToOutline(true);
+        ui.clickable(binding.floatingHelp, this::openFloatingHelp);
+        ui.clickable(binding.hideFloatingHelp, () -> {
+            floatingHelpDismissed = true;
+            updateFloatingHelp();
+        });
+        ui.pad(binding.hideFloatingHelp, 10, 10);
+        floatingHelpDrag = new FloatingHelpDrag(binding.floatingHelp, binding.floatingHelpContainer);
+        ui.surface(binding.helpPopup, com.example.tmdt.ui.common.Ui.WHITE, 20,
+                com.example.tmdt.ui.common.Ui.BORDER);
+        binding.helpPopup.setOutlineProvider(android.view.ViewOutlineProvider.BACKGROUND);
+        binding.helpPopup.setClipToOutline(true);
+    }
+
+    private void openFloatingHelp() {
+        if (helpPopupOpen || getSupportFragmentManager().isStateSaved()) return;
+        hideKeyboard();
+        Fragment help = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        androidx.fragment.app.FragmentTransaction transaction = getSupportFragmentManager()
+                .beginTransaction().setReorderingAllowed(true);
+        if (help == null) {
+            help = com.example.tmdt.ui.profile.HelpChatFragment.floating();
+            transaction.add(R.id.help_popup, help, FLOATING_HELP_TAG);
+        } else {
+            transaction.show(help);
+        }
+        transaction.setMaxLifecycle(help, androidx.lifecycle.Lifecycle.State.RESUMED);
+        helpPopupOpen = true;
+        updateFloatingHelp();
+        transaction.commitNow();
+        com.example.tmdt.ui.common.Motion.reveal(binding.helpPopup);
+    }
+
+    public void closeFloatingHelp() {
+        if (!helpPopupOpen || getSupportFragmentManager().isStateSaved()) return;
+        hideKeyboard();
+        Fragment help = getSupportFragmentManager().findFragmentByTag(FLOATING_HELP_TAG);
+        if (help != null) {
+            getSupportFragmentManager().beginTransaction().hide(help)
+                    .setMaxLifecycle(help, androidx.lifecycle.Lifecycle.State.STARTED).commitNow();
+        }
+        helpPopupOpen = false;
+        updateFloatingHelp();
+    }
+
+    private void updateFloatingHelp() {
+        if (binding == null) return;
+        int gap = Math.round(12 * getResources().getDisplayMetrics().density);
+        int bottomMargin = gap;
+        if (binding.navigationGlass.getVisibility() == View.VISIBLE) {
+            android.widget.FrameLayout.LayoutParams navigation =
+                    (android.widget.FrameLayout.LayoutParams) binding.navigationGlass.getLayoutParams();
+            int height = binding.navigationGlass.getHeight() > 0 ? binding.navigationGlass.getHeight()
+                    : getResources().getDimensionPixelSize(R.dimen.navigation_height);
+            bottomMargin += height + navigation.bottomMargin;
+        }
+        android.widget.FrameLayout.LayoutParams button =
+                (android.widget.FrameLayout.LayoutParams) binding.floatingHelpContainer.getLayoutParams();
+        if (button.bottomMargin != bottomMargin) {
+            button.bottomMargin = bottomMargin;
+            binding.floatingHelpContainer.setLayoutParams(button);
+        }
+        if (!keyboardVisible && floatingHelpDrag != null) {
+            int buttonWidth = binding.floatingHelpContainer.getWidth() > 0
+                    ? binding.floatingHelpContainer.getWidth() : button.width;
+            int buttonHeight = binding.floatingHelpContainer.getHeight() > 0
+                    ? binding.floatingHelpContainer.getHeight() : button.height;
+            int right = binding.appRoot.getWidth() - binding.appRoot.getPaddingRight() - gap - buttonWidth;
+            int bottom = binding.appRoot.getHeight() - Math.max(binding.appRoot.getPaddingBottom(), systemBottomInset)
+                    - gap - buttonHeight;
+            int permittedBottom = binding.appRoot.getHeight() - binding.appRoot.getPaddingBottom()
+                    - bottomMargin - buttonHeight;
+            if (binding.appRoot.getWidth() > 0 && binding.appRoot.getHeight() > 0) {
+                floatingHelpDrag.updateBounds(binding.appRoot.getPaddingLeft() + gap,
+                        binding.appRoot.getPaddingTop() + gap, right, bottom, permittedBottom);
+            }
+        }
+        boolean visible = !floatingHelpDismissed && !helpPopupOpen && !keyboardVisible && !"help_chat".equals(screen);
+        binding.floatingHelpContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
+        binding.helpPopup.setVisibility(helpPopupOpen ? View.VISIBLE : View.GONE);
+        if (!helpPopupOpen) return;
+
+        int availableWidth = binding.appRoot.getWidth() - binding.appRoot.getPaddingLeft()
+                - binding.appRoot.getPaddingRight() - gap * 2;
+        int availableHeight = binding.appRoot.getHeight() - binding.appRoot.getPaddingTop()
+                - binding.appRoot.getPaddingBottom() - bottomMargin - gap;
+        if (availableWidth <= 0 || availableHeight <= 0) return;
+        float density = getResources().getDisplayMetrics().density;
+        android.widget.FrameLayout.LayoutParams popup =
+                (android.widget.FrameLayout.LayoutParams) binding.helpPopup.getLayoutParams();
+        int width = Math.min(Math.round(360 * density), availableWidth);
+        int height = Math.min(Math.round(500 * density), availableHeight);
+        if (popup.width != width || popup.height != height || popup.bottomMargin != bottomMargin) {
+            popup.width = width;
+            popup.height = height;
+            popup.bottomMargin = bottomMargin;
+            binding.helpPopup.setLayoutParams(popup);
+        }
     }
     private void updateNavigationPadding() {
         if(binding==null)return;
+        android.widget.FrameLayout.LayoutParams params=(android.widget.FrameLayout.LayoutParams)binding.navigationGlass.getLayoutParams();
+        int height=binding.navigationGlass.getHeight()>0?binding.navigationGlass.getHeight():getResources().getDimensionPixelSize(R.dimen.navigation_height);
         int inset=binding.navigationGlass.getVisibility()==View.VISIBLE
-                ?Math.round(96*getResources().getDisplayMetrics().density)+systemBottomInset:0;
+                ?height+params.bottomMargin+getResources().getDimensionPixelSize(R.dimen.navigation_content_gap):0;
         for(int i=0;i<binding.screenContainer.getChildCount();i++)
             navigationInsets.apply(binding.screenContainer.getChildAt(i),inset);
     }
@@ -241,11 +497,28 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
     public void back(){
-        if(account.isBusy())return;hideKeyboard();
+        if(helpPopupOpen){closeFloatingHelp();return;}
+        if(account.isBusy()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return;
+        hideKeyboard();
         if("login".equals(screen))authenticatedDestination=null;
         String target=classroom.backTarget(screen);
+        if(target==null)target=exchange.backTarget(screen);
         if(target!=null){show(target);return;}
         switch(screen){
+            case "admin_user":show(administration.userOrigin);break;
+            case "admin_contract":show(administration.contractOrigin);break;
+            case "admin_contracts":if(!administration.selectedTutor.isEmpty()){administration.selectTutor("");show("admin_contracts");}else show("admin_dashboard");break;
+            case "admin_users":show("admin_management");break;
+            case "admin_management":case "admin_finance":show("admin_dashboard");break;
+            case "admin_income":show("admin_finance");break;
+            case "admin_tutor_income":show("admin_tutor_income".equals(administration.incomeOrigin)?"admin_income":administration.incomeOrigin);break;
+            case "admin_dashboard":finish();break;
+            case "payment_detail":case "payout_detail":show(payments.origin.equals(screen)?"payments":payments.origin);break;
+            case "admin_payroll":show(payments.payrollOrigin.startsWith("admin_")&&!"admin_payroll".equals(payments.payrollOrigin)?payments.payrollOrigin:"admin_finance");break;
+            case "payments":case "tutor_income":case "tutor_wallet":case "admin_withdrawals":show(isAdmin()?"admin_finance":"account");break;
+            case "withdraw_funds":show("tutor_wallet");break;
+            case "withdrawal_detail":show(payments.withdrawalOrigin);break;
+            case "payout_bank":show(payments.bankOrigin);break;
             case "welcome":finish();break;
             case "student_intro":show("welcome");break;
             case "register":
@@ -256,14 +529,55 @@ public class MainActivity extends AppCompatActivity {
                 account.removeDraft("register.password");account.removeDraft("register.confirm");account.clearFeedback();show("login");break;
             case "edit_account":account.clearDraft();account.clearFeedback();show("account");break;
             case "otp":account.clearFeedback();show("account");break;
+            case "email_verification":account.leaveEmailVerification();break;
             case "favorites":case "settings":account.clearFeedback();show("account");break;
+            case "help_chat":show("settings");break;
             case "register_tutor":account.clearFeedback();show("account");break;
-            case "review_tutor":account.clearFeedback();show("register_tutor");break;
-            case "post_request":show("home");break;
+            case "review_tutor":account.clearFeedback();show("tutor_evidence");break;
+            case "tutor_evidence":show("register_tutor");break;
+            case "tutor_supplement":case "tutor_submitted":show("tutor_pending");break;
+            case "tutor_pending":show("account");break;
+            case "admin_tutors":{
+                Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+                if(!(current instanceof com.example.tmdt.ui.profile.AdminTutorReviewFragment)||!((com.example.tmdt.ui.profile.AdminTutorReviewFragment)current).backToList())show("admin_management");break;
+            }
+            case "post_request":show(postRequestOrigin);break;
+            case "edit_request":requestManager().resetEdit();show("my_requests");break;
+            case "request_applicants":show("my_requests");break;
+            case "my_requests":show(requestManagementOrigin);break;
+            case "search_requests":show(requestSearchOrigin);break;
             case "tutor_profile":show(classroom.tutorProfileOrigin!=null?classroom.tutorProfileOrigin:"home");break;
             case "chat":{String origin=chat.origin();chat.close();show("chat".equals(origin)?"messages":origin);break;}
             default:account.removeDraft("login.password");show("home");
         }
+    }
+    /** UC13 keeps the entry screen separate from the owner's UC12 navigation. */
+    public void openRequestSearch(String origin){
+        requestSearchOrigin="account".equals(origin)?"account":"tutorHome".equals(origin)?"tutorHome":"home";
+        hideKeyboard();show("search_requests");
+    }
+    // UC12: owner request management and navigation back to the entry screen.
+    private static boolean isRequestScreen(String destination){
+        return "post_request".equals(destination)||"my_requests".equals(destination)
+                ||"edit_request".equals(destination)||"request_applicants".equals(destination);
+    }
+    private TutorRequestManager requestManager(){return new ViewModelProvider(this).get(TutorRequestManager.class);}
+    public String selectedRequestId(){return selectedRequestId;}
+    public void openMyRequests(String origin){
+        if("account".equals(origin)||"home".equals(origin))requestManagementOrigin=origin;
+        else if("post_request".equals(origin)&&!"my_requests".equals(postRequestOrigin))requestManagementOrigin="home";
+        hideKeyboard();show("my_requests");
+    }
+    public void openRequestEditor(String id){
+        selectedRequestId=id==null?"":id;hideKeyboard();show("edit_request");
+    }
+    public void openRequestApplicants(String id){
+        selectedRequestId=id==null?"":id;hideKeyboard();show("request_applicants");
+    }
+    public void reloadRequestEditor(String id){
+        if(requestManager().busy())return;
+        requestManager().resetEdit();selectedRequestId=id==null?"":id;
+        navigatingTo="reload_edit_request";hideKeyboard();show("edit_request");
     }
     // Tin nhắn (UC21, member 4) --------------------------------------------------------------------
 
@@ -292,6 +606,14 @@ public class MainActivity extends AppCompatActivity {
         badge.setBackgroundColor(getColor(R.color.chat_blue));badge.setBadgeTextColor(getColor(R.color.white));
         badge.setNumber(unread);badge.setVisible(true);
     }
+    /** UC23: số hợp đồng đang chờ người dùng xác nhận, hiện trên mục Cá nhân. */
+    private void renderContractBadge(){
+        int waiting=account.signedIn()?exchange.contracts.awaitingMe():0;
+        if(waiting<=0){binding.bottomNavigation.removeBadge(R.id.nav_account);return;}
+        BadgeDrawable badge=binding.bottomNavigation.getOrCreateBadge(R.id.nav_account);
+        badge.setBackgroundColor(getColor(R.color.chat_blue));badge.setBadgeTextColor(getColor(R.color.white));
+        badge.setNumber(waiting);badge.setVisible(true);
+    }
     @Override protected void onStart(){super.onStart();if(chat!=null)chat.presence(true);}
     @Override protected void onStop(){if(chat!=null)chat.presence(false);super.onStop();}
 
@@ -309,5 +631,34 @@ public class MainActivity extends AppCompatActivity {
         View focus=getCurrentFocus();
         if(focus!=null)((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focus.getWindowToken(),0);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("screen",screen);out.putString("authenticated_destination",authenticatedDestination);classroom.save(out);}
+    public void openPayment(String type,String sourceId){
+        Lesson lesson="LESSON".equals(type)?classroom.store.lesson(sourceId):null;
+        openPayment(type,sourceId,lesson==null?payments.owner:lesson.studentId);
+    }
+    public void openPayment(String type,String sourceId,String studentId){hideKeyboard();payments.open(type,sourceId,screen,studentId);}
+    @Override protected void onSaveInstanceState(Bundle out){
+        super.onSaveInstanceState(out);
+        out.putString("screen",screen);
+        out.putBoolean("floating_help_dismissed",floatingHelpDismissed);
+        out.putString("authenticated_destination",authenticatedDestination);
+        out.putString("request_id",selectedRequestId);
+        out.putString("request_origin",requestManagementOrigin);
+        out.putString("post_request_origin",postRequestOrigin);
+        out.putString("request_search_origin",requestSearchOrigin);
+        classroom.save(out);
+        exchange.save(out);
+        out.putString("payment_id",payments.selected);
+        out.putString("payout_id",payments.selectedPayout);
+        out.putString("payment_origin",payments.origin);
+        out.putString("payroll_origin",payments.payrollOrigin);
+        out.putString("admin_user",administration.selectedUser);
+        out.putString("admin_contract",administration.selectedContract);
+        out.putString("admin_tutor",administration.selectedTutor);
+        out.putString("admin_user_origin",administration.userOrigin);
+        out.putString("admin_contract_origin",administration.contractOrigin);
+        out.putString("admin_income_tutor",administration.selectedIncomeTutor);
+        out.putString("admin_income_name",administration.incomeTutorName);
+        out.putString("admin_income_origin",administration.incomeOrigin);
+        out.putString("admin_income_period",payments.incomePeriod);
+    }
 }

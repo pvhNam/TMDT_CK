@@ -8,35 +8,41 @@ import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.example.tmdt.ui.common.TimeRange;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.Lesson;
 import com.example.tmdt.Tutor;
 
 public final class BookingFragment extends ScreenFragment {
     private Tutor tutor;
     private LocalDate selectedDate;
-    private int hour=19, minutes=60;
+    private static final int FIRST_HOUR=7, LAST_END=23;
+    private int hour=19, minute, minutes=60;
     private String mode="Trực tuyến", savedGoal, savedAddress="";
-    private LinearLayout modes, days, hours, addressBox;
+    private LinearLayout modes, days, addressBox;
     private HorizontalScrollView daysScroll;
-    private TextView month, durationLabel, subtotal, total;
+    private TextView month, subtotal, total;
     private EditText goal, address;
+    /** Người học (id trong users/{uid}/learners, "" = bản thân) – một tài khoản đặt lịch cho nhiều học viên. */
+    private String learnerId="";
 
     /** Defaults for a new booking, or the draft kept while the trial screen was open or the classroom was recreated. */
     private void start() {
         tutor=Tutor.get(classroom.tutorKey);Bundle state=classroom.bookingDraft;
         selectedDate=LocalDate.now().plusDays(4);
         // Start on a day without an existing lesson at the default hour.
-        while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
+        while(classroom.store.conflict(tutor.id,classroom.me(),selectedDate.toString(),hour,minute,minutes,"")!=null) selectedDate=selectedDate.plusDays(1);
         savedGoal="";
         if(state!=null) {
             selectedDate=LocalDate.parse(state.getString("date",selectedDate.toString()));
-            hour=state.getInt("hour",19);minutes=state.getInt("minutes",60);
+            hour=state.getInt("hour",19);minute=state.getInt("minute",0);minutes=state.getInt("minutes",60);
             mode=state.getString("mode","Trực tuyến");savedGoal=state.getString("goal",savedGoal);savedAddress=state.getString("address","");
+            learnerId=state.getString("learner","");
         }
     }
 
@@ -46,31 +52,36 @@ public final class BookingFragment extends ScreenFragment {
         if(address!=null) savedAddress=address.getText().toString();
         LinearLayout root=ui.column();ui.header(root,"Đặt lịch học",classroom::back,null);
         LinearLayout body=ui.page(root);
-        LinearLayout summary=ui.row();summary.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(9));ui.cardSurface(summary,Ui.WHITE,Ui.BORDER);
-        summary.addView(ui.avatar(tutor.id,tutor.name,72));ui.gap(summary,13);
-        LinearLayout info=ui.column();ui.add(info,ui.text(tutor.name,17,Ui.INK,true));ui.space(info,6);
-        ui.add(info,ui.text(tutor.subject+" · "+tutor.level,15,Ui.MUTED,false));ui.space(info,6);
-        LinearLayout rating=ui.row();rating.addView(ui.icon(R.drawable.ic_star,18,Ui.GOLD));ui.gap(rating,7);
-        ui.weight(rating,ui.text(tutor.ratingLabel(),15,Ui.INK,false));rating.addView(ui.text(tutor.rateLabel(),15,Ui.INK,false));
-        ui.add(info,rating);ui.weight(summary,info);ui.add(body,summary);
-        TextView trial=ui.link("Muốn học thử trước? Đặt buổi học thử 30 phút  ›",15,()->classroom.show("trial"));ui.add(body,trial);ui.space(body,6);
+        LinearLayout summary=ui.row();summary.setGravity(Gravity.CENTER_VERTICAL);summary.setPadding(ui.dp(12),ui.dp(12),ui.dp(14),ui.dp(12));ui.cardSurface(summary,Ui.WHITE,Ui.BORDER);
+        summary.addView(ui.avatar(tutor.id,tutor.name,64));ui.gap(summary,14);
+        LinearLayout info=ui.column();TextView name=ui.text(tutor.name,18,Ui.INK,true);name.setSingleLine(true);name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        ui.add(info,name);ui.space(info,3);ui.add(info,ui.text(tutor.subject+" · "+tutor.level,14,Ui.MUTED,false));ui.space(info,8);
+        LinearLayout meta=ui.row();meta.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout verified=ui.row();verified.setGravity(Gravity.CENTER_VERTICAL);verified.setPadding(ui.dp(7),ui.dp(3),ui.dp(9),ui.dp(3));ui.fieldSurface(verified,Ui.PALE,0);
+        verified.addView(ui.icon(R.drawable.ic_star,14,Ui.GOLD));ui.gap(verified,4);verified.addView(ui.text("Đã xác minh",12,Ui.BLUE,true));
+        meta.addView(verified);ui.gap(meta,10);
+        TextView price=ui.text(tutor.rateLabel(),15,Ui.INK,true);price.setSingleLine(true);price.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        price.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);ui.weight(meta,price);
+        ui.add(info,meta);ui.weight(summary,info);ui.add(body,summary);ui.space(body,10);
+        LinearLayout trial=ui.row();trial.setGravity(Gravity.CENTER_VERTICAL);trial.setPadding(ui.dp(14),ui.dp(12),ui.dp(10),ui.dp(12));ui.fieldSurface(trial,Ui.PALE,0);
+        LinearLayout trialText=ui.column();ui.add(trialText,ui.text("Muốn học thử trước?",17,Ui.BLUE,true));ui.space(trialText,2);
+        ui.add(trialText,ui.text("Đặt buổi học thử 30 phút",15,Ui.INK,false));ui.weight(trial,trialText);
+        trial.addView(ui.icon(R.drawable.ic_right,22,Ui.BLUE));trial.setContentDescription("Muốn học thử trước? Đặt buổi học thử 30 phút");
+        ui.clickable(trial,()->classroom.show("trial"));ui.add(body,trial);ui.space(body,16);
         ui.section(body,"Hình thức học",18);ui.space(body,8);modes=ui.row();ui.add(body,modes);
         addressBox=ui.column();ui.space(addressBox,10);address=ui.input("Địa chỉ học tại nhà");address.setText(savedAddress);
         address.setContentDescription("Địa chỉ học tại nhà");address.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS);
-        ui.add(addressBox,address);ui.add(body,addressBox);renderModes();ui.space(body,18);
+        ui.add(addressBox,address);ui.add(body,addressBox);renderModes();ui.space(body,24);
         ui.section(body,"Chọn ngày học",18);
         month=ui.text("",15,Ui.INK,false);month.setMinimumHeight(ui.dp(26));month.setGravity(Gravity.CENTER_VERTICAL);
         ui.clickable(month,this::datePicker);ui.add(body,month);
         daysScroll=new HorizontalScrollView(classroom.context());daysScroll.setHorizontalScrollBarEnabled(false);
         days=ui.row();daysScroll.addView(days);ui.add(body,daysScroll);renderDays(true);ui.space(body,15);
-        ui.section(body,"Chọn giờ học",18);ui.space(body,8);hours=ui.row();ui.add(body,hours);renderHours();ui.space(body,15);
-        LinearLayout duration=ui.row();ui.weight(duration,ui.text("Thời lượng",17,Ui.INK,true));
-        durationLabel=ui.value(minutes+" phút");
-        LinearLayout picker=ui.picker(R.drawable.ic_clock,durationLabel,()->classroom.ui.dialog().setTitle("Thời lượng buổi học")
-                .setSingleChoiceItems(new String[]{"60 phút","90 phút","120 phút"},minutes==60?0:minutes==90?1:2,(dialog,which)->{
-                    minutes=new int[]{60,90,120}[which];durationLabel.setText(minutes+" phút");updatePrice();dialog.dismiss();
-                }).setNegativeButton("Đóng",null).show());
-        duration.addView(picker,ui.lp(148,40));ui.add(body,duration);ui.space(body,13);
+        TimeRange time=new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,30,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;updatePrice();});
+        hour=time.hour();minute=time.minute();minutes=time.minutes();
+        ui.add(body,time.view("Chọn giờ học"));ui.space(body,15);
+        com.example.tmdt.ui.exchange.LearnerPicker.add(ui,body,learners(),learnerId,id->{learnerId=id;refresh();},
+                ()->((com.example.tmdt.MainActivity)requireActivity()).exchange.openLearners());ui.space(body,15);
         ui.label(body,"Mục tiêu buổi học");goal=ui.entry("Bạn muốn học nội dung gì?",false);goal.setText(savedGoal);
         goal.setSingleLine(false);goal.setMaxLines(3);goal.setContentDescription("Mục tiêu buổi học");
         goal.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(300)});
@@ -86,6 +97,11 @@ public final class BookingFragment extends ScreenFragment {
         return root;
     }
 
+    private com.example.tmdt.LearnerState learners(){return ((com.example.tmdt.MainActivity)requireActivity()).exchange.learners;}
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view,@androidx.annotation.Nullable Bundle state){
+        super.onViewCreated(view,state);
+        learners().changes().observe(getViewLifecycleOwner(),ignored->refresh());learners().start();
+    }
     private void setMode(String value){mode=value;renderModes();}
     private void renderModes() {
         modes.removeAllViews();ui.weight(modes,ui.option("Trực tuyến",R.drawable.ic_laptop,mode.equals("Trực tuyến"),()->setMode("Trực tuyến")));
@@ -111,22 +127,30 @@ public final class BookingFragment extends ScreenFragment {
         },selectedDate.getYear(),selectedDate.getMonthValue()-1,selectedDate.getDayOfMonth());
         dialog.getDatePicker().setMinDate(System.currentTimeMillis()-1000);dialog.show();
     }
-    private void renderHours() {
-        hours.removeAllViews();
-        for(int value:new int[]{18,19,20}) {
-            ui.weight(hours,ui.choice(value+":00",value==hour,()->{hour=value;renderHours();}));if(value!=20)ui.gap(hours,8);
-        }
-    }
     private void updatePrice(){String price=Tutor.money(tutor.price(minutes));subtotal.setText(price);total.setText(price);}
     private void submit() {
-        if(!selectedDate.atTime(hour,0).isAfter(LocalDateTime.now())) {
+        if(!selectedDate.atTime(hour,minute).isAfter(LocalDateTime.now())) {
             classroom.dialog("Chọn thời gian khác","Thời gian học cần ở trong tương lai.");return;
         }
         String objective=goal.getText().toString().trim(), location=address.getText().toString().trim();
         if(objective.isEmpty()){goal.setError("Vui lòng nhập mục tiêu buổi học");goal.requestFocus();return;}
         if(mode.equals("Tại nhà") && location.isEmpty()){address.setError("Vui lòng nhập địa chỉ học");address.requestFocus();return;}
-        classroom.saveRequest(classroom.request(tutor,tutor.course,selectedDate,hour,minutes,mode,objective,
-                mode.equals("Tại nhà")?location:"",false,tutor.price(minutes)));
+        confirmRequest(objective,mode.equals("Tại nhà")?location:"");
+    }
+    /** UC23: bảng xác nhận đăng ký trước khi gửi yêu cầu; sau khi gia sư chấp nhận, gia sư gửi hợp đồng dạy để học viên xác nhận. */
+    private void confirmRequest(String objective, String location) {
+        com.example.tmdt.LearnerState.Learner learner=learners().learner(learnerId);
+        String summary="Gia sư: "+tutor.name+(learner==null?"":"\nNgười học: "+learner.name)+"\nMôn học: "+tutor.course+"\nNgày học: "+selectedDate.format(com.example.tmdt.Lesson.DATE)
+                +"\nThời gian: "+com.example.tmdt.Lesson.range(hour,minute,minutes)+" ("+minutes+" phút)\nHình thức: "+mode
+                +(location.isEmpty()?"":"\nĐịa chỉ: "+location)+"\nHọc phí buổi này: "+Tutor.money(tutor.price(minutes))
+                +"\n\nSau khi gia sư chấp nhận, gia sư sẽ gửi hợp đồng dạy (số buổi, học phí, điều khoản). Bạn xem và xác nhận ở Lịch học → Chi tiết buổi học hoặc Cá nhân → Hợp đồng của tôi.";
+        classroom.ui.dialog().setTitle("Xác nhận đăng ký học").setMessage(summary)
+                .setNegativeButton("Xem lại",null)
+                .setPositiveButton("Xác nhận đăng ký",(d,w)->{
+                    com.example.tmdt.Lesson lesson=classroom.request(tutor,tutor.course,selectedDate,hour,minute,minutes,mode,objective,location,false,tutor.price(minutes));
+                    if(learner!=null){lesson.learnerId=learner.id;lesson.learnerName=learner.name;}
+                    classroom.saveRequest(lesson);
+                }).show();
     }
     /** Keeps the draft when the trial screen replaces this one or the classroom is recreated. */
     @Override public void onPause() {
@@ -135,8 +159,9 @@ public final class BookingFragment extends ScreenFragment {
     }
     private void saveState(Bundle state) {
         state.putString("date",selectedDate.toString());
-        state.putInt("hour",hour);state.putInt("minutes",minutes);state.putString("mode",mode);
+        state.putInt("hour",hour);state.putInt("minute",minute);state.putInt("minutes",minutes);state.putString("mode",mode);
         state.putString("goal",goal==null?savedGoal:goal.getText().toString());
         state.putString("address",address==null?savedAddress:address.getText().toString());
+        state.putString("learner",learnerId);
     }
 }

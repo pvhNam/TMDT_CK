@@ -1,6 +1,5 @@
 package com.example.tmdt.ui.tutor;
 
-import android.app.DatePickerDialog;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -8,37 +7,49 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.time.LocalDate;
 import com.example.tmdt.R;
+import com.example.tmdt.ui.common.TimeRange;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Lesson;
+import com.example.tmdt.Tutor;
 
 /** Screen 34 · Mở lớp nhóm (UC16), also used to edit an open class (UC17). */
 public final class OpenClassFragment extends ScreenFragment {
-    private static final String[] SUBJECTS = {"Toán","Tiếng Anh","Vật lý","Hóa học"}, SUBJECT_MARKS = {"∑","A","Φ","⚗"};
     private static final String[] MODES = {"Trực tuyến","Tại nhà"};
-    private static final int[] START_HOURS = {7,8,9,14,15,16,17,18,19,20};
+    private static final String[] WEEKDAYS = {"T2","T3","T4","T5","T6","T7","CN"};
+    private static final int FIRST_HOUR = 7, LAST_END = 23;
     private GroupClass editing;
+    /** Students who posted the same need, when the form was opened from "Gợi ý ghép nhóm". */
+    private GroupMatch.Group draft;
     private boolean started;
     private String subject = "Toán", mode = "Trực tuyến";
-    private int capacity = 5, sessions = 4, hour = 19, minutes = 60;
+    private int capacity = 5, sessions = 4, hour = 19, minute = 0, minutes = 60;
     private int[] days = {6};
     private LocalDate start;
     private EditText name, price, address, description;
-    private TextView subjectMark, subjectValue, modeValue, capacityValue, sessionsValue, scheduleValue, startValue, counter;
-    private android.widget.ImageView modeIcon;
-    private LinearLayout addressField;
+    private TextView subjectValue, capacityValue, sessionsValue, startHint, counter;
+    private LinearLayout modes, addressField, weekdays, dates;
+    private TimeRange time;
 
-    /** A new class starts from the defaults; an edited one (UC17) from its saved values. */
+    /** A new class starts from the defaults or from a group of students; an edited one (UC17) from its saved values. */
     private void start() {
         started = true; editing = classroom.store.groupClass(classroom.classId);
+        draft = editing == null ? classroom.classDraft : null; classroom.classDraft = null;
+        if (draft != null) {
+            subject = draft.subject; capacity = Math.max(2,Math.min(10,draft.size()));
+            if (draft.day() > 0) days = new int[]{draft.day()};
+            if (draft.hour() >= 0) hour = Math.max(FIRST_HOUR,Math.min(LAST_END-1,draft.hour()));
+        }
         start = nextClassDay(LocalDate.now().plusDays(1));
         if (editing != null) {
-            subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour;
+            subject=editing.subject; mode=editing.mode; capacity=editing.capacity; sessions=editing.sessions; hour=editing.hour; minute=editing.minute;
             minutes=editing.minutes; days=editing.days; start=LocalDate.parse(editing.startDate);
         }
     }
@@ -47,111 +58,141 @@ public final class OpenClassFragment extends ScreenFragment {
         if (!started) start();
         LinearLayout root = ui.column(); ui.header(root,editing==null?"Mở lớp nhóm":"Chỉnh sửa lớp",classroom::back,null);
         LinearLayout body = ui.page(root);
+        if (draft != null) {
+            ui.add(body,ui.note(R.drawable.ic_users,"Điền sẵn cho nhóm "+draft.size()+" học viên cần "+draft.need()+".\nXem lại thông tin trước khi tạo lớp.",Ui.PALE,Ui.BLUE,Ui.INK));
+            ui.space(body,12);
+        }
 
-        ui.label(body,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
-        name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(60)}); ui.add(body,name); ui.space(body,11);
-
-        ui.label(body,"Môn học *");
-        subjectMark = ui.text("",30,Ui.INK,true); subjectMark.setGravity(Gravity.CENTER); subjectValue = ui.value("");
-        LinearLayout subjectBox = ui.picker(0,subjectValue,this::pickSubject); subjectBox.addView(subjectMark,0,ui.lp(25,-2));
-        subjectBox.addView(new View(classroom.context()),1,ui.lp(10,1)); ui.add(body,subjectBox); ui.space(body,11);
-
-        ui.label(body,"Hình thức học *"); modeValue = ui.value("");
-        LinearLayout modeBox = ui.picker(R.drawable.ic_laptop,modeValue,this::pickMode); modeIcon = (android.widget.ImageView) modeBox.getChildAt(0);
-        ui.add(body,modeBox);
-        addressField = ui.column(); ui.space(addressField,11); ui.label(addressField,"Địa điểm học *");
-        address = ui.entry("Ví dụ: Quận Cầu Giấy, Hà Nội",false); address.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
-        ui.add(addressField,address); ui.add(body,addressField); ui.space(body,11);
-
-        LinearLayout pair = ui.row(); pair.setGravity(Gravity.TOP);
-        LinearLayout left = ui.column(), right = ui.column();
-        ui.label(left,"Số thành viên tối đa *"); capacityValue = ui.value("");
-        ui.add(left,ui.picker(R.drawable.ic_users,capacityValue,this::pickCapacity));
-        ui.label(right,"Số buổi *"); sessionsValue = ui.value("");
-        ui.add(right,ui.picker(R.drawable.ic_calendar,sessionsValue,this::pickSessions));
-        ui.weight(pair,left); ui.gap(pair,25); ui.weight(pair,right); ui.add(body,pair); ui.space(body,11);
-
-        ui.label(body,"Học phí mỗi học viên *");
-        LinearLayout priceBox = ui.row(); priceBox.setPadding(ui.dp(12),0,ui.dp(12),0); ui.fieldSurface(priceBox,Ui.WHITE,Ui.BORDER);
-        priceBox.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(priceBox,10);
-        price = ui.entry("300000",false); price.setBackgroundColor(android.graphics.Color.TRANSPARENT); price.setPadding(0,0,0,0);
-        price.setInputType(InputType.TYPE_CLASS_NUMBER); price.setFilters(new InputFilter[]{new InputFilter.LengthFilter(8)});
-        price.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
-        price.setContentDescription("Học phí mỗi học viên, đồng một khóa");
-        ui.weight(priceBox,price); priceBox.addView(ui.text("đ / khóa",16,Ui.INK,true)); ui.add(body,priceBox); ui.space(body,11);
-
-        ui.label(body,"Lịch học *"); scheduleValue = ui.value("");
-        ui.add(body,ui.picker(R.drawable.ic_calendar,scheduleValue,this::pickDay)); ui.space(body,11);
-        ui.label(body,"Ngày bắt đầu *"); startValue = ui.value("");
-        ui.add(body,ui.picker(R.drawable.ic_calendar,startValue,this::pickStart)); ui.space(body,11);
-
-        ui.label(body,"Mô tả lớp *"); description = ui.entry("Nội dung, đối tượng và cách học của lớp",true);
-        description.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)}); ui.add(body,description);
-        counter = ui.text("",12,Ui.MUTED,false); counter.setGravity(Gravity.END); ui.add(body,counter);
+        LinearLayout info = group(body,"Thông tin lớp");
+        ui.label(info,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
+        name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(60)}); ui.add(info,name); ui.space(info,12);
+        ui.label(info,"Môn học *"); subjectValue = ui.value(subject);
+        ui.add(info,ui.picker(R.drawable.ic_field_note,subjectValue,this::pickSubject)); ui.space(info,12);
+        ui.label(info,"Mô tả lớp *"); description = ui.entry("Nội dung, đối tượng và cách học của lớp",true);
+        description.setFilters(new InputFilter[]{new InputFilter.LengthFilter(200)}); ui.add(info,description);
+        counter = ui.text("",12,Ui.MUTED,false); counter.setGravity(Gravity.END); counter.setPadding(0,ui.dp(4),0,0); ui.add(info,counter);
         description.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s,int a,int b,int c) {}
             public void onTextChanged(CharSequence s,int a,int b,int c) { counter.setText(s.length()+"/200"); }
             public void afterTextChanged(Editable s) {}
         });
-        ui.space(body,12);
-        ui.addAction(body,ui.action(editing==null?"＋ Tạo lớp":"Lưu thay đổi",0,Ui.PRIMARY,this::submit),47);
+
+        LinearLayout where = group(body,"Hình thức học");
+        modes = ui.row(); ui.add(where,modes);
+        addressField = ui.column(); ui.space(addressField,12); ui.label(addressField,"Địa điểm học *");
+        address = ui.entry("Ví dụ: Quận Cầu Giấy, Hà Nội",false); address.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
+        ui.add(addressField,address); ui.add(where,addressField);
+
+        LinearLayout plan = group(body,"Quy mô và lịch học");
+        capacityValue = ui.text("",17,Ui.INK,true);
+        ui.add(plan,stepper("Số thành viên tối đa","Từ 2 đến 10 học viên",capacityValue,()->{if(capacity>2)capacity--;render();},()->{if(capacity<10)capacity++;render();}));
+        ui.space(plan,10);
+        sessionsValue = ui.text("",17,Ui.INK,true);
+        ui.add(plan,stepper("Số buổi","Tối đa 12 buổi",sessionsValue,()->{if(sessions>1)sessions--;render();},()->{if(sessions<12)sessions++;render();}));
+        ui.space(plan,14);
+        ui.label(plan,"Ngày học trong tuần *"); weekdays = ui.row(); ui.add(plan,weekdays); ui.space(plan,14);
+        time = new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,30,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;showHint();});
+        hour = time.hour(); minute = time.minute(); minutes = time.minutes();
+        ui.add(plan,time.view("Thời gian dạy *")); ui.space(plan,14);
+        ui.label(plan,"Ngày khai giảng *");
+        HorizontalScrollView scroll = new HorizontalScrollView(classroom.context()); scroll.setHorizontalScrollBarEnabled(false);
+        dates = ui.row(); scroll.addView(dates); ui.add(plan,scroll); ui.space(plan,6);
+        startHint = ui.text("",13,Ui.MUTED,false); ui.add(plan,startHint);
+
+        LinearLayout fee = group(body,"Học phí");
+        LinearLayout priceBox = ui.row(); priceBox.setPadding(ui.dp(12),0,ui.dp(12),0); priceBox.setMinimumHeight(ui.dp(46)); ui.fieldSurface(priceBox,0xFFF8FAFF,Ui.BORDER);
+        priceBox.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(priceBox,10);
+        price = ui.entry("300000",false); price.setBackgroundColor(android.graphics.Color.TRANSPARENT); price.setPadding(0,0,0,0);
+        price.setInputType(InputType.TYPE_CLASS_NUMBER); price.setFilters(new InputFilter[]{new InputFilter.LengthFilter(8)});
+        price.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
+        price.setContentDescription("Học phí mỗi học viên, đồng một khóa");
+        ui.weight(priceBox,price); priceBox.addView(ui.text("đ / khóa",15,Ui.MUTED,true)); ui.add(fee,priceBox); ui.space(fee,6);
+        ui.add(fee,ui.text("Mỗi học viên, từ 50.000đ đến 10.000.000đ cho cả khóa.",13,Ui.MUTED,false));
+        if (draft != null && draft.budget() > 0) {
+            ui.space(fee,4); ui.add(fee,ui.text("Gợi ý theo ngân sách khoảng "+Tutor.money((int) draft.budget())+" / buổi của nhóm.",13,Ui.BLUE,false));
+        }
+
+        LinearLayout footer = ui.footer(root);
+        ui.weightAction(footer,ui.action(editing==null?"Tạo lớp":"Lưu thay đổi",0,Ui.PRIMARY,this::submit),48);
 
         if (editing != null) {
             name.setText(editing.title); price.setText(String.valueOf(editing.price));
             address.setText(editing.address); description.setText(editing.description);
+        }
+        if (draft != null) {
+            name.setText(draft.title()); description.setText(draft.description());
+            if (draft.price(sessions) > 0) price.setText(String.valueOf(draft.price(sessions)));
         }
         counter.setText(description.length()+"/200");
         render();
         return root;
     }
 
+    /** Every subject in the admin's list, after the four usual ones; the class's own subject is always offered. */
+    private void pickSubject() {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>(java.util.Arrays.asList(GroupMatch.SUBJECTS));
+        for (String value : classroom.subjects()) names.add(GroupMatch.subject(value));
+        names.add(subject); names.remove("");
+        String[] items = names.toArray(new String[0]);
+        classroom.ui.dialog().setTitle("Chọn môn học")
+                .setSingleChoiceItems(items,java.util.Arrays.asList(items).indexOf(subject),(dialog,which)->{subject=items[which];render();dialog.dismiss();})
+                .setNegativeButton("Đóng",null).show();
+    }
+
     private void render() {
-        int index = java.util.Arrays.asList(SUBJECTS).indexOf(subject);
-        subjectMark.setText(index<0?"∑":SUBJECT_MARKS[index]); subjectValue.setText(subject);
-        modeValue.setText(mode); modeIcon.setImageResource(mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_laptop);
+        subjectValue.setText(subject);
+        modes.removeAllViews();
+        ui.weight(modes,ui.option(MODES[0],R.drawable.ic_laptop,mode.equals(MODES[0]),()->{mode=MODES[0];render();})); ui.gap(modes,10);
+        ui.weight(modes,ui.option(MODES[1],R.drawable.ic_home_soft,mode.equals(MODES[1]),()->{mode=MODES[1];render();}));
         com.example.tmdt.ui.common.Motion.change((android.view.ViewGroup)addressField.getParent());
         addressField.setVisibility(mode.equals("Tại nhà")?View.VISIBLE:View.GONE);
         capacityValue.setText(String.valueOf(capacity)); sessionsValue.setText(String.valueOf(sessions));
-        scheduleValue.setText(label()); startValue.setText(start.format(Lesson.DATE));
+        weekdays.removeAllViews();
+        for (int i = 0; i < 7; i++) {
+            int day = i+1; boolean on = false; for (int d : days) on |= d==day;
+            if (i > 0) ui.gap(weekdays,5);
+            TextView chip = ui.choice(WEEKDAYS[i],on,()->{days=new int[]{day};start=nextClassDay(LocalDate.now().plusDays(1));render();});
+            chip.setTextSize(14); chip.setContentDescription(GroupClass.DAYS[i]+(on?", đã chọn":"")); ui.weight(weekdays,chip);
+        }
+        dates.removeAllViews();
+        LocalDate date = nextClassDay(LocalDate.now().plusDays(1));
+        if (start.isBefore(date)) start = date;
+        for (int i = 0; i < 8; i++, date = date.plusWeeks(1)) {
+            LocalDate value = date; if (i > 0) ui.gap(dates,8);
+            dates.addView(dateCell(value,value.equals(start),()->{start=value;render();}),ui.lp(64,70));
+        }
+        showHint();
+    }
+    private void showHint() {
+        startHint.setText(label()+" · khai giảng "+start.format(Lesson.DATE)+", "+sessions+" buổi");
+    }
+    private View dateCell(LocalDate date, boolean selected, Runnable click) {
+        LinearLayout cell = ui.column(); cell.setGravity(Gravity.CENTER); ui.fieldSurface(cell,selected?Ui.BLUE:Ui.WHITE,selected?Ui.BLUE:Ui.BORDER);
+        cell.addView(ui.text("Th"+date.getMonthValue(),12,selected?Ui.WHITE:Ui.MUTED,false)); ui.space(cell,4);
+        cell.addView(ui.text(String.valueOf(date.getDayOfMonth()),19,selected?Ui.WHITE:Ui.INK,true));
+        cell.setContentDescription(date.format(Lesson.DATE)+(selected?", đã chọn":"")); ui.clickable(cell,click); return cell;
+    }
+    private LinearLayout group(LinearLayout body, String title) {
+        LinearLayout card = ui.card(); ui.add(card,ui.text(title,17,Ui.INK,true)); ui.space(card,12);
+        ui.add(body,card); ui.space(body,12); return card;
+    }
+    private LinearLayout stepper(String title, String hint, TextView value, Runnable minus, Runnable plus) {
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout text = ui.column(); ui.add(text,ui.text(title,15,Ui.INK,true)); ui.space(text,2); ui.add(text,ui.text(hint,13,Ui.MUTED,false));
+        ui.weight(row,text);
+        row.addView(step("−",title+" giảm",minus)); value.setGravity(Gravity.CENTER); row.addView(value,ui.lp(44,-2)); row.addView(step("+",title+" tăng",plus));
+        return row;
+    }
+    private TextView step(String sign, String description, Runnable click) {
+        TextView button = ui.text(sign,20,Ui.BLUE,true); button.setGravity(Gravity.CENTER); ui.fieldSurface(button,Ui.PALE,0);
+        button.setContentDescription(description); ui.clickable(button,click); button.setLayoutParams(ui.lp(38,38)); return button;
     }
     private String label() {
-        GroupClass preview = new GroupClass("",classroom.me(),""); preview.days=days; preview.hour=hour; preview.minutes=minutes;
+        GroupClass preview = new GroupClass("",classroom.me(),""); preview.days=days; preview.hour=hour; preview.minute=minute; preview.minutes=minutes;
         return preview.scheduleLabel();
     }
     private LocalDate nextClassDay(LocalDate from) {
         return from.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.of(days[0])));
-    }
-
-    private void choose(String title, String[] items, int selected, java.util.function.IntConsumer apply) {
-        classroom.ui.dialog().setTitle(title)
-                .setSingleChoiceItems(items,selected,(dialog,which)->{apply.accept(which);render();dialog.dismiss();})
-                .setNegativeButton("Đóng",null).show();
-    }
-    private void pickSubject() { choose("Môn học",SUBJECTS,java.util.Arrays.asList(SUBJECTS).indexOf(subject),i->subject=SUBJECTS[i]); }
-    private void pickMode() { choose("Hình thức học",MODES,mode.equals("Tại nhà")?1:0,i->mode=MODES[i]); }
-    private void pickCapacity() {
-        String[] values = new String[9]; for (int i=0;i<9;i++) values[i]=String.valueOf(i+2);
-        choose("Số thành viên tối đa",values,capacity-2,i->capacity=i+2);
-    }
-    private void pickSessions() {
-        String[] values = new String[12]; for (int i=0;i<12;i++) values[i]=String.valueOf(i+1);
-        choose("Số buổi",values,sessions-1,i->sessions=i+1);
-    }
-    private void pickDay() {
-        choose("Ngày học trong tuần",GroupClass.DAYS,days.length==1?days[0]-1:-1,i->{
-            days=new int[]{i+1}; start=nextClassDay(start.isAfter(LocalDate.now())?start:LocalDate.now().plusDays(1));
-            pickHour();
-        });
-    }
-    private void pickHour() {
-        String[] values = new String[START_HOURS.length]; int selected = -1;
-        for (int i=0;i<START_HOURS.length;i++) { values[i]=Lesson.range(START_HOURS[i],minutes); if (START_HOURS[i]==hour) selected=i; }
-        choose("Giờ học",values,selected,i->hour=START_HOURS[i]);
-    }
-    private void pickStart() {
-        DatePickerDialog dialog = new DatePickerDialog(classroom.context(),R.style.ThemeOverlay_TMDT_Classroom_DatePicker,(view,year,month,day)->{start=LocalDate.of(year,month+1,day);render();},
-                start.getYear(),start.getMonthValue()-1,start.getDayOfMonth());
-        dialog.getDatePicker().setMinDate(System.currentTimeMillis()+24L*60*60*1000-1000); dialog.show();
     }
 
     private void submit() {
@@ -168,22 +209,28 @@ public final class OpenClassFragment extends ScreenFragment {
         if (editing != null && capacity < editing.members.size()) {
             classroom.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = classroom.store.classClash(classroom.me(),days,hour,minutes,start,sessions,editing==null?"":editing.id);
+        String clash = classroom.store.classClash(classroom.me(),days,hour*60+minute,minutes,start,sessions,editing==null?"":editing.id);
         if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
         GroupClass item = editing != null ? editing : new GroupClass(classroom.store.newId("group_classes"),classroom.me(),classroom.tutorName());
+        // A new schedule replaces the sessions moved one by one.
+        if (editing != null && (!editing.startDate.equals(start.toString()) || !java.util.Arrays.equals(editing.days,days) || editing.hour != hour
+                || editing.minute != minute || editing.minutes != minutes || editing.sessions != sessions)) { item.moves.clear(); item.proposal = null; }
         item.title=title; item.subject=subject; item.level=levelOf(title); item.mode=mode; item.address=mode.equals("Tại nhà")?place:"";
         item.description=about; item.startDate=start.toString(); item.sessions=sessions; item.price=fee; item.capacity=capacity;
-        item.days=days; item.hour=hour; item.minutes=minutes;
+        item.days=days; item.hour=hour; item.minute=minute; item.minutes=minutes;
         if (editing == null) {
             item.status=GroupClass.OPEN; item.art=subject.equals("Tiếng Anh")?2:subject.equals("Toán")?0:1;
         }
         classroom.store.saveClass(item); classroom.hideKeyboard(); classroom.classTab=0; classroom.show("classes");
         classroom.notice(editing==null?"Đã mở lớp \""+title+"\".":"Đã lưu thay đổi của lớp.");
     }
-    /** The level is taken from the class name ("… lớp 12"), or left general. */
+    /** The level is taken from the class name ("… lớp 12", "… THPT"), or left general. */
     private String levelOf(String title) {
         java.util.regex.Matcher match = java.util.regex.Pattern.compile("(?i)lớp\\s*(\\d{1,2})").matcher(title);
-        return match.find() ? "Lớp "+match.group(1) : editing != null ? editing.level : "Nhiều cấp độ";
+        if (match.find()) return "Lớp "+match.group(1);
+        for (String level : new String[]{"THPT","THCS","Tiểu học","Luyện thi"})
+            if (title.toLowerCase(java.util.Locale.ROOT).contains(level.toLowerCase(java.util.Locale.ROOT))) return level;
+        return editing != null ? editing.level : "Nhiều cấp độ";
     }
 }

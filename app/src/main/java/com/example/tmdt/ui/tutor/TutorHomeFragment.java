@@ -15,11 +15,16 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Lesson;
 import com.example.tmdt.Tutor;
 
 /** Screen 19 · Trang chủ gia sư: teaching overview, new requests and today's lessons. */
 public final class TutorHomeFragment extends ScreenFragment {
+    @Override protected Object dataSnapshot(){
+        com.example.tmdt.AgreementState agreement=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
+        return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,agreement.agreementLoaded(),agreement.signed(),agreement.outdated());
+    }
     private boolean allRequests;
     private LinearLayout requests;
     private TextView requestsToggle;
@@ -27,6 +32,11 @@ public final class TutorHomeFragment extends ScreenFragment {
         super.onCreate(state);allRequests=state!=null&&state.getBoolean("all_requests",false);
     }
     @Override public void onSaveInstanceState(android.os.Bundle out){super.onSaveInstanceState(out);out.putBoolean("all_requests",allRequests);}
+    @Override public void onViewCreated(@androidx.annotation.NonNull View view, android.os.Bundle state){
+        super.onViewCreated(view,state);
+        // UC23: thẻ nhắc ký hợp đồng cộng tác cập nhật khi dữ liệu hợp đồng tải xong.
+        ((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements.changes().observe(getViewLifecycleOwner(),ignored->refreshData());
+    }
 
     @Override protected View build() {
         LinearLayout root = ui.column(); LinearLayout body = ui.page(root);
@@ -40,8 +50,10 @@ public final class TutorHomeFragment extends ScreenFragment {
                 .setNegativeButton("Hủy",null).setPositiveButton("Chuyển",(d,w)->classroom.setTutorMode(false)).show());
         mode.setContentDescription("Chế độ gia sư. Chạm để chuyển về chế độ học viên"); hello.addView(mode,ui.lp(-2,27));
         ui.weight(top,hello);
+        top.addView(ui.iconButton(R.drawable.ic_wallet,Ui.BLUE,"Ví gia sư",()->classroom.show("tutor_wallet")));
         top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
         ui.add(body,top); ui.space(body,10);
+        agreementCard(body);
 
         List<Lesson> pending = new ArrayList<>(), today = new ArrayList<>();
         Set<String> students = new HashSet<>();
@@ -67,15 +79,51 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_calendar,String.valueOf(today.size()+classesToday.size()),"Buổi hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");})); ui.gap(tiles,7);
         ui.weight(tiles,tile(R.drawable.ic_users,String.valueOf(students.size()),"Học viên",()->classroom.show("classes")));
         ui.add(body,tiles); ui.space(body,20);
+        View searchRequests=ui.action(getString(R.string.request_search_title),R.drawable.ic_field_note,Ui.PRIMARY,
+                ()->((com.example.tmdt.MainActivity)requireActivity()).openRequestSearch("tutorHome"));
+        searchRequests.setId(R.id.search_tutor_requests);
+        ui.addAction(body,searchRequests,50);ui.space(body,10);
+        classroom.watchRequests(); ui.add(body,matchLink());ui.space(body,18);
+        replies(body);
 
         requestsToggle=sectionTitle(body,"Yêu cầu mới",()->{allRequests=!allRequests;animateRequests(pending);});
         requests = ui.column(); ui.add(body,requests); renderRequests(pending); ui.space(body,10);
 
         sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
-        for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session.groupClass())); ui.space(body,10); }
-        if (today.isEmpty() && classesToday.isEmpty()) ui.add(body,ui.note(R.drawable.ic_info,"Hôm nay chưa có buổi dạy nào.",Ui.PALE,Ui.BLUE,Ui.INK));
+        for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session)); ui.space(body,10); }
         return root;
+    }
+
+    /** Shortcut to Gợi ý ghép nhóm with the number of groups of students who posted the same need. */
+    private View matchLink() {
+        int groups = GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
+        LinearLayout row = ui.row(); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
+        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE)); ui.gap(row,12);
+        LinearLayout text = ui.column(); ui.add(text,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true)); ui.space(text,2);
+        ui.add(text,ui.text(groups>0?groups+" nhóm học viên cùng nhu cầu":"Học viên cùng môn và cấp học",13,Ui.MUTED,false));
+        ui.weight(row,text);
+        if (groups > 0) { row.addView(ui.pill(String.valueOf(groups),13,Ui.WHITE,Ui.BLUE),ui.lp(-2,-2)); ui.gap(row,6); }
+        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Gợi ý ghép nhóm"); ui.clickable(row,()->classroom.show("matches")); return row;
+    }
+
+    /** Answers to reschedule proposals not dismissed yet; tapping one opens that day of the teaching schedule. */
+    private void replies(LinearLayout body) {
+        List<Lesson> answers = new ArrayList<>();
+        for (Lesson lesson : classroom.lessons)
+            if (lesson.tutorId.equals(classroom.me()) && lesson.replied() && !classroom.replySeen(lesson)) answers.add(lesson);
+        if (answers.isEmpty()) return;
+        ui.section(body,"Phản hồi đổi lịch",19); ui.space(body,6);
+        for (Lesson lesson : answers) {
+            LinearLayout note = ui.note(lesson.kept()?R.drawable.ic_clock:R.drawable.ic_calendar,lesson.replyText(),
+                    lesson.kept()?0xFFFFE9EC:Ui.GREEN_BG,lesson.kept()?Ui.RED:Ui.GREEN,Ui.INK);
+            ui.gap(note,8); note.addView(ui.link("Đã xem",14,()->{classroom.markReplySeen(lesson);classroom.show("tutorHome");}));
+            ui.clickable(note,()->{classroom.teachingDay=LocalDate.parse(lesson.date);classroom.teachingMonth=false;classroom.show("teaching");});
+            ui.add(body,note); ui.space(body,8);
+        }
+        ui.space(body,12);
     }
 
     private static String givenName(String name) {
@@ -120,7 +168,6 @@ public final class TutorHomeFragment extends ScreenFragment {
                 ui.space(requests,10); shown++;
             }
         }
-        if (shown == 0) { ui.add(requests,ui.note(R.drawable.ic_info,"Chưa có yêu cầu mới.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(requests,10); }
     }
 
     private View requestCard(String userId, String name, String title, String when, String status, String action, Runnable click) {
@@ -146,19 +193,31 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
-    private View classTodayCard(GroupClass item) {
+    private View classTodayCard(GroupClass.Session session) {
+        GroupClass item = session.groupClass();
         LinearLayout card = ui.row(); card.setGravity(Gravity.TOP); card.setPadding(ui.dp(9),ui.dp(9),ui.dp(9),ui.dp(12));
         ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
-        card.addView(ui.art(item.smallArt(),69,73)); ui.gap(card,13);
+        card.addView(ui.photo(item.art(),null,69,73,12)); ui.gap(card,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,18,Ui.INK,true)); ui.space(info,5);
         ui.add(info,ui.text("Lớp nhóm · "+item.members.size()+"/"+item.capacity+" học viên",15,Ui.MUTED,false)); ui.space(info,2);
-        ui.add(info,ui.text(LocalDate.now().format(Lesson.DATE)+" · "+Lesson.range(item.hour,item.minutes),14,Ui.MUTED,false)); ui.space(info,8);
+        ui.add(info,ui.text(session.label(),14,Ui.MUTED,false)); ui.space(info,8);
         LinearLayout row = ui.row(); row.addView(ui.pill(item.mode,14,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,28)); ui.gap(row,10);
-        row.addView(ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));
+        row.addView(item.roomOpen()?ui.action("Vào phòng",0,Ui.PRIMARY,()->classroom.openClassRoom(item))
+                :ui.action("Xem lớp",0,Ui.PRIMARY,()->classroom.openClass(item,"review")),ui.lp(105,34));
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
-    /** Stand-in for screen 20 · Yêu cầu học (member 2), so booking requests can be answered in the demo. */
+    /** UC23: gia sư chưa ký (hoặc cần ký lại) hợp đồng cộng tác với hệ thống thì thấy thẻ nhắc ở đầu trang. */
+    private void agreementCard(LinearLayout body) {
+        com.example.tmdt.AgreementState agreements=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
+        if(!agreements.agreementLoaded()||(agreements.signed()&&!agreements.outdated()))return;
+        LinearLayout note=ui.note(R.drawable.ic_file,agreements.signed()?"Hợp đồng cộng tác có phiên bản mới. Chạm để đọc và ký lại."
+                :"Ký hợp đồng cộng tác với hệ thống để gửi hợp đồng dạy cho học viên. Chạm để ký.",Ui.ORANGE_BG,Ui.ORANGE,Ui.INK);
+        ui.clickable(note,()->((com.example.tmdt.MainActivity)requireActivity()).exchange.openAgreement());
+        ui.add(body,note);ui.space(body,12);
+    }
+
+    /** Review an actual booking request received from Firestore. */
     private void respond(Lesson lesson) {
         LinearLayout view = ui.column(); view.setPadding(ui.dp(20),ui.dp(20),ui.dp(20),ui.dp(18));
         LinearLayout top = ui.row();
@@ -175,6 +234,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         if (!lesson.address.isEmpty()) ui.tableRow(table,R.drawable.ic_pin,"Địa chỉ",lesson.address);
         ui.add(view,table); ui.space(view,14);
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(view,"Người học"); ui.add(view,ui.text(lesson.learnerName+" (tài khoản "+lesson.studentName+" đặt lịch)",15,Ui.INK,false)); ui.space(view,12); }
         ui.label(view,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,15,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(10),ui.dp(12),ui.dp(10));
         ui.fieldSurface(goal,Ui.PALE,Ui.BORDER); ui.add(view,goal); ui.space(view,12);
@@ -189,7 +249,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         LinearLayout actions = ui.row();
         ui.weightAction(actions,ui.action("Từ chối",0,Ui.DANGER,()->{dialog.dismiss();finish(classroom.store.rejectRequest(lesson),"Đã từ chối yêu cầu.");}),46);
         ui.gap(actions,10);
-        ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->{dialog.dismiss();finish(classroom.store.acceptRequest(lesson),"Đã chấp nhận. Buổi học được thêm vào lịch dạy.");}),46);
+        ui.weightAction(actions,ui.action("Chấp nhận",0,Ui.PRIMARY,()->{dialog.dismiss();accepted(lesson);}),46);
         ui.add(view,actions); ui.space(view,6);
         TextView later = ui.link("Để sau",15,dialog::dismiss); later.setTextColor(Ui.MUTED); later.setGravity(Gravity.CENTER); ui.add(view,later);
         dialog.show();
@@ -197,5 +257,11 @@ public final class TutorHomeFragment extends ScreenFragment {
     private void finish(String error, String done) {
         if (error != null) { classroom.dialog("Không thể xử lý yêu cầu",error); return; }
         classroom.show("tutorHome"); classroom.notice(done);
+    }
+    /** UC23: chấp nhận xong thì gợi ý gửi hợp đồng dạy cho học viên. */
+    private void accepted(Lesson lesson) {
+        String error = classroom.store.acceptRequest(lesson);
+        finish(error,"Đã chấp nhận. Buổi học được thêm vào lịch dạy.");
+        if (error == null) ((com.example.tmdt.MainActivity) requireActivity()).exchange.afterAccepted(lesson);
     }
 }

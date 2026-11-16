@@ -18,9 +18,7 @@ import com.example.tmdt.R;
 import com.example.tmdt.Tutor;
 import com.example.tmdt.databinding.FragmentTutorProfileBinding;
 import com.example.tmdt.databinding.ItemTutorProfileOfferingBinding;
-import com.example.tmdt.databinding.ItemTutorProfileReviewBinding;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,24 +38,6 @@ public final class TutorProfileFragment extends Fragment {
         args.putString(ARG_TUTOR_ID, tutorId);
         fragment.setArguments(args);
         return fragment;
-    }
-
-    public static final class ReviewItem {
-        public final String initials;
-        public final String name;
-        public final String tag;
-        public final String stars;
-        public final String date;
-        public final String comment;
-
-        public ReviewItem(String initials, String name, String tag, String stars, String date, String comment) {
-            this.initials = initials;
-            this.name = name;
-            this.tag = tag;
-            this.stars = stars;
-            this.date = date;
-            this.comment = comment;
-        }
     }
 
     @Override
@@ -100,9 +80,6 @@ public final class TutorProfileFragment extends Fragment {
         }
 
         CatalogState.Teacher teacher = catalog.teacher(tutorId);
-        if (teacher == null && (tutorId.isEmpty() || tutorId.startsWith("demo"))) {
-
-        }
         if (teacher == null) {
             binding.llEmptyState.setVisibility(View.VISIBLE);
             binding.flMainContent.setVisibility(View.GONE);
@@ -135,15 +112,14 @@ public final class TutorProfileFragment extends Fragment {
         String region = finalTeacher.region == null || finalTeacher.region.trim().isEmpty() ? "Toàn quốc" : finalTeacher.region;
         binding.tvRegion.setText(getString(R.string.tutor_profile_region_label, region));
 
-        // Stats ( fake số sao )
-        binding.tvStatRating.setText("4.9");
-        long years = finalTeacher.experience > 0 ? finalTeacher.experience : 2;
+        if (finalTeacher.userId == null || finalTeacher.userId.isEmpty()) binding.tvStatRating.setText("—");
+        long years = finalTeacher.experience;
         binding.tvStatExperience.setText(years + " năm");
-        binding.tvStatStudents.setText("128");
+        binding.tvStatStudents.setText("—");
 
         // Giới thiệu
         String intro = finalTeacher.introduction == null || finalTeacher.introduction.trim().isEmpty()
-                ? "Hướng dẫn dễ hiểu, bám sát mục tiêu và năng lực của từng học viên. Giúp học viên nắm vững kiến thức căn bản và nâng cao."
+                ? getString(R.string.tutor_profile_no_introduction)
                 : finalTeacher.introduction;
         binding.tvIntroduction.setText(intro);
 
@@ -154,7 +130,10 @@ public final class TutorProfileFragment extends Fragment {
         setupOfferings(host, catalog, finalTeacher);
 
         // Đánh giá của học viên
-        setupReviews(finalTeacher);
+        // UC26 (Thành viên 4): điểm trung bình, số đánh giá và đánh giá mới nhất từ học viên.
+        com.example.tmdt.ui.exchange.TutorReviewsSummary.bind(this, binding.llReviews, binding.tvReviewsSummaryCount,
+                binding.tvStatRating, finalTeacher.userId, finalTeacher.name);
+        setupComments(finalTeacher.id);
 
         // Favorite Button
         setupFavorite(host, finalTeacher);
@@ -162,6 +141,18 @@ public final class TutorProfileFragment extends Fragment {
         // Footer Action Buttons
         binding.btnMessage.setOnClickListener(v -> host.classroom.message(finalTeacher.name));
         binding.btnBook.setOnClickListener(v -> book(host, catalog, finalTeacher));
+        com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
+        com.example.tmdt.ui.common.Motion.bindControls(binding.getRoot());
+    }
+
+    private void setupComments(String id) {
+        if (!isAdded() || getChildFragmentManager().isStateSaved()) return;
+        Fragment current = getChildFragmentManager().findFragmentById(R.id.tutor_comments_container);
+        if (current instanceof TutorCommentsFragment && current.getArguments() != null
+                && id.equals(current.getArguments().getString("tutor_id", ""))) return;
+        getChildFragmentManager().beginTransaction()
+                .replace(R.id.tutor_comments_container, TutorCommentsFragment.newInstance(id), "tutor_comments")
+                .commitNow();
     }
 
     private void setupTeachingModes(String mode) {
@@ -204,16 +195,17 @@ public final class TutorProfileFragment extends Fragment {
     }
 
     private void setupOfferings(MainActivity host, CatalogState catalog, CatalogState.Teacher teacher) {
-        binding.llOfferings.removeAllViews();
+        com.example.tmdt.ui.common.StableBindings<ItemTutorProfileOfferingBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.llOfferings);rows.begin();
         if (teacher.offerings.isEmpty()) {
+            rows.commit(binding.llOfferings);
             binding.tvEmptyOfferings.setVisibility(View.VISIBLE);
             return;
         }
         binding.tvEmptyOfferings.setVisibility(View.GONE);
 
         for (CatalogState.Offering offering : teacher.offerings) {
-            ItemTutorProfileOfferingBinding itemBinding = ItemTutorProfileOfferingBinding.inflate(
-                    getLayoutInflater(), binding.llOfferings, false);
+            ItemTutorProfileOfferingBinding itemBinding = rows.item(offering.subjectId+"/"+offering.level,()->ItemTutorProfileOfferingBinding.inflate(
+                    getLayoutInflater(), binding.llOfferings, false));
 
             String subjectName = catalog.subjects().get(offering.subjectId);
             if (subjectName == null) subjectName = "Môn học";
@@ -228,51 +220,8 @@ public final class TutorProfileFragment extends Fragment {
             itemBinding.getRoot().setOnClickListener(bookClick);
             itemBinding.btnBookOffering.setOnClickListener(bookClick);
 
-            binding.llOfferings.addView(itemBinding.getRoot());
         }
-    }
-
-    private void setupReviews(CatalogState.Teacher teacher) {
-        binding.llReviews.removeAllViews();
-        List<ReviewItem> reviews = getMockReviews(teacher);
-        binding.tvReviewsSummaryCount.setText(getString(R.string.tutor_profile_reviews_count, Math.max(reviews.size(), 128)));
-
-        for (ReviewItem review : reviews) {
-            ItemTutorProfileReviewBinding itemBinding = ItemTutorProfileReviewBinding.inflate(
-                    getLayoutInflater(), binding.llReviews, false);
-
-            itemBinding.tvReviewerInitials.setText(review.initials);
-            itemBinding.tvReviewerName.setText(review.name);
-            itemBinding.tvReviewerTag.setText(review.tag);
-            itemBinding.tvReviewStars.setText(review.stars);
-            itemBinding.tvReviewDate.setText(review.date);
-            itemBinding.tvReviewComment.setText(review.comment);
-
-            itemBinding.getRoot().setOnClickListener(v -> showReviewDialog(review));
-
-            binding.llReviews.addView(itemBinding.getRoot());
-        }
-    }
-
-    private void showReviewDialog(ReviewItem review) {
-        new AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.tutor_profile_review_dialog_title))
-                .setMessage(review.name + " (" + review.tag + ")\n" + review.stars + " · " + review.date + "\n\n" + review.comment)
-                .setPositiveButton(R.string.close, null)
-                .show();
-    }
-
-    private List<ReviewItem> getMockReviews(CatalogState.Teacher teacher) {
-        List<ReviewItem> list = new ArrayList<>();
-        String name = teacher.name == null ? "" : teacher.name;
-        // fake review trước khi có review thật
-        list.add(new ReviewItem("BL", "Nguyễn Bảo Long", "Học viên", "★★★★★", "1 tuần trước",
-                "“Gia sư rất nhiệt tình, đúng giờ và phương pháp truyền đạt dễ tiếp thu. Rất hài lòng với các buổi học!”"));
-        list.add(new ReviewItem("MA", "Hoàng Mai Anh", "Học viên", "★★★★★", "1 tháng trước",
-                "“Thầy cô chuẩn bị bài chu đáo, tận tâm giải đáp mọi thắc mắc ngay trong buổi học.”"));
-        list.add(new ReviewItem("TC", "Phan Thanh Cường", "Học viên", "★★★★★", "2 tháng trước",
-                "“Sau khóa học điểm số của mình cải thiện rõ rệt. Đánh giá 5 sao cho sự tận tình của gia sư.”"));
-        return list;
+        rows.commit(binding.llOfferings);
     }
 
     private void setupFavorite(MainActivity host, CatalogState.Teacher teacher) {

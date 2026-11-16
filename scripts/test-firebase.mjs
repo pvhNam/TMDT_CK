@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 
 // Deliberately fixed to loopback: these tests must never write to production.
 const project = 'tmdt-3e274';
-const firestore = `http://127.0.0.1:8080/v1/projects/${project}/databases/(default)/documents`;
-const auth = 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
+const firestoreHost=process.env.FIRESTORE_EMULATOR_HOST||'127.0.0.1:8080';
+const authHost=process.env.FIREBASE_AUTH_EMULATOR_HOST||'127.0.0.1:9099';
+for(const host of [firestoreHost,authHost])assert.match(host,/^(127\.0\.0\.1|localhost):[0-9]+$/,'Tests require loopback emulators');
+const firestore = `http://${firestoreHost}/v1/projects/${project}/databases/(default)/documents`;
+const auth = `http://${authHost}/identitytoolkit.googleapis.com/v1`;
 const stamp = `test${Date.now()}`;
 let passed = 0;
 async function request(url, method, body, token) {
@@ -18,7 +21,14 @@ function check(condition, message) { assert.ok(condition,message); passed++; con
 async function signup(suffix) {
   const email=`${stamp}${suffix}@example.com`;
   const result=await request(`${auth}/accounts:signUp?key=emulator`, 'POST', {email,password:'HocTap123!',returnSecureToken:true});
-  assert.equal(result.status,200); return {...result.data,email};
+  assert.equal(result.status,200);
+  // Follow the actual verification action code in the emulator mailbox; profiles require verified email.
+  assert.equal((await request(`${auth}/accounts:sendOobCode?key=emulator`,'POST',{requestType:'VERIFY_EMAIL',idToken:result.data.idToken})).status,200);
+  const mailbox=await request(`http://${authHost}/emulator/v1/projects/${project}/oobCodes`,'GET');
+  const code=mailbox.data.oobCodes.find(item=>item.email===email&&item.requestType==='VERIFY_EMAIL');assert.ok(code);
+  assert.equal((await request(`${auth}/accounts:update?key=emulator`,'POST',{oobCode:code.oobCode})).status,200);
+  const verified=await request(`${auth}/accounts:signInWithPassword?key=emulator`,'POST',{email,password:'HocTap123!',returnSecureToken:true});
+  assert.equal(verified.status,200);return {...verified.data,email};
 }
 async function write(path,values,token,create=false) {
   const write={update:{name:`projects/${project}/databases/(default)/documents/${path}`,fields:fields(values)},
@@ -74,7 +84,7 @@ for(const [collection,field,value] of [['subjects','dang_su_dung',true],['tutor_
 check((await request(`${firestore}:runQuery`,'POST',{structuredQuery:{from:[{collectionId:'users'}]}},first.idToken)).status===403,'Users collection cannot be listed');
 check((await write('tutor_profiles/demo_math',{trang_thai_xac_minh:'VERIFIED'},first.idToken)).status===403,'Student cannot publish tutor profile');
 for(const collection of ['wallets','wallet_transactions','escrows','escrow_items','payos_transactions','payout_requests','certificates','job_posts','applications','invitations','invitation_terms','contracts','attendances','reviews','conversations','messages','system_configs']) {
-  check((await write(`${collection}/test`,{user_id:first.localId},first.idToken,true)).status===403,`Removed collection denied: ${collection}`);
+  check((await write(`${collection}/test`,{user_id:first.localId},first.idToken,true)).status===403,`Invalid or unauthorized write denied: ${collection}`);
 }
 await request(`${firestore}/users/${first.localId}`,'PATCH',{fields:{trang_thai:{stringValue:'BANNED'}}},'owner');
 check((await write(`users/${first.localId}`,{ho_ten:'Cannot update'},first.idToken)).status===403,'Banned profile cannot be edited');

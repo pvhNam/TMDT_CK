@@ -1,0 +1,4 @@
+# Copy to vnpay.properties in the project root. Never commit the filled file.
+VNPAY_TMN_CODE=1VKN2HWF
+VNPAY_HASH_SECRET=TFGOWKBQDWSTTTASVGKERBDUUOKKASQS
+VNPAY_RETURN_URL=https://tmdt.example/vnpay/return

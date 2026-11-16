@@ -40,7 +40,6 @@ public final class ConfirmLessonFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_coin,"Học phí buổi học",Tutor.money(lesson.total())));
         ui.add(body,tiles); ui.space(body,16);
 
-        ui.add(body,ui.note(R.drawable.ic_info,"Xác nhận hoàn thành sẽ cho phép giải ngân học phí buổi này cho gia sư.",Ui.PALE,Ui.BLUE,Ui.MUTED));
         ui.space(body,8);
         if (lesson.finished) {
             ui.addAction(body,ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null),47);
@@ -51,8 +50,8 @@ public final class ConfirmLessonFragment extends ScreenFragment {
             ui.addAction(body,ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,this::confirm),47);
         }
         ui.space(body,12);
-        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->classroom.dialog("Báo cáo vấn đề",
-                "Màn hình Báo cáo vi phạm (47) do Thành viên 4 phụ trách. Học phí của buổi này được giữ lại cho đến khi báo cáo được xử lý.")),46);
+        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->((com.example.tmdt.MainActivity)requireActivity()).exchange
+                .openReport(com.example.tmdt.Report.SUBJECT_LESSON,lesson.id)),46);
         return root;
     }
 
@@ -65,9 +64,6 @@ public final class ConfirmLessonFragment extends ScreenFragment {
 
     private void confirm() {
         if (!agree.isChecked()) { classroom.dialog("Chưa xác nhận","Hãy đánh dấu \"Tôi xác nhận buổi học đã diễn ra\" trước khi tiếp tục."); return; }
-        String error = classroom.store.confirmFinished(lesson, classroom.me());
-        if (error != null) { classroom.dialog("Không thể xác nhận",error); return; }
-        classroom.show("lesson");
-        classroom.dialog("Đã xác nhận hoàn thành","Học phí "+Tutor.money(lesson.total())+" của buổi này sẽ được giải ngân cho gia sư (màn hình 43 do Thành viên 4 phụ trách). Bạn có thể đánh giá gia sư sau buổi học.");
+        ((com.example.tmdt.MainActivity)requireActivity()).openPayment("LESSON",lesson.id);
     }
 }

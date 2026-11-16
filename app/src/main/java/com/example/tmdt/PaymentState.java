@@ -1,0 +1,217 @@
+package com.example.tmdt;
+
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.*;
+import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.function.Consumer;
+
+/** Release reads the real ledger; the native sandbox uses a separate Firestore namespace. */
+public final class PaymentState extends ViewModel {
+    public enum TutorPaymentsStatus { LOADING, CACHED, READY, UNAVAILABLE }
+
+    public static final class Row {
+        public final String id;public final Map<String,Object> data;
+        public Row(String id,Map<String,Object> data){this.id=id;this.data=data;}
+        public String text(String key){Object v=data.get(key);return v instanceof String?(String)v:"";}
+        public long number(String key){Object v=data.get(key);return v instanceof Number?((Number)v).longValue():0;}
+        public long time(String key){Object v=data.get(key);return v instanceof com.google.firebase.Timestamp?((com.google.firebase.Timestamp)v).toDate().getTime():0;}
+        public boolean flag(String key){return Boolean.TRUE.equals(data.get(key));}
+        public Map<String,Object> map(String key){Object v=data.get(key);return v instanceof Map?(Map<String,Object>)v:Collections.emptyMap();}
+    }
+    private final FirebaseFirestore db=FirebaseFirestore.getInstance();
+    private final FirebaseAuth auth=FirebaseAuth.getInstance();
+    PaymentApi api=new PaymentApi();
+    public final MutableLiveData<Integer> changes=new MutableLiveData<>(0);
+    public final Map<String,Row> payments=new LinkedHashMap<>(),earnings=new LinkedHashMap<>(),payouts=new LinkedHashMap<>(),refunds=new LinkedHashMap<>(),sessions=new TreeMap<>();
+    public final Map<String,Row> wallets=new LinkedHashMap<>(),withdrawals=new LinkedHashMap<>();
+    private final Map<String,Map<String,Row>> sources=new HashMap<>();
+    private final List<ListenerRegistration> listeners=new ArrayList<>();
+    private ListenerRegistration sessionListener,bankListener,walletListener;
+    private String sessionOwner="",key="";private int generation;
+    public String owner="",selected="",selectedPayout="",selectedRefund="",requestedType="",requestedSource="",requestedStudent="",origin="account",destination,error="",notice="";
+    public String incomePeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString(),payrollPeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusMonths(1).toString();
+    public boolean admin,tutor,busy;
+    public int adminPaymentTab, tutorIncomeTab;
+    public String tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+    public TutorPaymentsStatus tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
+    public int payrollFilter;
+    public int walletFilter,withdrawalFilter;
+    public boolean walletLoaded,incomeLoaded;
+    public String selectedWithdrawal="",withdrawalOrigin="tutor_wallet";
+    public String withdrawalDraft="",withdrawalRequestId="",bankOrigin="tutor_wallet";
+    public String payrollOrigin="admin_finance";
+    public Map<String,Object> bank=new HashMap<>();
+    public void account(AccountState account){
+        UserProfile profile=account.profile();
+        String next=account.signedIn()&&profile!=null&&"ACTIVE".equals(profile.status)?account.uid():"";
+        String nextKey=next+(profile==null?"":profile.role+profile.tutor);
+        if(nextKey.equals(key))return;key=nextKey;generation++;
+        for(ListenerRegistration listener:listeners)listener.remove();listeners.clear();
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;sessionOwner="";
+        if(bankListener!=null)bankListener.remove();bankListener=null;
+        if(walletListener!=null)walletListener.remove();walletListener=null;
+        owner=next;admin=profile!=null&&"ADMIN".equals(profile.role);tutor=profile!=null&&profile.tutor;
+        tutorIncomeTab=0;
+        tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+        tutorPaymentsStatus=!owner.isEmpty()&&tutor?TutorPaymentsStatus.LOADING:TutorPaymentsStatus.UNAVAILABLE;
+        payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();bank.clear();busy=false;error="";notice="";
+        wallets.clear();withdrawals.clear();walletLoaded=false;incomeLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
+        if(owner.isEmpty()){selected="";changed();return;}
+        attachListeners();
+    }
+    /** Reattach failed subscriptions while retaining the visible data and current selection. */
+    public void retry(){
+        if(owner.isEmpty()||busy)return;generation++;error="";notice="";
+        for(ListenerRegistration listener:listeners)listener.remove();listeners.clear();
+        if(bankListener!=null)bankListener.remove();bankListener=null;
+        if(walletListener!=null)walletListener.remove();walletListener=null;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        attachListeners();watchSessions();
+    }
+    private void attachListeners(){
+        if(admin){listen("payments",db.collection(api.collection("payments")),payments);listen("payouts",db.collection(api.collection("tutor_payouts")),payouts);listen("refunds",db.collection(api.collection("refund_requests")),refunds);}
+        else{
+            listen("student-payments",db.collection(api.collection("payments")).whereEqualTo("student_id",owner),payments);
+            listen("tutor-payments",db.collection(api.collection("payments")).whereEqualTo("tutor_id",owner),payments);
+            listen("payouts",db.collection(api.collection("tutor_payouts")).whereEqualTo("tutor_id",owner),payouts);
+            listen("refunds",db.collection(api.collection("refund_requests")).whereEqualTo("student_id",owner),refunds);
+        }
+        listen("earnings",admin?db.collection(api.collection("tutor_earnings")):db.collection(api.collection("tutor_earnings")).whereEqualTo("tutor_id",owner),earnings);
+        final int version=generation;
+        if(admin){
+            listen("wallets",db.collection(api.collection("tutor_wallets")),wallets);
+            listen("withdrawals",db.collection(api.collection("wallet_withdrawals")),withdrawals);
+        }else if(tutor){
+            listen("withdrawals",db.collection(api.collection("wallet_withdrawals")).whereEqualTo("tutor_id",owner),withdrawals);
+            walletListener=db.collection(api.collection("tutor_wallets")).document(owner).addSnapshotListener((doc,failure)->{
+                if(version!=generation)return;
+                if(failure!=null){walletLoaded=false;failRead(failure);return;}
+                wallets.clear();if(doc!=null&&doc.exists())wallets.put(doc.getId(),new Row(doc.getId(),doc.getData()));
+                walletLoaded=true;changed();
+            });
+        }
+        bankListener=db.collection(api.collection("payout_accounts")).document(owner).addSnapshotListener((doc,failure)->{
+            if(version!=generation)return;
+            if(failure!=null){failRead(failure);return;}
+            bank=doc!=null&&doc.exists()?doc.getData():new HashMap<>();changed();
+        });changed();
+    }
+    private void listen(String name,Query query,Map<String,Row> target){
+        final int version=generation;
+        boolean tracksTutorPayments=tutor&&(name.equals("tutor-payments")||name.equals("payments"));
+        MetadataChanges metadata=tracksTutorPayments?MetadataChanges.INCLUDE:MetadataChanges.EXCLUDE;
+        listeners.add(query.addSnapshotListener(metadata,(snapshot,failure)->{
+            if(version!=generation)return;
+            if(failure!=null){
+                if(tracksTutorPayments)tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
+                failRead(failure);return;
+            }
+            if(tracksTutorPayments&&snapshot!=null){
+                tutorPaymentsStatus=snapshot.getMetadata().isFromCache()?TutorPaymentsStatus.CACHED:TutorPaymentsStatus.READY;
+            }
+            Map<String,Row> rows=new LinkedHashMap<>();if(snapshot!=null)for(DocumentSnapshot doc:snapshot)rows.put(doc.getId(),new Row(doc.getId(),doc.getData()));
+            sources.put(name,rows);target.clear();
+            if(target==payments){for(Map.Entry<String,Map<String,Row>> source:sources.entrySet())if(source.getKey().equals("payments")||source.getKey().endsWith("-payments"))target.putAll(source.getValue());}
+            else target.putAll(rows);
+            if(target==wallets)walletLoaded=true;
+            incomeLoaded=sources.containsKey("earnings")&&sources.containsKey("payouts");
+            watchSessions();changed();
+        }));
+    }
+    private void watchSessions(){
+        String next=payments.containsKey(selected)?selected:"";
+        if(next.equals(sessionOwner)&&(sessionListener!=null||next.isEmpty()))return;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        if(!next.equals(sessionOwner))sessions.clear();sessionOwner=next;
+        if(next.isEmpty())return;final int version=generation;
+        sessionListener=db.collection(api.collection("payments")).document(next).collection("sessions").addSnapshotListener((snapshot,failure)->{
+            if(version!=generation||!next.equals(sessionOwner))return;
+            if(failure!=null){failRead(failure);return;}
+            sessions.clear();if(snapshot!=null)for(DocumentSnapshot doc:snapshot)sessions.put(doc.getId(),new Row(doc.getId(),doc.getData()));changed();
+        });
+    }
+    private void failRead(Exception e){error=e instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)e).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED?
+            "Chưa có quyền xem thanh toán. Vui lòng liên hệ quản trị viên để cập nhật cấu hình truy cập.":"Chưa tải được dữ liệu thanh toán. Kiểm tra kết nối và thử lại.";changed();}
+    public void open(String type,String source,String from){open(type,source,from,owner);}
+    public void open(String type,String source,String from,String student){requestedType=type;requestedSource=source;requestedStudent=student;selected=id(type,source);origin=from;error="";notice="";destination="payment_detail";watchSessions();changed();}
+    public void openExisting(String id,String from){selected=id;requestedType="";requestedSource="";origin=from;error="";notice="";destination="payment_detail";watchSessions();changed();}
+    public Row current(){return payments.get(selected);}
+    public Row paymentFor(String type,String source){return payments.get(id(type,source));}
+    public boolean paid(String type,String source){Row row=paymentFor(type,source);return row!=null&&"PAID".equals(row.text("status"));}
+    public boolean configured(){return api.configured();}
+    public boolean sandbox(){return api.sandbox();}
+    public void returned(String paymentId,String url){
+        if(!sandbox())return;
+        request("POST","/payments/"+paymentId+"/return",json("url",url),r->{String status=r.optString("status");notice=status.equals("PAID")?"Thanh toán thành công.":"Kết quả thanh toán: "+status(status);});
+    }
+    public void changed(){changes.setValue(changes.getValue()+1);}
+    public void clearFeedback(){error="";notice="";}
+    public void checkout(Consumer<String> open){
+        Row row=current();String type=row==null?requestedType:row.text("type"),source=row==null?requestedSource:row.text("source_id");
+        request("POST","/payments",json("type",type,"source_id",source),result->{String url=result.optString("checkoutUrl");if(!url.isEmpty())open.accept(url);else notice="Trạng thái thanh toán đã được cập nhật.";});
+    }
+    public void refresh(){request("POST","/payments/"+selected+"/refresh",json(),result->notice=sandbox()?result.optString("message"):"Đã đối chiếu trạng thái với VNPay.");}
+    public void session(int number,String action,String reason){
+        request("POST","/payments/"+selected+"/sessions/"+number+"/"+action,json("reason",reason),result->notice=action.equals("confirm")?"Đã xác nhận buổi học.":"Đã cập nhật buổi học.");
+    }
+    public void saveBank(String name,String number,String holder){request("PUT","/bank",json("bank_name",name,"account_number",number,"account_name",holder),r->notice="Đã lưu tài khoản nhận tiền.");}
+    public void preparePayroll(){
+        String period=payrollPeriod;
+        request("POST","/admin/payroll",json("period",period),r->notice=r.optInt("created")>0?
+                "Đã lập "+r.optInt("created")+" bảng lương kỳ "+period+".":
+                "Không có bảng lương mới. Kiểm tra khoản chưa lập bảng và trạng thái gia sư.");
+    }
+    public void creditSalary(String id){request("POST","/admin/payouts/"+id+"/credit",json(),r->notice="Đã trả lương vào ví gia sư.");}
+    public Row wallet(){return wallets.get(owner);}
+    public void beginWithdrawal(){clearFeedback();withdrawalDraft="";withdrawalRequestId=owner+"_"+UUID.randomUUID();destination="withdraw_funds";changed();}
+    public void requestWithdrawal(long amount,String requestId,Map<String,Object> bank){
+        request("POST","/wallet/withdrawals",json("amount",amount,"request_id",requestId,"bank",new JSONObject(bank)),r->{
+            String status=r.optString("status");notice=TutorWallet.withdrawalStatus(status);withdrawalDraft="";withdrawalRequestId="";
+            if(TutorWallet.withdrawing(status)){selectedWithdrawal=r.optString("id",requestId);withdrawalOrigin="tutor_wallet";destination="withdrawal_detail";}else destination="tutor_wallet";
+        });
+    }
+    public void openWithdrawal(String id,String from){selectedWithdrawal=id;withdrawalOrigin=from;clearFeedback();destination="withdrawal_detail";changed();}
+    public void completeWithdrawal(String id){
+        request("POST","/wallet/withdrawals/"+id+"/complete",json(),r->notice="Đã rút tiền.");
+    }
+    public void cancelWithdrawal(String id){
+        request("POST","/wallet/withdrawals/"+id+"/cancel",json(),r->notice="Đã hủy yêu cầu. Tiền đã trở lại ví.");
+    }
+    public void markPayout(String reference){request("POST","/admin/payouts/"+selectedPayout+"/paid",json("reference",reference),r->notice="Đã ghi nhận khoản chuyển tiền cho gia sư.");}
+    public void cancelPayout(String reason){request("POST","/admin/payouts/"+selectedPayout+"/cancel",json("reason",reason),r->notice="Đã hủy bảng chi trả.");}
+    public void refund(String reason){request("POST","/payments/"+selected+"/refund",json("reason",reason),r->notice="Đã gửi yêu cầu hoàn học phí.");}
+    public void finishRefund(String reference){request("POST","/admin/refunds/"+selectedRefund+"/paid",json("reference",reference),r->notice="Đã ghi nhận hoàn tiền cho học sinh.");}
+    public void rejectRefund(String reason){request("POST","/admin/refunds/"+selectedRefund+"/reject",json("reason",reason),r->notice="Đã cập nhật kết quả đối soát yêu cầu hoàn tiền.");}
+    private void request(String method,String path,JSONObject body,Consumer<JSONObject> success){
+        if(busy)return;busy=true;clearFeedback();changed();final int version=generation;
+        api.request(auth.getCurrentUser(),method,path,body).addOnCompleteListener(task->{
+            if(version!=generation)return;busy=false;
+            if(task.isSuccessful())success.accept(task.getResult());else error=task.getException() instanceof PaymentApi.Failure?task.getException().getMessage():"Phiên đăng nhập chưa hợp lệ. Hãy đăng nhập lại.";
+            changed();
+        });
+    }
+    public static JSONObject json(Object...pairs){JSONObject value=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)value.put((String)pairs[i],pairs[i+1]);}catch(Exception e){throw new IllegalArgumentException(e);}return value;}
+    public static String id(String type,String source){
+        try{byte[] bytes=MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));StringBuilder hex=new StringBuilder();for(byte value:bytes)hex.append(String.format(Locale.ROOT,"%02x",value&255));return type.toLowerCase(Locale.ROOT)+"_"+hex.substring(0,32);}
+        catch(Exception e){throw new IllegalStateException(e);}
+    }
+    public static String money(long value){return String.format(new Locale("vi","VN"),"%,d đ",value);}
+    public static String status(String value){switch(value){
+        case "CREATING":return "Đang tạo phiên";case "WAITING":return "Chờ thanh toán";case "PAID":return "Đã thanh toán";
+        case "PAID_REVIEW":return "Đã nhận tiền · Cần đối soát";case "REFUND_REQUESTED":return "Chờ hoàn tiền";case "CLOSED_REFUNDED":case "REFUNDED":return "Đã hoàn tiền";
+        case "EXPIRED":return "Phiên hết hạn";case "CANCELLED":return "Phiên đã hủy";case "ERROR":return "Chưa tạo được phiên";case "FAILED":return "Thanh toán thất bại";
+        case "GATEWAY_REVIEW":return "VNPay đang cần đối soát";
+        case "READY":return "Chờ chi trả";case "PROPOSED":return "Chờ học sinh xác nhận";case "COMPLETED":return "Đã hoàn thành";case "DISPUTED":return "Có phản ánh";
+        case "PENDING":return "Chờ xử lý";case "REJECTED":return "Đã từ chối";
+        default:return value;
+    }}
+    public static String payoutStatus(String value){return "CREDITED".equals(value)?"Đã vào ví":"PAID".equals(value)?"Đã chuyển ngân hàng":"CANCELLED".equals(value)?"Đã hủy bảng chi":status(value);}
+    @Override protected void onCleared(){for(ListenerRegistration listener:listeners)listener.remove();if(sessionListener!=null)sessionListener.remove();if(bankListener!=null)bankListener.remove();if(walletListener!=null)walletListener.remove();super.onCleared();}
+}

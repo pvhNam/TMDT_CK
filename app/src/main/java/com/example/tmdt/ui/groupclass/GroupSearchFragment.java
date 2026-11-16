@@ -11,17 +11,21 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.text.Normalizer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.IntConsumer;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
+import com.example.tmdt.ui.common.StableViews;
 import com.example.tmdt.GroupClass;
+import com.example.tmdt.GroupMatch;
 
 /** Screen 37 · Tìm lớp học nhóm (UC19): search and filter open group classes. */
 public final class GroupSearchFragment extends ScreenFragment {
-    private LinearLayout filters, results;
+    private LinearLayout filters, results, history;
     private EditText search;
     private static final String[] MODES = {"Mọi hình thức","Trực tuyến","Tại nhà"};
     /** Empty subject or mode means no filter. */
@@ -42,6 +46,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         search.setOnEditorActionListener((v,id,event)->{classroom.hideKeyboard();return true;});
         ui.weight(box,search); ui.add(body,box); ui.space(body,13);
         filters = ui.row(); ui.add(body,filters); ui.space(body,13);
+        history=ui.column();ui.add(body,history); ui.space(body,13);
         results = ui.column(); ui.add(body,results);
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
@@ -54,7 +59,7 @@ public final class GroupSearchFragment extends ScreenFragment {
 
     /** Subject and mode open a list to choose from (UC19); "Còn chỗ" switches on and off. */
     /** New data only redraws the results, so the search text and filters stay as they are. */
-    @Override public void refresh() { if (results != null && getView() != null) renderResults(); else super.refresh(); }
+    @Override protected boolean updateContent() { if(results==null)return false;renderResults();return true; }
 
     private void renderFilters() {
         filters.removeAllViews();
@@ -91,29 +96,54 @@ public final class GroupSearchFragment extends ScreenFragment {
     }
 
     private void renderResults() {
-        results.removeAllViews(); String query = normalized(search.getText().toString()); int count = 0;
+        StableViews historyRows=StableViews.at(history);historyRows.begin();
+        int sent=0,waiting=0;
+        for(GroupClass item:classroom.store.classes)for(GroupClass.Registration registration:item.registrations)
+            if(registration.studentId.equals(classroom.me())){sent++;if(registration.pending())waiting++;}
+        final int sentCount=sent,waitingCount=waiting;
+        historyRows.add("history",new int[]{sent,waiting},()->historyLink(sentCount,waitingCount),0);historyRows.commit();
+        StableViews rows=StableViews.at(results);rows.begin();
+        String query = normalized(search.getText().toString());
+        // Ghép nhóm có cùng yêu cầu: classes that suit the student's own tutor requests come first while nothing is searched.
+        Map<GroupClass,GroupMatch.Request> suggestions = query.isEmpty() && subject.isEmpty() && mode.isEmpty() && !seats ? classroom.suggestions() : new HashMap<>();
+        if (!suggestions.isEmpty()) {
+            rows.add("suggestions",true,()->ui.text("Phù hợp với tin đăng của bạn",18,Ui.INK,true),ui.dp(10));
+            for (Map.Entry<GroupClass,GroupMatch.Request> entry : suggestions.entrySet())
+                rows.add("suggestion/"+entry.getKey().id,java.util.Arrays.asList(entry.getKey(),entry.getValue()),()->card(entry.getKey(),entry.getValue()),ui.dp(13));
+            rows.add("all",true,()->ui.text("Tất cả lớp",18,Ui.INK,true),ui.dp(10));
+        }
         for (GroupClass item : classroom.store.classes) {
-            if (GroupClass.ENDED.equals(item.status)) continue;
+            if (!item.active()) continue;
             if (!subject.isEmpty() && !item.subject.equals(subject)) continue;
             if (!mode.isEmpty() && !item.mode.equals(mode)) continue;
             if (seats && !item.recruiting()) continue;
             if (!normalized(item.title+" "+item.subject+" "+item.level+" "+item.tutorName).contains(query)) continue;
-            ui.add(results,card(item)); ui.space(results,13); count++;
+            rows.add("class/"+item.id,item,()->card(item,null),ui.dp(13));
         }
-        if (count == 0) {
-            LinearLayout empty = ui.column(); empty.setGravity(Gravity.CENTER); empty.setPadding(ui.dp(18),ui.dp(28),ui.dp(18),ui.dp(22)); ui.cardSurface(empty,Ui.PALE,0);
-            empty.addView(ui.icon(R.drawable.ic_users,40,Ui.BLUE)); ui.space(empty,14);
-            TextView title = ui.text("Chưa có lớp phù hợp",18,Ui.INK,true); title.setGravity(Gravity.CENTER); ui.add(empty,title); ui.space(empty,8);
-            TextView hint = ui.text("Thử từ khóa khác hoặc bỏ bớt bộ lọc.",15,Ui.MUTED,false); hint.setGravity(Gravity.CENTER); ui.add(empty,hint); ui.space(empty,16);
-            ui.addAction(empty,ui.action("Xóa bộ lọc",0,Ui.OUTLINE,()->{subject=mode="";seats=false;search.setText("");renderFilters();renderResults();}),44);
-            ui.add(results,empty);
-        }
+        rows.commit();
     }
 
-    private View card(GroupClass item) {
+    private View historyLink(int sent,int waiting) {
+        LinearLayout row=ui.row();ui.pad(row,14,12);ui.cardSurface(row,Ui.WHITE,Ui.BORDER);
+        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE));ui.gap(row,12);
+        LinearLayout copy=ui.column();ui.add(copy,ui.text("Lớp đã đăng ký",15,Ui.INK,true));ui.space(copy,4);
+        ui.add(copy,ui.text(sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
+        ui.weight(row,copy);ui.gap(row,8);row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
+        row.setContentDescription("Lớp đã đăng ký, "+sent+" đăng ký, "+waiting+" chờ duyệt");
+        ui.clickable(row,classroom::openRegistrations);return row;
+    }
+
+    @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;history=null;search=null;}
+
+    /** A class card; a suggested one names the student's request it suits. */
+    private View card(GroupClass item, GroupMatch.Request request) {
         LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
+        if (request != null) {
+            String title = request.title.length() > 36 ? request.title.substring(0,35).trim()+"…" : request.title;
+            ui.add(card,ui.note(R.drawable.ic_file,"Khớp tin đăng \""+title+"\"",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(card,10);
+        }
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.art(item.largeArt(),99,133)); ui.gap(top,13);
+        top.addView(ui.photo(item.art(),null,99,133,14)); ui.gap(top,13);
         LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);
         LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,43)); ui.gap(teacher,12);
         ui.weight(teacher,ui.text(item.tutorName,16,Ui.INK,false)); ui.add(info,teacher); ui.space(info,6);
@@ -121,6 +151,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),19,16,Ui.INK,false));
         ui.add(info,ui.fact(R.drawable.ic_coin,item.priceLabel(),19,16,Ui.INK,true)); ui.space(info,3);
         info.addView(availability(item),ui.lp(-2,28)); ui.weight(top,info); ui.add(card,top); ui.space(card,8);
+        ClassQuestionEntry.add(this,ui,card,item.id);
         ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,item.full()?"full":"join")),41);
         return card;
     }

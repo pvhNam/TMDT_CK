@@ -19,11 +19,11 @@ public final class LineIcon extends View {
     public LineIcon(Context context, String kind, int color) {
         super(context);
         this.kind = kind;
-        this.color = color;
+        this.color = ThemeColors.text(context,color);
         int resource="calendar".equals(kind)?com.example.tmdt.R.drawable.ic_calendar:
                 "chat".equals(kind)?com.example.tmdt.R.drawable.ic_chat:0;
         sharedIcon=resource==0?null:androidx.appcompat.content.res.AppCompatResources.getDrawable(context,resource).mutate();
-        if(sharedIcon!=null&&!NavigationAssets.useOriginalColors(resource,color))sharedIcon.setTint(color);
+        if(sharedIcon!=null&&!NavigationAssets.useOriginalColors(resource,color))sharedIcon.setTint(this.color);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
@@ -61,6 +61,7 @@ public final class LineIcon extends View {
                 c.drawOval(rect(2,8,22,16),paint);c.save();c.rotate(60,12,12);c.drawOval(rect(2,8,22,16),paint);
                 c.rotate(60,12,12);c.drawOval(rect(2,8,22,16),paint);c.restore();c.drawCircle(12,12,1,paint);break;
             case "back": lines(c, 19,12, 5,12, 12,5); lines(c,5,12,12,19); break;
+            case "close": lines(c,6,6,18,18); lines(c,18,6,6,18); break;
             case "next": lines(c,9,5,16,12,9,19); break;
             case "down": lines(c,6,9,12,15,18,9); break;
             case "search": c.drawCircle(10,10,7,paint); lines(c,15,15,21,21); break;

@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:title="@string/page_otp"
-        app:titleTextColor="#081F50"
+        app:titleTextColor="@color/theme_text_081f50"
         app:navigationIcon="@drawable/ic_back"
         app:navigationContentDescription="@string/back" />
     <ScrollView

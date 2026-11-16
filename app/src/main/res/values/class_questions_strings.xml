@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="class_questions_title">Hỏi đáp về lớp</string>
+    <string name="class_questions_caption">Đặt câu hỏi về nội dung, lịch học hoặc cách tham gia lớp và trao đổi ngay bên dưới.</string>
+    <string name="class_questions_input_hint">Bạn muốn hỏi gì về lớp này?</string>
+    <string name="class_questions_reply_hint">Nhập câu trả lời của bạn</string>
+    <string name="class_questions_send">Gửi câu hỏi</string>
+    <string name="class_questions_send_reply">Gửi trả lời</string>
+    <string name="class_questions_empty">Chưa có câu hỏi. Bạn có thể bắt đầu trao đổi về lớp tại đây.</string>
+    <string name="class_questions_loading">Đang tải hỏi đáp</string>
+    <string name="class_questions_offline">Đang hiển thị nội dung đã lưu. Kết nối mạng để gửi hoặc tải thêm hỏi đáp; bản nháp vẫn được giữ.</string>
+    <string name="class_questions_unavailable">Lớp học không còn khả dụng hoặc chưa thể tải thông tin.</string>
+    <string name="class_questions_read_only">Lớp đã kết thúc hoặc đã hủy. Bạn vẫn có thể xem lại hỏi đáp.</string>
+    <string name="class_questions_account_blocked">Tài khoản hiện chưa được phép gửi hỏi đáp. Vui lòng kiểm tra thông tin tài khoản rồi thử lại.</string>
+    <string name="class_questions_sign_in_caption">Đăng nhập để đặt câu hỏi hoặc tham gia trả lời.</string>
+    <string name="class_questions_sign_in">Đăng nhập để hỏi đáp</string>
+    <string name="class_questions_retry">Thử lại</string>
+    <string name="class_questions_load_more">Xem thêm câu hỏi</string>
+    <string name="class_questions_reply">Trả lời</string>
+    <string name="class_questions_view_replies">Xem trả lời</string>
+    <string name="class_questions_collapse_replies">Thu gọn trả lời</string>
+    <string name="class_questions_reply_target">Đang trả lời %1$s</string>
+    <string name="class_questions_new_question">Câu hỏi mới</string>
+    <string name="class_questions_question_label">Câu hỏi của bạn</string>
+    <string name="class_questions_tutor_badge">Gia sư của lớp</string>
+    <string name="class_questions_reply_empty">Chưa có câu trả lời cho câu hỏi này.</string>
+    <string name="class_questions_load_more_replies">Xem câu trả lời trước</string>
+    <string name="class_questions_counter">%1$d/1.000 ký tự</string>
+    <string name="class_questions_required">Vui lòng nhập nội dung trước khi gửi.</string>
+    <string name="class_questions_just_sent">Vừa gửi</string>
+    <string name="class_questions_close">Đóng</string>
+</resources>

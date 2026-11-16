@@ -34,7 +34,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-condensed"
                     android:maxLines="2"
-                    android:textColor="#06164D"
+                    android:textColor="@color/theme_text_06164d"
                     android:textSize="21sp"
                     android:textStyle="bold" />
 
@@ -47,7 +47,7 @@
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="3dp"
                     android:text="@string/tutor_verified_badge"
-                    android:textColor="#009D70"
+                    android:textColor="@color/theme_text_009d70"
                     android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
@@ -100,7 +100,7 @@
             android:layout_marginTop="4dp"
             android:fontFamily="sans-serif-condensed"
             android:lineSpacingExtra="2sp"
-            android:textColor="#46638C"
+            android:textColor="@color/theme_text_46638c"
             android:textSize="15sp" />
 
         <TextView
@@ -122,14 +122,14 @@
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-condensed"
             android:text="@string/chat_message_tutor"
-            android:textColor="@color/chat_blue"
+            android:textColor="@color/app_accent"
             android:textSize="16sp"
             android:textStyle="bold"
             app:cornerRadius="14dp"
             app:icon="@drawable/ic_chat"
             app:iconGravity="textStart"
             app:iconSize="20dp"
-            app:iconTint="@color/chat_blue"
+            app:iconTint="@color/app_accent"
             app:strokeColor="@color/chat_blue" />
 
         <LinearLayout
@@ -145,7 +145,7 @@
                 android:layout_weight="1"
                 android:fontFamily="sans-serif-condensed"
                 android:text="@string/close"
-                android:textColor="#46638C"
+                android:textColor="@color/theme_text_46638c"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:cornerRadius="14dp"

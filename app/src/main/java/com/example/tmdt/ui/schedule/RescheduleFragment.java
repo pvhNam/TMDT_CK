@@ -39,11 +39,12 @@ public final class RescheduleFragment extends ScreenFragment {
 
         ui.addAction(body,ui.action("Đồng ý đổi lịch",0,Ui.PRIMARY,this::accept),50); ui.space(body,12);
         ui.addAction(body,ui.action("Giữ lịch hiện tại",0,Ui.OUTLINE,this::keep),49); ui.space(body,6);
-        ui.add(body,ui.note(R.drawable.ic_info,"Lịch cũ được giữ khi chưa có xác nhận.",Ui.WHITE,Ui.BLUE,Ui.MUTED));
         return root;
     }
 
-    private View slot(String title, String value, int fill, int accent) {
+    private View slot(String title, String value, int fill, int accent) { return slot(ui,title,value,fill,accent); }
+    /** Current or proposed slot, also used when a group-class session moves. */
+    public static View slot(Ui ui, String title, String value, int fill, int accent) {
         LinearLayout box = ui.column(); box.setPadding(ui.dp(10),ui.dp(11),ui.dp(10),ui.dp(12)); ui.cardSurface(box,fill,0);
         ui.add(box,ui.text(title,18,accent,true)); ui.space(box,9);
         LinearLayout row = ui.row(); row.setPadding(ui.dp(3),0,0,0); row.addView(ui.icon(R.drawable.ic_calendar,23,accent)); ui.gap(row,13);
@@ -56,7 +57,8 @@ public final class RescheduleFragment extends ScreenFragment {
         classroom.show("lesson"); classroom.notice("Đã đổi lịch sang "+lesson.dateLabel()+" · "+lesson.timeLabel()+".");
     }
     private void keep() {
-        classroom.store.clearProposal(lesson);
+        String error = classroom.store.keepSchedule(lesson);
+        if (error != null) { classroom.dialog("Chưa gửi được phản hồi",error); return; }
         classroom.show("lesson"); classroom.notice("Đã giữ lịch hiện tại. Gia sư sẽ nhận được phản hồi của bạn.");
     }
 }

@@ -10,9 +10,9 @@
         <item name="android:backgroundDimAmount">0.4</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="colorPrimary">@color/classroom_dialog_blue</item>
-        <item name="colorAccent">@color/classroom_dialog_blue</item>
-        <item name="android:colorAccent">@color/classroom_dialog_blue</item>
-        <item name="colorControlActivated">@color/classroom_dialog_blue</item>
+        <item name="colorAccent">@color/app_accent</item>
+        <item name="android:colorAccent">@color/app_accent</item>
+        <item name="colorControlActivated">@color/app_accent</item>
         <item name="android:textColorPrimary">@color/classroom_dialog_ink</item>
         <item name="android:textColorSecondary">@color/classroom_dialog_muted</item>
         <item name="android:textColorAlertDialogListItem">@color/classroom_dialog_ink</item>
@@ -30,7 +30,7 @@
         <item name="android:backgroundDimAmount">0.4</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="colorPrimary">@color/classroom_dialog_blue</item>
-        <item name="android:colorAccent">@color/classroom_dialog_blue</item>
+        <item name="android:colorAccent">@color/app_accent</item>
         <item name="android:textColorPrimary">@color/classroom_dialog_ink</item>
         <item name="android:datePickerStyle">@style/Widget.TMDT.Classroom.DatePicker</item>
         <item name="android:buttonBarPositiveButtonStyle">@style/Widget.TMDT.Classroom.DialogButton</item>
@@ -64,7 +64,7 @@
     </style>
 
     <style name="Widget.TMDT.Classroom.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/classroom_dialog_blue</item>
+        <item name="android:textColor">@color/app_accent</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:fontFamily">sans-serif</item>
