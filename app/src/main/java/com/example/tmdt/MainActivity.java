@@ -310,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
         if(account.isBusy()||account.isSendingCode()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
+        else if(itemId==R.id.nav_requests)destination="my_requests";
         else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
@@ -318,6 +319,7 @@ public class MainActivity extends AppCompatActivity {
             administration.notice="";
             if(itemId==R.id.nav_messages)administration.selectTutor("");
         }
+        if(itemId==R.id.nav_requests&&!isAdmin())requestManagementOrigin="home";
         destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
             account.clearFeedback();
@@ -332,6 +334,7 @@ public class MainActivity extends AppCompatActivity {
     private void renderNavigation(){
         updatingNavigation=true;
         android.view.Menu menu=binding.bottomNavigation.getMenu();
+        menu.findItem(R.id.nav_requests).setVisible(!isAdmin());
         menu.findItem(R.id.nav_messages).setTitle(isAdmin()?"Hợp đồng":"Tin nhắn");
         menu.findItem(R.id.nav_account).setTitle(isAdmin()?"Tài chính":"Cá nhân");
         if(adminMenuIcons!=isAdmin()){
@@ -343,8 +346,8 @@ public class MainActivity extends AppCompatActivity {
         if("schedule".equals(screen))selected=R.id.nav_schedule;
         else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
         else if(!"home".equals(screen))selected=R.id.nav_account;
-        if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
-        if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
+        if(isRequestScreen(screen))selected=R.id.nav_requests;
+        if("search_requests".equals(screen))selected=R.id.nav_requests;
         selected=classroom.navigationItem(menu,screen,selected);
         if(isAdmin()){
             menu.findItem(R.id.nav_home).setTitle("Tổng quan");menu.findItem(R.id.nav_schedule).setTitle("Quản lý");
@@ -358,7 +361,7 @@ public class MainActivity extends AppCompatActivity {
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_management".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||"my_requests".equals(screen)||classroom.mainScreen(screen)||"admin_dashboard".equals(screen)||"admin_management".equals(screen)||"admin_contracts".equals(screen)||"admin_finance".equals(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;
