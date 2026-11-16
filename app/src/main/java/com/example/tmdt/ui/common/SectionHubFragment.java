@@ -30,6 +30,7 @@ public abstract class SectionHubFragment extends Fragment {
     protected abstract String[] sections();
     protected abstract Fragment page(int index);
     protected abstract String selectionKey();
+    protected boolean showBackButton(){return true;}
 
     public static boolean embedded(Fragment fragment){return fragment.getParentFragment() instanceof SectionHubFragment;}
 
@@ -37,7 +38,7 @@ public abstract class SectionHubFragment extends Fragment {
         Ui ui=((MainActivity)requireActivity()).classroom.ui;
         LinearLayout root=ui.column();
         root.setBackgroundColor(ThemeColors.background(requireContext()));
-        ui.header(root,title(),()->((MainActivity)requireActivity()).back(),null);
+        ui.header(root,title(),showBackButton()?()->((MainActivity)requireActivity()).back():null,null);
         TabLayout tabs=(TabLayout)inflater.inflate(R.layout.view_section_tabs,root,false);
         root.addView(tabs);
         FragmentContainerView content=new FragmentContainerView(requireContext());content.setId(R.id.section_content);
