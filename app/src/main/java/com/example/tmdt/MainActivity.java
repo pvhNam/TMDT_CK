@@ -437,10 +437,13 @@ public class MainActivity extends AppCompatActivity {
         updateFloatingHelp();
     }
 
-    private void updateFloatingHelp() {
+    public void updateFloatingHelp() {
         if (binding == null) return;
         int gap = Math.round(12 * getResources().getDisplayMetrics().density);
         int bottomMargin = gap;
+        Fragment current=getSupportFragmentManager().findFragmentById(R.id.screen_container);
+        if(current instanceof com.example.tmdt.ui.profile.AdminTutorReviewFragment)
+            bottomMargin+=((com.example.tmdt.ui.profile.AdminTutorReviewFragment)current).actionInset();
         if (binding.navigationGlass.getVisibility() == View.VISIBLE) {
             android.widget.FrameLayout.LayoutParams navigation =
                     (android.widget.FrameLayout.LayoutParams) binding.navigationGlass.getLayoutParams();
