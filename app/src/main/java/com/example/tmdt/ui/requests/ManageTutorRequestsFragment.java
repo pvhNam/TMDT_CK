@@ -35,7 +35,6 @@ public final class ManageTutorRequestsFragment extends Fragment {
         if(com.example.tmdt.ui.common.SectionHubFragment.embedded(this))binding.toolbar.setVisibility(View.GONE);
         manager = new ViewModelProvider(requireActivity()).get(TutorRequestManager.class);
         closed = savedInstanceState == null ? manager.closedTab() : savedInstanceState.getBoolean("closed");
-        binding.toolbar.setNavigationOnClickListener(v -> host().back());
         binding.createRequest.setOnClickListener(v -> host().show("post_request"));
         binding.retryRequests.setOnClickListener(v -> manager.retry());
         binding.requestTabs.addTab(binding.requestTabs.newTab().setText(R.string.requests_open), !closed);

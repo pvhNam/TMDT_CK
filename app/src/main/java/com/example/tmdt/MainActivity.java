@@ -318,6 +318,7 @@ public class MainActivity extends AppCompatActivity {
         if(account.isBusy()||account.isSendingCode()||payments.busy||administration.busy||(isRequestScreen(screen)&&requestManager().busy()))return false;
         String destination;
         if(itemId==R.id.nav_schedule)destination="schedule";
+        else if(itemId==R.id.nav_requests)destination="my_requests";
         else if(itemId==R.id.nav_messages)destination="messages";
         else if(itemId==R.id.nav_account)destination="account";
         else destination="home";
@@ -326,6 +327,7 @@ public class MainActivity extends AppCompatActivity {
             administration.notice="";
             if("admin_contracts".equals(destination)&&!screen.equals(destination))administration.selectTutor("");
         }
+        if(itemId==R.id.nav_requests&&!isAdmin())requestManagementOrigin="home";
         destination=classroom.redirect(destination);
         if(!screen.equals(destination)){
             account.clearFeedback();
@@ -356,8 +358,7 @@ public class MainActivity extends AppCompatActivity {
             if("schedule".equals(screen))selected=R.id.nav_schedule;
             else if("messages".equals(screen)||"chat".equals(screen))selected=R.id.nav_messages;
             else if(!"home".equals(screen))selected=R.id.nav_account;
-            if(isRequestScreen(screen))selected="account".equals(requestManagementOrigin)?R.id.nav_account:R.id.nav_home;
-            if("search_requests".equals(screen))selected="account".equals(requestSearchOrigin)?R.id.nav_account:R.id.nav_home;
+            if(isRequestScreen(screen)||"search_requests".equals(screen))selected=R.id.nav_requests;
             selected=classroom.navigationItem(menu,screen,selected);
         }
         menu.findItem(selected).setChecked(true);
@@ -366,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
         updatingNavigation=false;
     }
     private void updateNavigationVisibility(){
-        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||classroom.mainScreen(screen)||AdminNavigation.mainScreen(screen);
+        boolean mainScreen="home".equals(screen)||"account".equals(screen)||"schedule".equals(screen)||"messages".equals(screen)||"my_requests".equals(screen)||classroom.mainScreen(screen)||AdminNavigation.mainScreen(screen);
         int visibility=mainScreen&&!keyboardVisible?View.VISIBLE:View.GONE;
         // Let the page extend underneath both the floating menu and Android's gesture area.
         int paddingBottom=visibility==View.VISIBLE?0:bottomInset;

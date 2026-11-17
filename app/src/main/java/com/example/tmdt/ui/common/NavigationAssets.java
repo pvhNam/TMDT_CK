@@ -25,8 +25,8 @@ public final class NavigationAssets {
         }
     }
     public static void apply(BottomNavigationView navigation){
-        int[] ids={R.id.nav_home,R.id.nav_schedule,R.id.nav_messages,R.id.nav_account};
-        String[] names={"home","schedule","messages","account"};
+        int[] ids={R.id.nav_home,R.id.nav_schedule,R.id.nav_requests,R.id.nav_messages,R.id.nav_account};
+        String[] names={"home","schedule","requests","messages","account"};
         for(int i=0;i<ids.length;i++){
             StateListDrawable states=new StateListDrawable();
             Drawable active=icon(navigation,names[i]+"_active").mutate();
@@ -41,6 +41,11 @@ public final class NavigationAssets {
         }
     }
     private static Drawable icon(BottomNavigationView navigation,String name){
+        if("requests_active".equals(name)||"requests_idle".equals(name)){
+            Drawable drawable=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_field_note).mutate();
+            drawable.setTint(ThemeColors.text(navigation.getContext(),"requests_active".equals(name)?Ui.BLUE:Ui.MUTED));
+            return drawable;
+        }
         if("schedule_idle".equals(name))return androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_calendar);
         if("messages_idle".equals(name))return androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_chat);
         try {

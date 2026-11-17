@@ -8,6 +8,11 @@
         android:id="@+id/nav_schedule"
         android:title="@string/page_schedule" />
     <item
+        android:id="@+id/nav_requests"
+        android:title="@string/page_requests"
+        android:contentDescription="@string/manage_requests_title"
+        android:tooltipText="@string/manage_requests_title" />
+    <item
         android:id="@+id/nav_messages"
         android:title="@string/page_messages" />
     <item
