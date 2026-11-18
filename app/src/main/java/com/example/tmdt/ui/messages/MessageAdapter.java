@@ -28,15 +28,39 @@ final class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     MessageAdapter(OnRetry onRetry) { this.onRetry = onRetry; }
 
     void submit(List<ChatMessage> messages, String peer, String uid) {
-        peerId=uid==null?"":uid;
-        rows.clear(); peerName = peer == null ? "" : peer;
+        List<Object> next=snapshot(messages);
+        String nextPeer=peer==null?"":peer,nextUid=uid==null?"":uid;
+        boolean samePeer=peerName.equals(nextPeer)&&peerId.equals(nextUid);peerName=nextPeer;peerId=nextUid;
+        androidx.recyclerview.widget.DiffUtil.DiffResult diff=diff(rows,next,samePeer);
+        rows.clear();rows.addAll(next);diff.dispatchUpdatesTo(this);
+    }
+    static List<Object> snapshot(List<ChatMessage> messages){
+        List<Object> next=new ArrayList<>();
         LocalDate previous = null;
         for (ChatMessage message : messages) {
             LocalDate date = ChatFormat.date(message.sentAt);
-            if (!date.equals(previous)) { rows.add(ChatFormat.day(message.sentAt)); previous = date; }
-            rows.add(message);
+            if (!date.equals(previous)) { next.add(ChatFormat.day(message.sentAt)); previous = date; }
+            // Keep a snapshot: read receipts may update the source model in place.
+            next.add(new ChatMessage(message.id,message.senderId,message.content,message.sentAt,message.status,message.mine));
         }
-        notifyDataSetChanged();
+        return next;
+    }
+    static androidx.recyclerview.widget.DiffUtil.DiffResult diff(List<Object> rows,List<Object> next,boolean samePeer){
+        return androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback(){
+            @Override public int getOldListSize(){return rows.size();}
+            @Override public int getNewListSize(){return next.size();}
+            @Override public boolean areItemsTheSame(int oldPosition,int newPosition){
+                Object before=rows.get(oldPosition),after=next.get(newPosition);
+                if(before instanceof String||after instanceof String)return before instanceof String&&before.equals(after);
+                ChatMessage a=(ChatMessage)before,b=(ChatMessage)after;return a.id.equals(b.id)&&a.mine==b.mine;
+            }
+            @Override public boolean areContentsTheSame(int oldPosition,int newPosition){
+                Object before=rows.get(oldPosition),after=next.get(newPosition);
+                if(before instanceof String)return before.equals(after);
+                ChatMessage a=(ChatMessage)before,b=(ChatMessage)after;
+                return samePeer&&a.content.equals(b.content)&&a.sentAt==b.sentAt&&a.status==b.status;
+            }
+        });
     }
 
     @Override public int getItemCount() { return rows.size(); }
@@ -58,6 +82,8 @@ final class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (holder instanceof DayHolder) ((DayHolder) holder).b.day.setText((String) row);
         else if (holder instanceof InHolder) ((InHolder) holder).bind((ChatMessage) row);
         else ((OutHolder) holder).bind((ChatMessage) row);
+        com.example.tmdt.ui.common.ThemeColors.apply(holder.itemView);
+        com.example.tmdt.ui.common.Motion.bindControls(holder.itemView);
     }
 
     static final class DayHolder extends RecyclerView.ViewHolder {

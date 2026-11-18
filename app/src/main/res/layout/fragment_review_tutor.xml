@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     tools:context="com.example.tmdt.ui.profile.ReviewTutorFragment">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
@@ -76,12 +76,12 @@
                             android:id="@+id/mode"
                             style="@style/TutorText"
                             android:textSize="13sp"
-                            android:textColor="#009D70" />
+                            android:textColor="@color/theme_text_009d70" />
                         <TextView
                             android:id="@+id/price"
                             style="@style/TutorLabel"
                             android:textSize="17sp"
-                            android:textColor="@color/tutor_blue"
+                            android:textColor="@color/app_accent"
                             android:layout_marginBottom="0dp" />
                     </LinearLayout>
                 </LinearLayout>

@@ -35,16 +35,39 @@ android {
         versionCode = 14
         versionName = "1.2.4"
         buildConfigField("String", "PAYMENT_API_BASE_URL", "\"" + paymentApiBaseUrl.get().replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
+        buildConfigField("String", "HELP_AI_MODEL", quoted(providers.gradleProperty("HELP_AI_MODEL").orElse("gemini-3.5-flash-lite").get()))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Shared development key: every team member's debug APK has the same Firebase SHA.
+    // This key is intentionally distributed with the project; release uses its own signing setup.
+    signingConfigs {
+        create("teamDebug") {
+            storeFile = rootProject.file("signing/team-debug.keystore")
+            storeType = "JKS"
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
+            signingConfig = signingConfigs.getByName("teamDebug")
             buildConfigField("boolean", "VNPAY_CLIENT_SANDBOX", clientSandbox.toString())
             buildConfigField("String", "VNPAY_TMN_CODE", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_TMN_CODE", "") else ""))
             buildConfigField("String", "VNPAY_HASH_SECRET", quoted(if (clientSandbox) vnpayLocal.getProperty("VNPAY_HASH_SECRET", "") else ""))
             buildConfigField("String", "VNPAY_RETURN_URL", quoted(vnpayReturnUrl))
+        }
+        create("share") {
+            initWith(getByName("debug"))
+            // Same development certificate lets the team install this APK as an update.
+            // App Check uses Play Integrity through src/share, with no debug provider.
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("teamDebug")
+            matchingFallbacks += listOf("release")
+            versionNameSuffix = "-share"
         }
         release {
             buildConfigField("boolean", "VNPAY_CLIENT_SANDBOX", "false")
@@ -81,25 +104,36 @@ val checkVnpayConfig = tasks.register("checkVnpayConfig") {
         }
     }
 }
-tasks.matching { it.name == "preDebugBuild" }.configureEach { dependsOn(checkVnpayConfig) }
+tasks.matching { it.name == "preDebugBuild" || it.name == "preShareBuild" }
+    .configureEach { dependsOn(checkVnpayConfig) }
 
 dependencies {
     implementation("com.github.Dimezis:BlurView:version-3.2.0")
     implementation("com.caverock:androidsvg-aar:1.4")
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-ai")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
+    implementation("com.google.guava:guava:31.0.1-android")
+    implementation("org.reactivestreams:reactive-streams:1.0.4")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.android.gms:play-services-auth:22.0.0")
+    implementation("androidx.browser:browser:1.10.0")
     implementation(libs.appcompat)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.material)
     implementation(libs.constraintlayout)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
+    testImplementation("org.json:json:20250517")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F9FF"
+    android:background="@color/theme_fill_f5f9ff"
     tools:context="com.example.tmdt.ui.profile.FavoritesFragment">
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"

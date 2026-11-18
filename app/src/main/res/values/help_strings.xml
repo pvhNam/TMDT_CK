@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="help_open_floating">Mở chat hỗ trợ</string>
+    <string name="help_hide_floating">Ẩn nút hỗ trợ</string>
+    <string name="help_close_popup">Đóng chat hỗ trợ</string>
+    <string name="help_popup_title">Trợ giúp</string>
+</resources>

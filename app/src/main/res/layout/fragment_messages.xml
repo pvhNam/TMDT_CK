@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_background"
     android:orientation="vertical"
     android:paddingTop="20dp"
     tools:context="com.example.tmdt.ui.messages.MessagesFragment">
@@ -18,7 +18,7 @@
         android:fontFamily="sans-serif-medium"
         android:text="@string/chat_title"
         android:textColor="@color/chat_ink"
-        android:textSize="28sp"
+        android:textSize="24sp"
         android:textStyle="bold" />
 
     <EditText
@@ -47,14 +47,14 @@
         android:layout_height="46dp"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="10dp"
-        android:background="@android:color/white"
+        android:background="@android:color/transparent"
         app:tabGravity="fill"
-        app:tabIndicatorColor="@color/chat_blue"
+        app:tabIndicatorColor="@color/app_accent"
         app:tabIndicatorFullWidth="true"
         app:tabIndicatorHeight="3dp"
         app:tabMode="fixed"
         app:tabRippleColor="@color/chat_pale"
-        app:tabSelectedTextColor="@color/chat_blue"
+        app:tabSelectedTextColor="@color/app_accent"
         app:tabTextAppearance="@style/ChatTabText"
         app:tabTextColor="@color/chat_muted">
 
@@ -75,6 +75,17 @@
         android:layout_marginHorizontal="20dp"
         android:background="@color/chat_border" />
 
+    <TextView
+        android:id="@+id/conversations_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="10dp"
+        android:textColor="@color/chat_muted"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
@@ -82,6 +93,6 @@
         android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingHorizontal="20dp"
-        android:paddingTop="6dp"
+        android:paddingTop="4dp"
         android:paddingBottom="16dp" />
 </LinearLayout>

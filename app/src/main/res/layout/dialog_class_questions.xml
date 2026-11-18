@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="@android:color/white" android:padding="16dp">
+    android:orientation="vertical" android:background="@color/app_surface" android:padding="16dp">
     <TextView android:id="@+id/class_questions_title" style="@style/ScreenTitle"
         android:text="@string/class_questions_title" android:textSize="22sp" android:layout_marginBottom="4dp" />
     <TextView android:id="@+id/class_questions_class_title" style="@style/FieldLabel" android:maxLines="2" android:ellipsize="end" />
@@ -15,7 +15,7 @@
                 android:accessibilityLiveRegion="polite" android:visibility="gone" />
             <TextView android:id="@+id/class_questions_error" style="@style/BodyText" android:textColor="#B3261E"
                 android:accessibilityLiveRegion="polite" android:visibility="gone" />
-            <TextView android:id="@+id/class_questions_notice" style="@style/BodyText" android:textColor="#236B42"
+            <TextView android:id="@+id/class_questions_notice" style="@style/BodyText" android:textColor="@color/theme_text_236b42"
                 android:accessibilityLiveRegion="polite" android:visibility="gone" />
             <com.google.android.material.button.MaterialButton android:id="@+id/class_questions_retry"
                 style="@style/SecondaryButton" android:text="@string/class_questions_retry" android:visibility="gone" />
@@ -41,7 +41,7 @@
         <EditText android:id="@+id/class_question_input" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="2" android:maxLines="4"
             android:maxLength="1000" android:padding="10dp" android:background="@drawable/bg_input"
-            android:textSize="14sp" android:textColor="#081F50" android:hint="@string/class_questions_input_hint"
+            android:textSize="14sp" android:textColor="@color/theme_text_081f50" android:hint="@string/class_questions_input_hint"
             android:saveEnabled="false" android:importantForAutofill="no" />
         <TextView android:id="@+id/class_question_character_count" style="@style/BodyText" android:textSize="12sp"
             android:gravity="end" android:layout_marginBottom="2dp" />

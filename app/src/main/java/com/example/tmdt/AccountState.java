@@ -39,6 +39,8 @@ public final class AccountState extends ViewModel {
     private android.os.CancellationSignal googlePicker;
     private TutorRegistration tutorRegistration;
     private boolean emailVerificationRequired;
+    private com.google.firebase.firestore.ListenerRegistration statusListener;
+    private String watchedUid="";
     public boolean requiresEmailVerification(){return user()!=null&&emailVerificationRequired;}
     public String verificationEmail(){return user()==null||user().getEmail()==null?"":user().getEmail();}
     public long emailResendAt(){return SystemClock.elapsedRealtime()+PendingEmailRegistration.resendRemaining(uid());}
@@ -173,15 +175,26 @@ public final class AccountState extends ViewModel {
                 if(profile!=null && "BANNED".equals(profile.status)) {
                     signOut(); error="Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.";
                 } else {
-                    if(task.getResult().exists())syncSavedAvatar(token,uid);
+                    if(task.getResult().exists()){syncSavedAvatar(token,uid);watchStatus(uid);}
                     if(task.getResult().exists() && destination==null && (navigate||onboarding().pending()))
-                        destination=onboarding().finish(profile,navigate?"home":"account");
+                        destination="ADMIN".equals(profile.role)?"admin_dashboard":onboarding().finish(profile,navigate?"home":"account");
                 }
             } else {
                 error="Không tải được hồ sơ. " + message(task.getException());
                 if(navigate)destination="account";
             }
             notifyUi();
+        });
+    }
+    private void watchStatus(String owner){
+        if(owner.equals(watchedUid))return;
+        if(statusListener!=null)statusListener.remove();watchedUid=owner;int token=generation;
+        statusListener=db.collection("users").document(owner).addSnapshotListener((doc,e)->{
+            if(!current(token,owner)||e!=null||doc==null||!doc.exists()||doc.getMetadata().isFromCache())return;
+            if("BANNED".equals(doc.getString("trang_thai"))){signOut();error="Tài khoản đã bị quản trị viên khóa.";notifyUi();return;}
+            if(profile!=null&&(!profile.role.equals(doc.getString("vai_tro"))||profile.tutor!=Boolean.TRUE.equals(doc.getBoolean("la_gia_su")))){
+                profile=UserProfile.from(doc);notifyUi();
+            }
         });
     }
     public void saveProfile(UserProfile value) {
@@ -392,6 +405,7 @@ public final class AccountState extends ViewModel {
         });
     }
     public void signOut() {
+        if(statusListener!=null)statusListener.remove();statusListener=null;watchedUid="";
         onboarding().existingAccount();
         cancelGooglePicker();
         GoogleSignIn.clearSession(com.google.firebase.FirebaseApp.getInstance().getApplicationContext());
@@ -401,6 +415,7 @@ public final class AccountState extends ViewModel {
         destination="login";notifyUi();
     }
     @Override protected void onCleared() {
+        if(statusListener!=null)statusListener.remove();
         if(googlePicker!=null){googlePicker.cancel();googlePicker=null;}
         super.onCleared();
     }

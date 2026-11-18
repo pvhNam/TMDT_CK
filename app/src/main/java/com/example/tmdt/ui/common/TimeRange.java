@@ -14,7 +14,7 @@ import com.google.android.material.slider.RangeSlider;
 
 /**
  * Start time and length of a lesson on one two-thumb slider; the arrows change the length in exact steps.
- * The start snaps to whole hours or, for group classes, to half hours. A fixed length only moves the lesson.
+ * Each thumb moves its own end; a lesson shorter than allowed pushes the other end along. A fixed length only moves the lesson.
  */
 public final class TimeRange {
     public interface Listener { void changed(int hour, int minute, int minutes); }
@@ -62,7 +62,7 @@ public final class TimeRange {
 
     private RangeSlider slider() {
         slider = new RangeSlider(ui.context);
-        slider.setValueFrom(firstHour); slider.setValueTo(lastEnd); slider.setStepSize(gcd(step,startStep)/60f); slider.setMinSeparationValue(shortest/60f);
+        slider.setValueFrom(firstHour); slider.setValueTo(lastEnd); slider.setStepSize(gcd(step,startStep)/60f); slider.setMinSeparationValue(0);
         slider.setValues(start/60f,(start+minutes)/60f);
         slider.setTickVisible(false); slider.setLabelFormatter(value->String.format("%02d:%02d",(int)value,Math.round((value%1)*60)));
         slider.setThumbWidth(ui.dp(22)); slider.setThumbHeight(ui.dp(22)); slider.setThumbTrackGapSize(0); slider.setTrackHeight(ui.dp(14));
@@ -75,7 +75,7 @@ public final class TimeRange {
             if (!user) return;
             List<Float> values = slider.getValues(); float begin = values.get(0), end = values.get(1);
             int from = Math.round(begin*60), to = Math.round(end*60);
-            if (from != start) start = snap(from);
+            if (from != start) { int finish = start+minutes; start = snap(from); if (shortest != longest) minutes = finish-start; }
             else if (shortest == longest) start = snap(to-minutes);
             else minutes = Math.round((to-from)/(float)step)*step;
             fit();

@@ -4,10 +4,21 @@ import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.tmdt.ui.admin.AdminClassesFragment;
+import com.example.tmdt.ui.admin.AdminRolesFragment;
+import com.example.tmdt.ui.admin.AdminTutorsFragment;
+import com.example.tmdt.ui.exchange.LearnersFragment;
+import com.example.tmdt.ui.admin.AdminStatsFragment;
 import com.example.tmdt.ui.exchange.AgreementFragment;
 import com.example.tmdt.ui.exchange.ContractFragment;
 import com.example.tmdt.ui.exchange.ContractTemplatesFragment;
 import com.example.tmdt.ui.exchange.ContractsFragment;
+import com.example.tmdt.ui.exchange.HandleReportFragment;
+import com.example.tmdt.ui.exchange.MyReportsFragment;
+import com.example.tmdt.ui.exchange.ReportFragment;
+import com.example.tmdt.ui.exchange.ReportsAdminFragment;
+import com.example.tmdt.ui.exchange.ReviewFormFragment;
+import com.example.tmdt.ui.exchange.ReviewsFragment;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,23 +28,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Thành viên 4 – UC23 Chốt hợp đồng dạy: màn 40, Hợp đồng của tôi, hợp đồng cộng tác gia sư – hệ thống
- * và mẫu hợp đồng của quản trị viên. MainActivity chỉ chuyển tiếp sang lớp này (giống {@link Classroom}).
- *
  * Luồng: học viên đặt lịch → gia sư chấp nhận → gia sư gửi hợp đồng (theo mẫu của quản trị viên) → học viên xác nhận.
  */
 public final class Exchange {
     public static final String CONTRACT = "contract", CONTRACTS = "contracts", AGREEMENT = "agreement", TEMPLATES = "contract_templates";
+    public static final String REVIEW = "ex_review", REVIEWS = "ex_reviews", REPORT = "ex_report", REPORTS = "ex_reports",
+            REPORTS_ADMIN = "report_admin", HANDLE_REPORT = "report_handle";
+    /** Thống kê cho quản trị viên (mở từ trang Cá nhân). */
+    public static final String ADMIN_STATS = "admin_stats";
+    public static final String ADMIN_CLASSES = "admin_classes";
+    public static final String ADMIN_ROLES = "admin_roles";
+    public static final String ADMIN_TUTOR_MANAGE = "admin_tutor_manage";
+    public static final String LEARNERS = "learners";
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String[] WEEKDAYS = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"};
 
     private final MainActivity host;
     public final ContractState contracts;
     public final AgreementState agreements;
+    public final ReviewState reviews;
+    public final ReportState reports;
+    public final ReportAdminState reportAdmin;
+    public final LearnerState learners;
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
-    /** Màn đã mở từng màn của phần này, để nút quay lại trở về đúng chỗ. */
+    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole, reportType, reportSubject, adminReportId;
     private final Map<String, String> origins = new HashMap<>();
 
     Exchange(MainActivity host, Bundle state) {
@@ -41,14 +61,26 @@ public final class Exchange {
         ViewModelProvider provider = new ViewModelProvider(host);
         contracts = provider.get(ContractState.class);
         agreements = provider.get(AgreementState.class);
+        reviews = provider.get(ReviewState.class);
+        reports = provider.get(ReportState.class);
+        reportAdmin = provider.get(ReportAdminState.class);
+        learners = provider.get(LearnerState.class);
         if (state != null) {
             contractId = state.getString("ex.contract");
+            reviewContractId = state.getString("ex.review"); adminReportId = state.getString("ex.adminReport");
+            reviewsTarget = state.getString("ex.reviewsTarget"); reviewsName = state.getString("ex.reviewsName");
+            reviewsRole = state.getString("ex.reviewsRole");
+            reportType = state.getString("ex.reportType"); reportSubject = state.getString("ex.reportSubject");
             Bundle saved = state.getBundle("ex.origins");
             if (saved != null) for (String key : saved.keySet()) origins.put(key, saved.getString(key));
         }
     }
     void save(Bundle out) {
         out.putString("ex.contract", contractId);
+        out.putString("ex.review", reviewContractId); out.putString("ex.adminReport", adminReportId);
+        out.putString("ex.reviewsTarget", reviewsTarget); out.putString("ex.reviewsName", reviewsName);
+        out.putString("ex.reviewsRole", reviewsRole);
+        out.putString("ex.reportType", reportType); out.putString("ex.reportSubject", reportSubject);
         Bundle saved = new Bundle(); for (Map.Entry<String, String> e : origins.entrySet()) saved.putString(e.getKey(), e.getValue());
         out.putBundle("ex.origins", saved);
     }
@@ -57,16 +89,27 @@ public final class Exchange {
 
     /** Đăng nhập/đăng xuất: bật hoặc tắt các listener của tài khoản. */
     void accountChanged(boolean signedIn) {
-        if (signedIn) { contracts.start(); agreements.start(); }
-        else { contracts.stop(); agreements.stop(); contracts.draft = null; contractId = null; }
+        if (signedIn) { contracts.start(); agreements.start(); learners.start(); }
+        else {
+            contracts.stop(); agreements.stop(); learners.stop(); contracts.draft = null; contractId = null;
+            reviews.stopWatch(); new androidx.lifecycle.ViewModelProvider(host).get(ManageState.class).stop(); reports.stop(); reports.clearDraft(); reportAdmin.stop(); adminReportId = null;
+        }
     }
     static boolean owns(String destination) {
-        return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination);
+        return CONTRACT.equals(destination) || CONTRACTS.equals(destination) || AGREEMENT.equals(destination) || TEMPLATES.equals(destination)
+                || REVIEW.equals(destination) || REVIEWS.equals(destination) || ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || ADMIN_ROLES.equals(destination) || ADMIN_TUTOR_MANAGE.equals(destination) || LEARNERS.equals(destination) || REPORT.equals(destination) || REPORTS.equals(destination)
+                || REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination);
     }
-    /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; màn 40 thiếu hợp đồng thì về danh sách. */
+    /** Khách cần đăng nhập; mẫu hợp đồng chỉ dành cho quản trị viên; thiếu hợp đồng thì về danh sách. */
     String redirect(String destination) {
         if (!owns(destination)) return destination;
+        if (REVIEWS.equals(destination) && reviewsTarget != null && Review.TUTOR.equals(reviewsRole)) return destination; // Khách xem được đánh giá gia sư.
         if (!host.account.signedIn()) return "login";
+        if ((ADMIN_STATS.equals(destination) || ADMIN_CLASSES.equals(destination) || ADMIN_ROLES.equals(destination) || ADMIN_TUTOR_MANAGE.equals(destination)) && !isAdmin()) return "account";
+        if (REVIEWS.equals(destination) && reviewsTarget == null) return "account";
+        if ((REPORTS_ADMIN.equals(destination) || HANDLE_REPORT.equals(destination)) && !isAdmin()) return "account";
+        if (REVIEW.equals(destination) && reviewContractId == null) return CONTRACTS;
+        if (HANDLE_REPORT.equals(destination) && adminReportId == null) return REPORTS_ADMIN;
         if (TEMPLATES.equals(destination) && !isAdmin()) return "account";
         if (CONTRACT.equals(destination) && contractId == null && contracts.draft == null) return CONTRACTS;
         return destination;
@@ -74,9 +117,20 @@ public final class Exchange {
     Fragment fragment(String destination) {
         switch (destination) {
             case CONTRACT: return new ContractFragment();
-            case CONTRACTS: return new ContractsFragment();
+            case CONTRACTS: return isTutor()?new com.example.tmdt.ui.exchange.ContractsHubFragment():new ContractsFragment();
             case AGREEMENT: return new AgreementFragment();
             case TEMPLATES: return new ContractTemplatesFragment();
+            case REVIEW: return new ReviewFormFragment();
+            case REVIEWS: return new ReviewsFragment();
+            case ADMIN_STATS: return new AdminStatsFragment();
+            case ADMIN_CLASSES: return new AdminClassesFragment();
+            case ADMIN_ROLES: return new AdminRolesFragment();
+            case ADMIN_TUTOR_MANAGE: return new AdminTutorsFragment();
+            case LEARNERS: return new LearnersFragment();
+            case REPORT: return new ReportFragment();
+            case REPORTS: return new MyReportsFragment();
+            case REPORTS_ADMIN: return new ReportsAdminFragment();
+            case HANDLE_REPORT: return new HandleReportFragment();
             default: return null;
         }
     }
@@ -85,6 +139,8 @@ public final class Exchange {
         if (CONTRACT.equals(screen)) contracts.draft = null;
         String origin = origins.get(screen);
         if (origin != null && !origin.equals(screen)) return origin;
+        if (HANDLE_REPORT.equals(screen)) return REPORTS_ADMIN;
+        if (REPORTS_ADMIN.equals(screen) && isAdmin()) return "admin_dashboard";
         return "account";
     }
     private void open(String destination) {
@@ -92,8 +148,6 @@ public final class Exchange {
         if (!destination.equals(current) && !(owns(current) && destination.equals(origins.get(current)))) origins.put(destination, current);
         host.hideKeyboard(); host.show(destination);
     }
-
-    // Thông tin người đang đăng nhập -----------------------------------------------------------------
 
     public boolean isAdmin() { UserProfile p = host.account.profile(); return p != null && "ADMIN".equals(p.role); }
     /** Gia sư đã được duyệt (VERIFIED), giống điều kiện của chế độ gia sư. */
@@ -113,6 +167,60 @@ public final class Exchange {
     public void openContracts() { open(CONTRACTS); }
     public void openAgreement() { open(AGREEMENT); }
     public void openTemplates() { open(TEMPLATES); }
+    /** Thống kê biểu đồ cho quản trị viên. */
+    public void openStats() { open(ADMIN_STATS); }
+    public void openClassesAdmin() { open(ADMIN_CLASSES); }
+    public void openRoles() { open(ADMIN_ROLES); }
+    public void openTutorManage() { open(ADMIN_TUTOR_MANAGE); }
+    public void openLearners() { open(LEARNERS); }
+
+    // UC26 – Đánh giá hai chiều ----------------------------------------------------------------------
+
+    public String myRole() { return isTutor() ? Review.TUTOR : Review.STUDENT; }
+    public String reviewContractId() { return reviewContractId; }
+    /** Màn 09 (học viên đánh giá gia sư) hoặc 46 (gia sư đánh giá học viên) cho một hợp đồng đã chốt. */
+    public void openReview(Contract contract) { reviewContractId = contract.id; open(REVIEW); }
+    public String reviewsTarget() { return reviewsTarget; }
+    public String reviewsName() { return reviewsName; }
+    public String reviewsRole() { return reviewsRole; }
+    /** Màn 10: đánh giá về một người (role = TUTOR: đánh giá gia sư, công khai; STUDENT: đánh giá học viên). */
+    public void openReviews(String targetId, String name, String role) {
+        reviewsTarget = targetId; reviewsName = name; reviewsRole = role; open(REVIEWS);
+    }
+    /** "Đánh giá của tôi": gia sư đang ở chế độ gia sư xem đánh giá về mình với vai trò gia sư, còn lại là học viên. */
+    public void openMyReviews() {
+        boolean tutor = isTutor() && host.classroom.tutorMode();
+        openReviews(myId(), myName(), tutor ? Review.TUTOR : Review.STUDENT);
+    }
+    /** Đánh giá có thể viết cho hợp đồng này chưa: đã chốt và buổi học đầu tiên đã kết thúc. */
+    public static boolean canReview(Contract c) {
+        return c != null && c.agreed() && System.currentTimeMillis() >= c.startAt + c.minutes * 60_000L;
+    }
+
+    // UC27 – Báo cáo vi phạm -------------------------------------------------------------------------
+
+    public String reportType() { return reportType; }
+    public String reportSubject() { return reportSubject; }
+    /** Màn 47; type/subjectId (CONTRACT hoặc CONVERSATION) chọn sẵn đối tượng, null để người dùng tự chọn. */
+    public void openReport(String type, String subjectId) {
+        reportType = type; reportSubject = subjectId;
+        if (type != null && subjectId != null) { reports.clearDraft(); reports.draftSubject = type + ":" + subjectId; }
+        open(REPORT);
+    }
+    public void openReports() { open(REPORTS); }
+    /** Thay màn hiện tại (ví dụ sau khi gửi báo cáo): quay lại sẽ về nơi đã mở màn hiện tại. */
+    public void replaceWith(String destination) {
+        String origin = origins.get(host.screen);
+        if (origin != null) origins.put(destination, origin); else origins.remove(destination);
+        host.hideKeyboard(); host.show(destination);
+    }
+
+    // UC29 – Xử lý báo cáo vi phạm (quản trị viên) ---------------------------------------------------
+
+    public String adminReportId() { return adminReportId; }
+    /** Danh sách báo cáo cho quản trị viên. Trang quản trị gọi exchange.openReportsAdmin(). */
+    public void openReportsAdmin() { open(REPORTS_ADMIN); }
+    public void openHandleReport(Report report) { adminReportId = report.id; open(HANDLE_REPORT); }
     public void openContract(Contract contract) { contractId = contract.id; contracts.draft = null; open(CONTRACT); }
     /** Sau khi gửi: màn 40 chuyển sang xem hợp đồng vừa tạo. */
     public void showCreated(String id) { contractId = id; contracts.draft = null; }

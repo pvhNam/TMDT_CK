@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Một ảnh minh chứng: ảnh nhỏ, tên, dung lượng, nút xóa hoặc "Xem tệp". -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/ExCard"
+    android:layout_marginTop="8dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/thumb"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_ex_pale"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_ex_image" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/name"
+            style="@style/ExValue"
+            android:ellipsize="middle"
+            android:maxLines="1" />
+
+        <TextView
+            android:id="@+id/size"
+            style="@style/ExLabel" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/view"
+        style="@style/ExValue"
+        android:drawableEnd="@drawable/ic_right"
+        android:drawablePadding="4dp"
+        android:drawableTint="@color/chat_blue"
+        android:gravity="center_vertical"
+        android:text="@string/ex_view_file"
+        android:textColor="@color/chat_blue"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/remove"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/ex_remove"
+        android:src="@drawable/ic_ex_close"
+        android:visibility="gone" />
+</LinearLayout>

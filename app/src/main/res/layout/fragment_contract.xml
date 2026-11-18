@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/app_surface"
     android:orientation="vertical"
     tools:context="com.example.tmdt.ui.exchange.ContractFragment">
 
@@ -298,7 +298,7 @@
                     <TextView
                         android:id="@+id/total_value"
                         style="@style/ExValue"
-                        android:textColor="@color/chat_blue"
+                        android:textColor="@color/app_accent"
                         android:textSize="19sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -317,26 +317,17 @@
                 android:textColor="@color/chat_ink"
                 android:textSize="14sp" />
 
-            <TextView
-                style="@style/ExNote"
-                android:background="@drawable/bg_ex_pale"
-                android:padding="10dp"
-                android:text="@string/ex_terms_note" />
 
             <CheckBox
                 android:id="@+id/agree"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:buttonTint="@color/chat_blue"
+                android:buttonTint="@color/app_accent"
                 android:text="@string/ex_agree"
                 android:textColor="@color/chat_ink"
                 android:textSize="13.5sp" />
 
-            <TextView
-                style="@style/ExNote"
-                android:layout_marginTop="2dp"
-                android:text="@string/ex_effective_note" />
         </LinearLayout>
     </ScrollView>
 
@@ -345,7 +336,7 @@
         android:id="@+id/actions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
+        android:background="@color/app_surface"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
         android:paddingTop="8dp"

@@ -5,7 +5,7 @@
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="14dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#FFFFFF"
+    app:cardBackgroundColor="@color/theme_fill_ffffff"
     app:strokeColor="@color/soft_border"
     app:strokeWidth="1dp">
     <LinearLayout
@@ -39,7 +39,7 @@
                     android:layout_marginTop="0dp"
                     android:text="Xem hồ sơ"
                     android:textSize="14sp"
-                    android:textColor="@color/tutor_blue"
+                    android:textColor="@color/app_accent"
                     app:strokeColor="@color/tutor_blue" />
             </LinearLayout>
         </LinearLayout>

@@ -8,15 +8,15 @@
         android:id="@+id/error_message"
         style="@style/BodyText"
         android:textColor="#B42318"
-        android:background="#FFF1F0"
+        android:background="@color/theme_fill_fff1f0"
         android:padding="12dp"
         android:accessibilityLiveRegion="polite"
         android:visibility="gone" />
     <TextView
         android:id="@+id/notice_message"
         style="@style/BodyText"
-        android:textColor="#13834E"
-        android:background="#ECFDF3"
+        android:textColor="@color/theme_text_13834e"
+        android:background="@color/theme_fill_ecfdf3"
         android:padding="12dp"
         android:accessibilityLiveRegion="polite"
         android:visibility="gone" />

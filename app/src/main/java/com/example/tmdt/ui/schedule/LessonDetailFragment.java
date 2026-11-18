@@ -48,6 +48,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         ui.tableRow(table,R.drawable.ic_hourglass,"Thời lượng",lesson.minutes+" phút");
         ui.add(body,table); ui.space(body,12);
 
+        if (!lesson.learnerName.isEmpty()) { ui.label(body,"Người học"); ui.add(body,ui.text(lesson.learnerName,16,Ui.INK,false)); ui.space(body,12); }
         ui.label(body,"Mục tiêu buổi học");
         TextView goal = ui.text(lesson.goal,16,Ui.INK,false); goal.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));
         goal.setMinHeight(ui.dp(46)); ui.cardSurface(goal,Ui.PALE,Ui.BORDER); ui.add(body,goal); ui.space(body,12);
@@ -95,7 +96,7 @@ public final class LessonDetailFragment extends ScreenFragment {
         if (Lesson.CANCELLED.equals(lesson.status)) return "Buổi học đã hủy"+(lesson.cancelReason.isEmpty()?".":" · Lý do: "+lesson.cancelReason+".");
         if (Lesson.REJECTED.equals(lesson.status)) return "Gia sư đã từ chối yêu cầu này. Bạn có thể chọn thời gian khác.";
         if (lesson.pending()) return "Gia sư sẽ xác nhận yêu cầu của bạn.";
-        if (lesson.needsConfirmation()) return "Buổi học đã kết thúc. Hãy xác nhận hoàn thành để ghi nhận tiền dạy vào kỳ chi trả tháng này.";
+        if (lesson.needsConfirmation()) return "Chờ xác nhận hoàn thành.";
         if (lesson.finished) return "Bạn đã xác nhận buổi học này hoàn thành.";
         return lesson.mode.equals("Tại nhà") ? "Gia sư sẽ đến địa chỉ học đúng giờ đã hẹn." : (lesson.roomLink.isEmpty()?"Phòng học":"Phòng học "+lesson.roomHost())+" mở trước giờ bắt đầu 10 phút.";
     }

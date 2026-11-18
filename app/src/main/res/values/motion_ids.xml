@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="motion_bound" type="id" />
     <item name="motion_revealing" type="id" />
+    <item name="motion_content_signature" type="id" />
+    <item name="stable_bindings" type="id" />
+    <item name="stable_views" type="id" />
     <item name="avatar_render_source" type="id" />
+    <item name="section_tabs" type="id" />
+    <item name="section_content" type="id" />
 </resources>

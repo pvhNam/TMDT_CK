@@ -40,7 +40,6 @@ public final class ConfirmLessonFragment extends ScreenFragment {
         ui.weight(tiles,tile(R.drawable.ic_coin,"Học phí buổi học",Tutor.money(lesson.total())));
         ui.add(body,tiles); ui.space(body,16);
 
-        ui.add(body,ui.note(R.drawable.ic_info,"Gia sư báo hoàn thành, học sinh xác nhận rồi tiền dạy được cộng vào kỳ tháng này. Admin chi trả từ ngày 5 tháng sau.",Ui.PALE,Ui.BLUE,Ui.MUTED));
         ui.space(body,8);
         if (lesson.finished) {
             ui.addAction(body,ui.action("Đã xác nhận hoàn thành",0,Ui.DISABLED,null),47);
@@ -51,8 +50,8 @@ public final class ConfirmLessonFragment extends ScreenFragment {
             ui.addAction(body,ui.action("Xác nhận hoàn thành",0,Ui.PRIMARY,this::confirm),47);
         }
         ui.space(body,12);
-        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->classroom.dialog("Báo cáo vấn đề",
-                "Màn hình Báo cáo vi phạm (47) do Thành viên 4 phụ trách. Học phí của buổi này được giữ lại cho đến khi báo cáo được xử lý.")),46);
+        ui.addAction(body,ui.action("Báo cáo vấn đề",0,Ui.OUTLINE,()->((com.example.tmdt.MainActivity)requireActivity()).exchange
+                .openReport(com.example.tmdt.Report.SUBJECT_LESSON,lesson.id)),46);
         return root;
     }
 

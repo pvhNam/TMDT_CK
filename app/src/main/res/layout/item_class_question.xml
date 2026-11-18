@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp" app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="14dp" app:strokeWidth="1dp" app:strokeColor="#DDE4EF" app:cardElevation="0dp">
+    android:layout_marginBottom="12dp" app:cardBackgroundColor="@color/app_surface"
+    app:cardCornerRadius="14dp" app:strokeWidth="1dp" app:strokeColor="@color/theme_border_dde4ef" app:cardElevation="0dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
         <TextView android:id="@+id/class_question_author" style="@style/FieldLabel" android:textSize="16sp" android:layout_marginBottom="4dp" />
         <TextView android:id="@+id/class_question_tutor_badge" style="@style/BodyText" android:text="@string/class_questions_tutor_badge"
-            android:textColor="#236B42" android:textSize="12sp" android:layout_marginBottom="4dp" android:visibility="gone" />
+            android:textColor="@color/theme_text_236b42" android:textSize="12sp" android:layout_marginBottom="4dp" android:visibility="gone" />
         <TextView android:id="@+id/class_question_date" style="@style/BodyText" android:textSize="12sp" android:layout_marginBottom="8dp" />
-        <TextView android:id="@+id/class_question_content" style="@style/BodyText" android:textColor="#081F50"
+        <TextView android:id="@+id/class_question_content" style="@style/BodyText" android:textColor="@color/theme_text_081f50"
             android:textIsSelectable="true" android:layout_marginBottom="6dp" />
         <com.google.android.material.button.MaterialButton android:id="@+id/reply_to_class_question" style="@style/TextButton"
             android:text="@string/class_questions_reply" android:minHeight="44dp" />

@@ -33,6 +33,7 @@ public abstract class AccountFragmentBase extends Fragment {
             view.findViewById(R.id.progress).setVisibility(state.isBusy()?View.VISIBLE:View.GONE);
             enable(view.findViewById(R.id.form),!state.isBusy());
             renderState();
+            ThemeColors.apply(view);Motion.bindControls(view);
         });
     }
     protected abstract void bindFields(View view);

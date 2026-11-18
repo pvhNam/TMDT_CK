@@ -18,6 +18,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class AvatarRenderer {
+    private static final android.view.ViewOutlineProvider CIRCLE=new android.view.ViewOutlineProvider(){
+        @Override public void getOutline(View target,android.graphics.Outline outline){int size=Math.min(target.getWidth(),target.getHeight());
+            outline.setOval((target.getWidth()-size)/2,(target.getHeight()-size)/2,(target.getWidth()+size)/2,(target.getHeight()+size)/2);}
+    };
     private static final android.util.LruCache<String,Bitmap> photos=new android.util.LruCache<String,Bitmap>(2*1024*1024){
         @Override protected int sizeOf(String key,Bitmap value){return value.getAllocationByteCount()+key.length()*2;}
     };
@@ -27,6 +31,7 @@ public final class AvatarRenderer {
     private static final Map<String,List<WeakReference<ViewAvatarBinding>>> pending=new HashMap<>();
     private AvatarRenderer(){}
     public static void render(ViewAvatarBinding binding,String encoded,String name){
+        circle(binding.getRoot());circle(binding.avatarInitials);circle(binding.avatarPhoto);
         name=name==null?"":name.trim();
         binding.avatarInitials.setText(name.isEmpty()?"HV":name.substring(0,name.offsetByCodePoints(0,1)).toUpperCase(Locale.ROOT));
         String source=encoded==null||encoded.length()>90000?"":encoded;
@@ -51,6 +56,9 @@ public final class AvatarRenderer {
                 }
             });
         });
+    }
+    public static void circle(View view){
+        view.setOutlineProvider(CIRCLE);view.setClipToOutline(true);
     }
     private static Bitmap decodePhoto(String source){
         try{

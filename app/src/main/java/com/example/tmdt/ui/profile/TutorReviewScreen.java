@@ -15,8 +15,9 @@ abstract class TutorReviewScreen extends ScreenFragment {
         review=new ViewModelProvider(requireActivity()).get(TutorReviewState.class);
         account=new ViewModelProvider(requireActivity()).get(AccountState.class);
         super.onViewCreated(view,state);
-        review.changes.observe(getViewLifecycleOwner(),ignored->refresh());
+        review.changes.observe(getViewLifecycleOwner(),ignored->refreshData());
     }
+    @Override protected Object dataSnapshot(){return RenderSnapshot.of(classroom,review);}
     protected void go(String screen){((MainActivity)requireActivity()).show(screen);}
     protected void feedback(LinearLayout body){
         if(review.busy){ProgressBar progress=new ProgressBar(requireContext());body.addView(progress,ui.lp(32,32));ui.space(body,8);}

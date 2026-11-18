@@ -51,7 +51,7 @@ public final class ChatFragment extends Fragment {
         layout.setStackFromEnd(true);  // Tin mới nhất ở cuối, sát ô soạn thảo.
         binding.messages.setLayoutManager(layout);
         binding.messages.setAdapter(adapter);
-        binding.messages.setItemAnimator(null);
+        com.example.tmdt.ui.common.Motion.list(binding.messages);
         // Bàn phím mở làm danh sách thấp lại: giữ tin cuối trong tầm nhìn.
         binding.messages.addOnLayoutChangeListener((v, l, t, r, bottom, ol, ot, or, oldBottom) -> {
             if (bottom < oldBottom && adapter.getItemCount() > 0) binding.messages.post(this::scrollToEnd);

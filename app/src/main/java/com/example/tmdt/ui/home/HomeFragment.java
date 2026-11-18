@@ -25,6 +25,7 @@ public final class HomeFragment extends Fragment {
     private String shownSubject;
     private final Map<String,ItemTutorBinding> cards=new LinkedHashMap<>();
     private boolean renderQueued;
+    private boolean pulling;
     private final Runnable render=()->{
         renderQueued=false;
         if(binding!=null){renderSubjects();renderResults();}
@@ -34,6 +35,18 @@ public final class HomeFragment extends Fragment {
         super.onViewCreated(view,savedInstanceState);
         binding=FragmentHomeBinding.bind(view);
         catalog=new ViewModelProvider(requireActivity()).get(CatalogState.class);
+        binding.pullRefresh.setColorSchemeColors(requireContext().getColor(R.color.app_accent));
+        binding.pullRefresh.setProgressBackgroundColorSchemeColor(requireContext().getColor(R.color.app_surface));
+        binding.pullRefresh.setOnChildScrollUpCallback((parent,child)->binding!=null&&binding.homeScroll.canScrollVertically(-1));
+        binding.pullRefresh.setOnRefreshListener(()->{
+            if(pulling)return;pulling=true;
+            FragmentHomeBinding current=binding;
+            catalog.refreshFromServer().addOnCompleteListener(task->{
+                if(binding!=current)return;pulling=false;current.pullRefresh.setRefreshing(false);
+                if(!task.isSuccessful())com.google.android.material.snackbar.Snackbar.make(current.getRoot(),"Chưa làm mới được. Kiểm tra kết nối rồi thử lại.",com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show();
+                requestRender();
+            });
+        });
         AccountState account=new ViewModelProvider(requireActivity()).get(AccountState.class);
         binding.search.setText(catalog.query());
         binding.searchButton.setOnClickListener(v -> searchTeachers());
@@ -47,8 +60,6 @@ public final class HomeFragment extends Fragment {
         binding.account.bindCurrentAccount();
         binding.account.setOnClickListener(v->host().show("account"));
         binding.groupClasses.setOnClickListener(v->host().show("groups"));
-        binding.postTutorRequest.setOnClickListener(v->host().show("post_request"));
-        binding.manageTutorRequests.setOnClickListener(v->host().openMyRequests("home"));
         binding.refresh.setOnClickListener(v->catalog.reload());binding.retry.setOnClickListener(v->catalog.reload());
         binding.clearSearch.setOnClickListener(v -> {
             catalog.subject("");
@@ -95,16 +106,18 @@ public final class HomeFragment extends Fragment {
     private void renderResults(){
         boolean loading=catalog.loading(),failed=!catalog.error().isEmpty();
         List<CatalogState.Teacher> teachers=catalog.results();
-        boolean empty=!loading&&!failed&&teachers.isEmpty(),searched=!catalog.query().isEmpty()||!catalog.subject().isEmpty();
-        binding.progress.setVisibility(loading?View.VISIBLE:View.GONE);
+        boolean searched=!catalog.query().isEmpty()||!catalog.subject().isEmpty();
+        boolean retained=binding.results.getChildCount()>0;
+        if(!loading&&!pulling)binding.pullRefresh.setRefreshing(false);
+        binding.progress.setVisibility(loading&&!retained&&!pulling?View.VISIBLE:View.GONE);
         binding.offline.setVisibility(catalog.offline()&&!failed&&!loading?View.VISIBLE:View.GONE);
-        binding.message.setVisibility(failed||empty?View.VISIBLE:View.GONE);
-        binding.description.setVisibility(empty?View.VISIBLE:View.GONE);
+        binding.message.setVisibility(failed?View.VISIBLE:View.GONE);
+        binding.description.setVisibility(View.GONE);
         binding.retry.setVisibility(failed?View.VISIBLE:View.GONE);
-        binding.clearSearch.setVisibility(empty&&searched?View.VISIBLE:View.GONE);
+        binding.clearSearch.setVisibility(View.GONE);
         binding.message.setText(failed?catalog.error():getString(searched?R.string.empty_search:R.string.empty_catalog));
         binding.description.setText(searched?R.string.empty_search_caption:R.string.empty_catalog_caption);
-        binding.results.setVisibility(loading||failed?View.GONE:View.VISIBLE);
+        binding.results.setVisibility((loading||failed)&&!retained?View.GONE:View.VISIBLE);
         if(loading||failed)return;
         java.util.Set<String> visible=new java.util.HashSet<>();
         int position=0;
@@ -133,6 +146,8 @@ public final class HomeFragment extends Fragment {
                 return true;
             });
             bindFavorite(item.favorite,teacher.id);
+            com.example.tmdt.ui.common.ThemeColors.apply(item.getRoot());
+            com.example.tmdt.ui.common.Motion.bindControls(item.getRoot());
         }
         java.util.Iterator<Map.Entry<String,ItemTutorBinding>> iterator=cards.entrySet().iterator();
         while(iterator.hasNext()){
@@ -154,7 +169,7 @@ public final class HomeFragment extends Fragment {
     }
     @Override public void onDestroyView(){
         if(binding!=null)binding.getRoot().removeCallbacks(render);
-        renderQueued=false;cards.clear();shownSubjects.clear();shownSubject=null;
+        renderQueued=false;pulling=false;cards.clear();shownSubjects.clear();shownSubject=null;
         super.onDestroyView();binding=null;
     }
 }

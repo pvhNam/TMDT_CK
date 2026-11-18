@@ -18,10 +18,19 @@ public final class Store {
         void save(Lesson lesson);
         void save(GroupClass item, List<GroupClass.Registration> registrations);
         void save(GroupClass.Registration registration);
+        /** Writes only the member's own answer to the class's proposal. */
+        void answer(GroupClass item, String student, String answer);
     }
+    /** Hours of notice a moved session and its new slot need, and how long before the earlier of the two answers close. */
+    public static final int MOVE_NOTICE = 24, MOVE_ANSWER = 12;
 
     public final List<Lesson> lessons = new ArrayList<>();
     public final List<GroupClass> classes = new ArrayList<>();
+    /** Open tutor requests: the user's own, and every student's once a tutor looks for groups to match. */
+    public final List<GroupMatch.Request> myRequests = new ArrayList<>(), openRequests = new ArrayList<>();
+    /** True once the classes and the user's own requests have both loaded, so earlier matches are not announced as new. */
+    public boolean matchesReady, openRequestsLoaded;
+    public String requestsError = "";
     private final Remote remote;
     private final Set<String> settled = new HashSet<>();
     /** uid of the signed-in user, empty for a guest. */
@@ -36,14 +45,14 @@ public final class Store {
     // Lessons ---------------------------------------------------------------------------------
 
     /** Returns a message when the slot overlaps the student's own lessons and classes or the tutor's confirmed lessons and classes. */
-    public String conflict(String tutorId, String student, String date, int hour, int minutes, String ignoreId) {
+    public String conflict(String tutorId, String student, String date, int hour, int minute, int minutes, String ignoreId) {
         for (Lesson other : lessons) {
-            if (other.id.equals(ignoreId) || !other.active() || !other.overlaps(date,hour,minutes)) continue;
+            if (other.id.equals(ignoreId) || !other.active() || !other.overlaps(date,hour,minute,minutes)) continue;
             if (other.studentId.equals(student)) return "Bạn đã có buổi học hoặc yêu cầu trong khung giờ này. Hãy chọn giờ khác.";
             if (other.tutorId.equals(tutorId) && other.confirmed()) return "Gia sư đã có lịch dạy trong khung giờ này. Hãy chọn giờ khác.";
         }
         for (GroupClass item : classes) {
-            if (!item.active() || !item.meetsAt(date,hour*60,minutes)) continue;
+            if (!item.active() || !item.meetsAt(date,hour*60+minute,minutes)) continue;
             if (item.attends(student)) return "Khung giờ này trùng với lớp nhóm \""+item.title+"\" của bạn. Hãy chọn giờ khác.";
             if (item.tutorId.equals(tutorId)) return "Gia sư đã có lịch dạy lớp nhóm trong khung giờ này. Hãy chọn giờ khác.";
         }
@@ -57,7 +66,7 @@ public final class Store {
         if (lesson.hour*60+lesson.minute+lesson.minutes > Lesson.DAY) return "Buổi học cần kết thúc trong ngày.";
         if (lesson.price > Lesson.MAX_PRICE) return "Học phí một buổi vượt quá "+Tutor.money(Lesson.MAX_PRICE)+". Hãy chọn thời lượng ngắn hơn.";
         if (lesson.trial) { String used = trialError(lesson.tutorId,lesson.studentId); if (used != null) return used; }
-        String clash = conflict(lesson.tutorId,lesson.studentId,lesson.date,lesson.hour,lesson.minutes,"");
+        String clash = conflict(lesson.tutorId,lesson.studentId,lesson.date,lesson.hour,lesson.minute,lesson.minutes,"");
         if (clash != null) return clash;
         lessons.add(lesson); remote.save(lesson); return null;
     }
@@ -66,7 +75,7 @@ public final class Store {
         if (!lesson.pending()) return "Yêu cầu này đã được xử lý.";
         if (lesson.started()) return "Thời gian học đã qua, không thể chấp nhận.";
         for (Lesson other : lessons)
-            if (other != lesson && other.tutorId.equals(lesson.tutorId) && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minutes))
+            if (other != lesson && other.tutorId.equals(lesson.tutorId) && other.confirmed() && other.overlaps(lesson.date,lesson.hour,lesson.minute,lesson.minutes))
                 return "Khung giờ này trùng với một buổi dạy đã xác nhận.";
         for (GroupClass item : classes)
             if (item.tutorId.equals(lesson.tutorId) && item.active() && item.meetsAt(lesson.date,lesson.hour*60+lesson.minute,lesson.minutes))
@@ -78,30 +87,30 @@ public final class Store {
         lesson.status = Lesson.REJECTED; remote.save(lesson); return null;
     }
 
-    public String propose(Lesson lesson, LocalDate date, int hour, String reason) {
+    public String propose(Lesson lesson, LocalDate date, int hour, int minute, String reason) {
         if (!lesson.confirmed() || lesson.started()) return "Chỉ đề nghị đổi lịch cho buổi học đã xác nhận và chưa diễn ra.";
         if (lesson.proposal()) return "Buổi học này đang chờ học viên phản hồi một đề nghị khác.";
-        if (!date.atTime(hour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất cần ở trong tương lai.";
-        if (date.toString().equals(lesson.date) && hour == lesson.hour) return "Thời gian đề xuất đang trùng với lịch hiện tại.";
-        if (hour*60+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
-        String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, lesson.minutes, lesson.id);
+        if (!date.atTime(hour,minute).isAfter(LocalDateTime.now())) return "Thời gian đề xuất cần ở trong tương lai.";
+        if (date.toString().equals(lesson.date) && hour == lesson.hour && minute == lesson.minute) return "Thời gian đề xuất đang trùng với lịch hiện tại.";
+        if (hour*60+minute+lesson.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
+        String clash = conflict(lesson.tutorId, lesson.studentId, date.toString(), hour, minute, lesson.minutes, lesson.id);
         if (clash != null) return clash;
-        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposalReason = reason; lesson.reply = ""; remote.save(lesson); return null;
+        lesson.proposedDate = date.toString(); lesson.proposedHour = hour; lesson.proposedMinute = minute; lesson.proposalReason = reason; lesson.reply = ""; remote.save(lesson); return null;
     }
     /** The lesson only moves after the student agrees and the proposed slot is still free. */
     public String acceptProposal(Lesson lesson) {
         if (!lesson.proposal()) return "Đề nghị đổi lịch không còn hiệu lực.";
-        if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,0).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
-        String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.minutes, lesson.id);
+        if (!LocalDate.parse(lesson.proposedDate).atTime(lesson.proposedHour,lesson.proposedMinute).isAfter(LocalDateTime.now())) return "Thời gian đề xuất đã qua. Lịch hiện tại được giữ nguyên.";
+        String clash = conflict(lesson.tutorId, lesson.studentId, lesson.proposedDate, lesson.proposedHour, lesson.proposedMinute, lesson.minutes, lesson.id);
         if (clash != null) return "Khung giờ đề xuất không còn trống. Lịch hiện tại được giữ nguyên.";
-        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = 0; lesson.reply = Lesson.REPLY_ACCEPTED; clearProposal(lesson); return null;
+        lesson.date = lesson.proposedDate; lesson.hour = lesson.proposedHour; lesson.minute = lesson.proposedMinute; lesson.reply = Lesson.REPLY_ACCEPTED; clearProposal(lesson); return null;
     }
     /** The student keeps the current slot; the answer stays on the lesson so the tutor learns about it. */
     public String keepSchedule(Lesson lesson) {
         if (!lesson.proposal()) return "Đề nghị đổi lịch không còn hiệu lực.";
         lesson.reply = Lesson.REPLY_KEPT; clearProposal(lesson); return null;
     }
-    public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = ""; remote.save(lesson); }
+    public void clearProposal(Lesson lesson) { lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposedMinute = 0; lesson.proposalReason = ""; remote.save(lesson); }
     public String setRoomLink(Lesson lesson, String link) {
         if (!lesson.confirmed() || lesson.ended()) return "Chỉ gắn link cho buổi học đã xác nhận và chưa kết thúc.";
         if (!lesson.online()) return "Buổi học tại nhà không cần link phòng học.";
@@ -125,7 +134,7 @@ public final class Store {
     public String cancel(Lesson lesson, String reason) {
         if (!lesson.active()) return "Buổi học này không còn ở trạng thái có thể hủy.";
         if (lesson.started()) return "Buổi học đã bắt đầu hoặc đã diễn ra nên không thể hủy.";
-        lesson.status = Lesson.CANCELLED; lesson.cancelReason = reason; lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposalReason = "";
+        lesson.status = Lesson.CANCELLED; lesson.cancelReason = reason; lesson.proposedDate = null; lesson.proposedHour = -1; lesson.proposedMinute = 0; lesson.proposalReason ="";
         remote.save(lesson); return null;
     }
 
@@ -192,11 +201,14 @@ public final class Store {
                 return "Lớp trùng lịch với lớp \""+other.title+"\" bạn đã đăng ký ("+other.scheduleLabel()+").";
         return null;
     }
-    public String register(GroupClass item, String student, String name, String goal) {
+    public String register(GroupClass item, String student, String name, String goal) { return register(item,student,name,goal,"",""); }
+    /** Đăng ký lớp nhóm; learnerId/learnerName khác rỗng khi tài khoản đăng ký cho người học khác. */
+    public String register(GroupClass item, String student, String name, String goal, String learnerId, String learnerName) {
         String error = registrationError(item, student);
         if (error != null) return error;
         item.registrations.removeIf(old -> old.studentId.equals(student));
         GroupClass.Registration registration = new GroupClass.Registration(item.id,item.tutorId,student,name,goal,LocalDate.now().toString(),Lesson.PENDING);
+        registration.learnerId = learnerId == null ? "" : learnerId; registration.learnerName = learnerName == null ? "" : learnerName;
         item.registrations.add(registration); remote.save(registration); return null;
     }
     /** Never accepts more students than the class limit (UC18). */
@@ -233,17 +245,100 @@ public final class Store {
         remote.save(item, closeWaiting(item)); return null;
     }
 
+    /** A session the tutor may still move: at least a day ahead, in a class that has not ended. */
+    public boolean movable(GroupClass item, GroupClass.Session session) {
+        return item.tutorId.equals(user) && item.active() && !session.start().isBefore(LocalDateTime.now().plusHours(MOVE_NOTICE));
+    }
+    /**
+     * The tutor moves one session of a class. Without members it moves at once; otherwise every member is asked and the
+     * session keeps its time until nobody is busy. The new slot stays between the sessions before and after it.
+     */
+    public String proposeMove(GroupClass item, int number, LocalDate date, int hour, int minute, String reason) {
+        List<GroupClass.Session> list = item.sessionList();
+        if (number < 1 || number > list.size()) return "Buổi học không còn trong lịch của lớp.";
+        GroupClass.Session session = list.get(number-1);
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới đổi lịch được.";
+        if (!movable(item,session)) return "Chỉ đổi lịch buổi học còn ít nhất "+MOVE_NOTICE+" giờ nữa mới bắt đầu.";
+        if (item.proposalOpen() && item.proposal.number != number)
+            return "Học viên đang trả lời đề nghị đổi buổi "+item.proposal.number+". Hãy đợi đề nghị đó xong hoặc giữ giờ cũ cho buổi đó.";
+        String text = reason.trim();
+        if (text.isEmpty()) return "Vui lòng nhập lý do đổi lịch.";
+        if (text.length() > 120) return "Lý do đổi lịch tối đa 120 ký tự.";
+        LocalDateTime start = date.atTime(hour,minute), end = start.plusMinutes(item.minutes);
+        if (start.isBefore(LocalDateTime.now().plusHours(MOVE_NOTICE))) return "Giờ mới cần cách hiện tại ít nhất "+MOVE_NOTICE+" giờ để học viên kịp sắp xếp.";
+        if (start.equals(session.start())) return "Giờ mới đang trùng với lịch hiện tại của buổi này.";
+        if (hour*60+minute+item.minutes > Lesson.DAY) return "Với giờ này buổi học sẽ kéo sang ngày hôm sau. Hãy chọn giờ sớm hơn.";
+        if (number > 1 && start.isBefore(list.get(number-2).end()))
+            return "Buổi "+number+" cần diễn ra sau buổi "+(number-1)+" ("+list.get(number-2).label()+").";
+        if (number < list.size() && end.isAfter(list.get(number).start()))
+            return "Buổi "+number+" cần kết thúc trước buổi "+(number+1)+" ("+list.get(number).label()+").";
+        String clash = moveClash(item,date.toString(),hour*60+minute);
+        if (clash != null) return clash;
+        item.settleProposal();
+        GroupClass.Move move = new GroupClass.Move(date.toString(),hour,minute,text);
+        LocalDateTime first = start.isBefore(session.start()) ? start : session.start();
+        if (item.members.isEmpty()) { item.moves.put(number,move); item.proposal = null; }
+        else item.proposal = new GroupClass.Proposal(number,move,first.minusHours(MOVE_ANSWER));
+        remote.save(item, Collections.emptyList()); return null;
+    }
+    /** The tutor's other lessons and classes, and the classes of every member; members' own lessons the tutor cannot see are left to their answers. */
+    private String moveClash(GroupClass item, String date, int begin) {
+        for (Lesson lesson : lessons) {
+            if (!lesson.active() || !lesson.date.equals(date) || !GroupClass.overlap(begin,item.minutes,lesson.hour*60+lesson.minute,lesson.minutes)) continue;
+            if (lesson.studentId.equals(item.tutorId) || (lesson.tutorId.equals(item.tutorId) && lesson.confirmed()))
+                return "Giờ mới trùng với buổi \""+lesson.title+"\" của bạn ("+lesson.timeLabel()+").";
+            if (item.members.contains(lesson.studentId)) return "Giờ mới trùng với buổi học của học viên "+item.nameOf(lesson.studentId)+" ("+lesson.timeLabel()+").";
+        }
+        for (GroupClass other : classes) {
+            if (other.id.equals(item.id) || !other.active() || !other.meetsAt(date,begin,item.minutes)) continue;
+            if (other.tutorId.equals(item.tutorId) || other.attends(item.tutorId)) return "Giờ mới trùng với lớp \""+other.title+"\" của bạn.";
+            for (String member : item.members)
+                if (other.attends(member)) return "Giờ mới trùng với lớp \""+other.title+"\" của học viên "+item.nameOf(member)+".";
+        }
+        return null;
+    }
+    /** The member's own lesson or class at the proposed time, named so they can answer "busy"; null when the slot is free. */
+    public String moveConflict(GroupClass item) {
+        if (item.proposal == null) return null;
+        GroupClass.Move move = item.proposal.move;
+        for (Lesson lesson : lessons)
+            if (lesson.studentId.equals(user) && lesson.active() && lesson.date.equals(move.date)
+                    && GroupClass.overlap(move.begin(),item.minutes,lesson.hour*60+lesson.minute,lesson.minutes))
+                return "buổi \""+lesson.title+"\" ("+lesson.timeLabel()+")";
+        for (GroupClass other : classes)
+            if (!other.id.equals(item.id) && other.active() && other.attends(user) && other.meetsAt(move.date,move.begin(),item.minutes))
+                return "lớp \""+other.title+"\"";
+        return null;
+    }
+    /** A member says whether they can come; the answer can change until the deadline or until the proposal applies. */
+    public String answerMove(GroupClass item, boolean join) {
+        if (!item.members.contains(user)) return "Chỉ học viên trong lớp mới trả lời được đề nghị này.";
+        if (!item.proposalOpen()) return "Đề nghị đổi lịch đã hết hạn trả lời hoặc đã được áp dụng.";
+        String answer = join ? GroupClass.Proposal.JOIN : GroupClass.Proposal.BUSY;
+        item.proposal.answers.put(user,answer); remote.answer(item,user,answer); return null;
+    }
+    /** The tutor withdraws a proposal that has not applied, so the session keeps its time. */
+    public String keepSessionTime(GroupClass item) {
+        if (!item.tutorId.equals(user)) return "Chỉ gia sư của lớp mới giữ được giờ cũ.";
+        if (item.proposal == null || item.proposalAccepted()) return "Đề nghị đổi lịch không còn hiệu lực.";
+        item.proposal = null; remote.save(item, Collections.emptyList()); return null;
+    }
+
     /**
      * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer
      * recruits closes the registrations still waiting, which frees the students' time slots.
-     * Only the class's tutor may write it, and only once per class, so a refused write is not retried in a loop.
+     * A proposal members can no longer answer becomes part of the schedule, or is dropped when someone was busy.
+     * Only the class's tutor may write it, and only once per class or proposal, so a refused write is not retried in a loop.
      */
     public void updateClasses() {
         for (GroupClass item : classes) {
             boolean ended = item.active() && item.over();
             if (ended) item.status = GroupClass.ENDED;
             List<GroupClass.Registration> closed = GroupClass.OPEN.equals(item.status) ? Collections.emptyList() : closeWaiting(item);
-            if ((ended || !closed.isEmpty()) && item.tutorId.equals(user) && settled.add(item.id)) remote.save(item, closed);
+            boolean mine = item.tutorId.equals(user);
+            boolean moved = mine && item.proposal != null && !item.proposalOpen() && settled.add(item.id+"#"+item.proposal.key()) && item.settleProposal();
+            boolean changed = (ended || !closed.isEmpty()) && mine && settled.add(item.id);
+            if (changed || moved) remote.save(item, closed);
         }
     }
     private static List<GroupClass.Registration> closeWaiting(GroupClass item) {

@@ -20,8 +20,11 @@ public final class TutorReviewState extends ViewModel {
     public final List<Map<String,Object>> queue=new ArrayList<>();
     public String error="",notice="",owner="",selectedId="",destination;
     public boolean busy,loading=true,admin;
+    public boolean queueLoading,detailLoading;
+    public String queueError="",detailError="";
     private Map<String,Object> ownProfile=new HashMap<>(),ownApplication=new HashMap<>();
     private ListenerRegistration profileListener,applicationListener,queueListener,detailListener;
+    private int queueVersion,detailVersion;
     private final FirebaseFirestore db=FirebaseFirestore.getInstance();
     private final Context context=FirebaseApp.getInstance().getApplicationContext();
     private final java.util.concurrent.ExecutorService io=Executors.newSingleThreadExecutor();
@@ -65,12 +68,24 @@ public final class TutorReviewState extends ViewModel {
             }
         }
         boolean allowed=account.profile()!=null&&"ADMIN".equals(account.profile().role)&&"ACTIVE".equals(account.profile().status);
-        if(admin!=allowed){admin=allowed;if(queueListener!=null){queueListener.remove();queueListener=null;}queue.clear();
-            if(admin)queueListener=db.collection("tutor_profiles").limit(100).addSnapshotListener((docs,e)->{
-                if(!admin)return;if(e!=null){error=AccountState.message(e);changed();return;}queue.clear();
-                for(DocumentSnapshot doc:docs){Map<String,Object> item=new HashMap<>(doc.getData());item.put("id",doc.getId());queue.add(item);}changed();
-            });
+        if(admin!=allowed){admin=allowed;if(queueListener!=null){queueListener.remove();queueListener=null;}queue.clear();queueLoading=false;queueError="";
+            if(admin)listenQueue();changed();
         }
+    }
+    private void listenQueue(){
+        if(queueListener!=null)queueListener.remove();queueLoading=true;queueError="";String viewer=owner;int request=++queueVersion;
+        queueListener=db.collection("tutor_profiles").limit(100).addSnapshotListener((docs,e)->{
+            if(!admin||!viewer.equals(owner)||request!=queueVersion)return;queueLoading=false;
+            if(e!=null){queueError=AccountState.message(e);error=queueError;changed();return;}
+            if(error.equals(queueError))error="";queueError="";queue.clear();
+            if(docs!=null)for(DocumentSnapshot doc:docs){Map<String,Object> item=new HashMap<>(doc.getData());item.put("id",doc.getId());queue.add(item);}
+            for(Map<String,Object> item:queue)if(selectedId.equals(item.get("id"))){Map<String,Object> next=new HashMap<>(selected);next.putAll(item);selected=next;break;}
+            changed();
+        });
+    }
+    public void reloadAdmin(){
+        if(!admin||busy)return;error="";notice="";listenQueue();
+        if(!selectedId.isEmpty())select(selectedId);else changed();
     }
     private void mergeOwner(){own=new HashMap<>(ownProfile);own.putAll(ownApplication);changed();}
     public static String text(Map<String,Object> data,String key){Object value=data.get(key);return value instanceof String?(String)value:"";}
@@ -79,12 +94,14 @@ public final class TutorReviewState extends ViewModel {
         Object value=data.get("minh_chung");return value instanceof List?(List<Map<String,Object>>)value:Collections.emptyList();
     }
     public void select(String uid){
-        if(!admin)return;if(detailListener!=null)detailListener.remove();selectedId=uid;selected=new HashMap<>();
+        if(!admin||busy)return;if(detailListener!=null)detailListener.remove();
+        if(!uid.equals(selectedId))selected=new HashMap<>();selectedId=uid;detailLoading=true;detailError="";error="";notice="";int request=++detailVersion;
         for(Map<String,Object> item:queue)if(uid.equals(item.get("id")))selected.putAll(item);
         detailListener=db.collection("tutor_applications").document(uid).addSnapshotListener((doc,e)->{
-            if(!uid.equals(selectedId)||!admin)return;
+            if(!uid.equals(selectedId)||!admin||request!=detailVersion)return;detailLoading=false;
             Map<String,Object> next=new HashMap<>();for(Map<String,Object> item:queue)if(uid.equals(item.get("id")))next.putAll(item);
-            if(e!=null)error=AccountState.message(e);else if(doc!=null&&doc.exists())next.putAll(doc.getData());selected=next;changed();
+            if(e!=null){detailError=AccountState.message(e);error=detailError;changed();return;}
+            if(error.equals(detailError))error="";if(doc!=null&&doc.exists())next.putAll(doc.getData());selected=next;detailError="";changed();
         });changed();
     }
     public void decide(String uid,String status,String reason){
@@ -184,6 +201,6 @@ public final class TutorReviewState extends ViewModel {
         new androidx.appcompat.app.AlertDialog.Builder(activity).setTitle(text(file,"name"))
                 .setView(new com.example.tmdt.ui.common.EvidenceImageView(activity,file)).setPositiveButton("Đóng",null).show();
     }
-    private void close(){for(ListenerRegistration listener:new ListenerRegistration[]{profileListener,applicationListener,queueListener,detailListener})if(listener!=null)listener.remove();busy=false;admin=false;}
+    private void close(){for(ListenerRegistration listener:new ListenerRegistration[]{profileListener,applicationListener,queueListener,detailListener})if(listener!=null)listener.remove();queueVersion++;detailVersion++;profileListener=applicationListener=queueListener=detailListener=null;busy=false;admin=false;queueLoading=detailLoading=false;queueError=detailError="";}
     @Override protected void onCleared(){close();io.shutdownNow();}
 }

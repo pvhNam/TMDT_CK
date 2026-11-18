@@ -13,17 +13,39 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 /** Shared menu icons. Calendar/chat vectors retain the original SVG paths and colors. */
 public final class NavigationAssets {
     private NavigationAssets() {}
-    public static void apply(BottomNavigationView navigation){
-        int[] ids={R.id.nav_home,R.id.nav_schedule,R.id.nav_messages,R.id.nav_account};
-        String[] names={"home","schedule","messages","account"};
+    public static void applyAdmin(BottomNavigationView navigation){
+        int[] ids={R.id.nav_admin_home,R.id.nav_admin_management,R.id.nav_admin_contracts,R.id.nav_admin_finance,R.id.nav_admin_account};
+        int[] resources={R.drawable.ic_home,R.drawable.ic_users,R.drawable.ic_file,R.drawable.ic_wallet,R.drawable.ic_pf_user};
         for(int i=0;i<ids.length;i++){
             StateListDrawable states=new StateListDrawable();
-            states.addState(new int[]{android.R.attr.state_checked},icon(navigation,names[i]+"_active"));
-            states.addState(new int[]{},icon(navigation,names[i]+"_idle"));
+            Drawable checked=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();checked.setTint(ThemeColors.text(navigation.getContext(),Ui.BLUE));
+            Drawable idle=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),resources[i]).mutate();idle.setTint(ThemeColors.text(navigation.getContext(),Ui.MUTED));
+            states.addState(new int[]{android.R.attr.state_checked},checked);states.addState(new int[]{},idle);
+            navigation.getMenu().findItem(ids[i]).setIcon(states);
+        }
+    }
+    public static void apply(BottomNavigationView navigation){
+        int[] ids={R.id.nav_home,R.id.nav_schedule,R.id.nav_requests,R.id.nav_messages,R.id.nav_account};
+        String[] names={"home","schedule","requests","messages","account"};
+        for(int i=0;i<ids.length;i++){
+            StateListDrawable states=new StateListDrawable();
+            Drawable active=icon(navigation,names[i]+"_active").mutate();
+            Drawable idle=icon(navigation,names[i]+"_idle").mutate();
+            if(ThemeColors.dark(navigation.getContext())){
+                active.setTint(navigation.getContext().getColor(R.color.app_accent));
+                idle.setTint(navigation.getContext().getColor(R.color.app_muted));
+            }
+            states.addState(new int[]{android.R.attr.state_checked},active);
+            states.addState(new int[]{},idle);
             navigation.getMenu().findItem(ids[i]).setIcon(states);
         }
     }
     private static Drawable icon(BottomNavigationView navigation,String name){
+        if("requests_active".equals(name)||"requests_idle".equals(name)){
+            Drawable drawable=androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_field_note).mutate();
+            drawable.setTint(ThemeColors.text(navigation.getContext(),"requests_active".equals(name)?Ui.BLUE:Ui.MUTED));
+            return drawable;
+        }
         if("schedule_idle".equals(name))return androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_calendar);
         if("messages_idle".equals(name))return androidx.appcompat.content.res.AppCompatResources.getDrawable(navigation.getContext(),R.drawable.ic_chat);
         try {

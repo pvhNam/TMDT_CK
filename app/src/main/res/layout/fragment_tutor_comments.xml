@@ -19,7 +19,7 @@
         <EditText android:id="@+id/tutor_comment_input" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="2" android:maxLines="4"
             android:maxLength="1000" android:padding="12dp" android:background="@drawable/bg_input" android:textSize="14sp"
-            android:textColor="#081F50" android:hint="@string/tutor_comments_input_hint" android:saveEnabled="false" android:importantForAutofill="no" />
+            android:textColor="@color/theme_text_081f50" android:hint="@string/tutor_comments_input_hint" android:saveEnabled="false" android:importantForAutofill="no" />
         <TextView android:id="@+id/tutor_comment_character_count" style="@style/BodyText" android:textSize="12sp" android:gravity="end" android:layout_marginBottom="2dp" />
         <com.google.android.material.button.MaterialButton android:id="@+id/send_tutor_comment" style="@style/PrimaryButton" android:text="@string/tutor_comments_send" />
     </LinearLayout>
@@ -31,7 +31,7 @@
         android:accessibilityLiveRegion="polite" android:visibility="gone" />
     <TextView android:id="@+id/tutor_comments_error" style="@style/BodyText" android:textColor="#B3261E"
         android:accessibilityLiveRegion="polite" android:visibility="gone" />
-    <TextView android:id="@+id/tutor_comments_notice" style="@style/BodyText" android:textColor="#236B42"
+    <TextView android:id="@+id/tutor_comments_notice" style="@style/BodyText" android:textColor="@color/theme_text_236b42"
         android:accessibilityLiveRegion="polite" android:visibility="gone" />
     <com.google.android.material.button.MaterialButton android:id="@+id/tutor_comments_retry" style="@style/SecondaryButton"
         android:text="@string/tutor_comments_retry" android:visibility="gone" />

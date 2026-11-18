@@ -17,6 +17,7 @@ final class TutorReviewDesign {
         Object bytes=file.get("size");String size=bytes instanceof Number?Math.max(1,Math.round(((Number)bytes).doubleValue()/1024))+" KB · ":"";
         ui.add(copy,ui.text(size+"Chạm ảnh để xem",11,Ui.MUTED,false));ui.weight(row,copy);
         if(remove!=null)row.addView(ui.iconButton("close","Xóa tệp "+TutorReviewState.text(file,"name"),remove));
+        else ui.clickable(row,()->preview.performClick());
         return row;
     }
     static void steps(Ui ui,LinearLayout body,int current){

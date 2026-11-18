@@ -52,12 +52,10 @@ public final class RequestApplicantsFragment extends Fragment {
         binding.applicantsError.setText(manager.applicantsError());
         binding.applicantsError.setVisibility(manager.applicantsError().isEmpty() ? View.GONE : View.VISIBLE);
         binding.retryApplicants.setVisibility(manager.applicantsError().isEmpty() ? View.GONE : View.VISIBLE);
-        binding.applicantsEmpty.setVisibility(!manager.applicantsLoading() && manager.applicantsError().isEmpty()
-                && manager.applicants().isEmpty() ? View.VISIBLE : View.GONE);
-        int scrollY = binding.applicantsScroll.getScrollY();
-        binding.applicantsList.removeAllViews();
+        binding.applicantsEmpty.setVisibility(View.GONE);
+        com.example.tmdt.ui.common.StableBindings<ItemTutorApplicationBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.applicantsList);rows.begin();
         for (TutorApplication application : manager.applicants()) {
-            ItemTutorApplicationBinding row = ItemTutorApplicationBinding.inflate(getLayoutInflater(), binding.applicantsList, false);
+            ItemTutorApplicationBinding row = rows.item(application.tutorId,()->ItemTutorApplicationBinding.inflate(getLayoutInflater(), binding.applicantsList, false));
             row.applicantName.setText(application.tutorName.isEmpty() ? getString(R.string.requests_applicant_unnamed) : application.tutorName);
             row.applicantMessage.setText(application.introduction.isEmpty() ? getString(R.string.requests_applicant_no_message) : application.introduction);
             row.applicantStatus.setText(request != null && !request.selectedTutorId.isEmpty()
@@ -72,11 +70,10 @@ public final class RequestApplicantsFragment extends Fragment {
                         Locale.forLanguageTag("vi-VN")).format(new Date(application.createdAtMillis));
                 row.applicantDate.setText(getString(R.string.requests_application_date, date));
             }
-            binding.applicantsList.addView(row.getRoot());
         }
-        binding.applicantsScroll.post(() -> {
-            if (binding != null) binding.applicantsScroll.scrollTo(0, scrollY);
-        });
+        rows.commit(binding.applicantsList);
+        com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
+        com.example.tmdt.ui.common.Motion.bindControls(binding.applicantsList);
     }
 
     private String status(String status) {

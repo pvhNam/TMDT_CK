@@ -1,27 +1,38 @@
 package com.example.tmdt.ui.exchange;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import com.example.tmdt.Contract;
+import com.example.tmdt.R;
+import com.example.tmdt.Report;
+import com.example.tmdt.ReportState;
 import com.example.tmdt.databinding.ViewExHeaderBinding;
 import com.example.tmdt.ui.messages.ChatFormat;
 import com.google.android.material.snackbar.Snackbar;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.function.IntConsumer;
 
-/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23: hợp đồng). */
+/** Thành phần giao diện dùng chung cho các màn của Thành viên 4 (UC23 hợp đồng, UC26 đánh giá, UC27/29 báo cáo vi phạm). */
 public final class ExUi {
     public static final int OK = 0, WAIT = 1, BAD = 2, INFO = 3, NEUTRAL = 4;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -47,8 +58,8 @@ public final class ExUi {
             default: fg = 0xFF6A7FA6; bg = 0xFFF0F3F8;
         }
         GradientDrawable shape = new GradientDrawable();
-        shape.setColor(bg); shape.setCornerRadius(dp(view.getContext(), 8));
-        view.setBackground(shape); view.setTextColor(fg); view.setText(text);
+        shape.setColor(com.example.tmdt.ui.common.ThemeColors.fill(view.getContext(),bg)); shape.setCornerRadius(dp(view.getContext(), 8));
+        view.setBackground(shape); view.setTextColor(com.example.tmdt.ui.common.ThemeColors.text(view.getContext(),fg)); view.setText(text);
         view.setVisibility(text == null || text.isEmpty() ? View.GONE : View.VISIBLE);
     }
     public static int kind(Contract c) {
@@ -57,11 +68,50 @@ public final class ExUi {
         return c.closed() ? BAD : NEUTRAL;
     }
 
+    public static int kind(Report r) {
+        switch (r.status) {
+            case Report.RESOLVED: return OK;
+            case Report.DISMISSED: return NEUTRAL;
+            case Report.NEED_INFO: return BAD;
+            default: return WAIT;
+        }
+    }
+
+    /** Hàng sao (UC26); truyền onPick để người dùng chọn số sao. */
+    public static void stars(LinearLayout row, int rating, int sizeDp, @Nullable IntConsumer onPick) {
+        Context context = row.getContext();
+        row.removeAllViews();
+        for (int i = 1; i <= 5; i++) {
+            ImageView star = new ImageView(context);
+            star.setImageResource(R.drawable.ic_star);
+            star.setImageTintList(ColorStateList.valueOf(i <= rating ? 0xFFFFB617 : 0xFFD8DFEA));
+            int size = dp(context, sizeDp);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
+            params.setMarginEnd(dp(context, sizeDp >= 28 ? 10 : 2));
+            final int value = i;
+            if (onPick != null) {
+                star.setContentDescription(value + " sao");
+                star.setBackgroundResource(android.R.drawable.list_selector_background);
+                star.setOnClickListener(v -> onPick.accept(value));
+            } else star.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(star, params);
+        }
+        if (onPick == null) row.setContentDescription(rating + " trên 5 sao");
+    }
+
     public static String date(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE); }
     public static String dateTime(long millis) { return millis <= 0 ? "" : Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE_TIME); }
     public static String money(long value) { return String.format(Locale.forLanguageTag("vi-VN"), "%,dđ", value); }
+    public static String size(long bytes) {
+        return bytes >= 1024 * 1024 ? String.format(Locale.ROOT, "%.1f MB", bytes / 1048576f) : Math.max(1, bytes / 1024) + " KB";
+    }
     public static int dp(Context context, float value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }
 
+    /** Bộ đếm ký tự "56/500" dưới ô nhập. */
+    public static void counter(EditText input, TextView counter, int max) {
+        counter.setText(input.length() + "/" + max);
+        afterChange(input, value -> counter.setText(value.length() + "/" + max));
+    }
     public static void afterChange(EditText input, java.util.function.Consumer<String> action) {
         input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -85,5 +135,34 @@ public final class ExUi {
     @Nullable public static Bitmap decode(String base64) {
         try { byte[] bytes = Base64.decode(base64, Base64.DEFAULT); return BitmapFactory.decodeByteArray(bytes, 0, bytes.length); }
         catch (IllegalArgumentException e) { return null; }
+    }
+
+    /** Xem ảnh minh chứng cỡ lớn. */
+    public static void showImage(Context context, String title, String base64) {
+        Bitmap bitmap = decode(base64);
+        if (bitmap == null) { new AlertDialog.Builder(context).setTitle(title).setMessage("Không đọc được ảnh.").setPositiveButton(R.string.close, null).show(); return; }
+        ImageView image = new ImageView(context);
+        image.setAdjustViewBounds(true); image.setImageBitmap(bitmap);
+        int pad = dp(context, 12); image.setPadding(pad, pad, pad, pad);
+        new AlertDialog.Builder(context).setTitle(title).setView(image).setPositiveButton(R.string.close, null).show();
+    }
+    /** Đọc ảnh người dùng chọn, thu nhỏ tối đa 1280px và nén JPEG cho tới khi vừa giới hạn lưu trữ. Chạy ở luồng nền. */
+    public static ReportState.Attachment compress(Context context, Uri uri, String name) throws IOException {
+        int[] limits = {1280, 1024, 800};
+        for (int edge : limits) {
+            Bitmap bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.getContentResolver(), uri), (decoder, info, source) -> {
+                float ratio = Math.min(1f, (float) edge / Math.max(info.getSize().getWidth(), info.getSize().getHeight()));
+                decoder.setTargetSize(Math.max(1, Math.round(info.getSize().getWidth() * ratio)), Math.max(1, Math.round(info.getSize().getHeight() * ratio)));
+                decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+            });
+            for (int quality = 80; quality >= 50; quality -= 15) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, bytes);
+                String data = Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP);
+                if (data.length() <= ReportState.MAX_DATA) { bitmap.recycle(); return new ReportState.Attachment(name, data, bytes.size()); }
+            }
+            bitmap.recycle();
+        }
+        throw new IOException("Ảnh quá lớn");
     }
 }

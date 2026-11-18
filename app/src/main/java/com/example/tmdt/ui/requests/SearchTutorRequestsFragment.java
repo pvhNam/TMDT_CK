@@ -29,6 +29,7 @@ public final class SearchTutorRequestsFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         binding = FragmentSearchTutorRequestsBinding.bind(view);
+        if(com.example.tmdt.ui.common.SectionHubFragment.embedded(this))binding.toolbar.setVisibility(View.GONE);
         state = new ViewModelProvider(requireActivity()).get(TutorRequestSearchState.class);
         catalog = new ViewModelProvider(requireActivity()).get(CatalogState.class);
         binding.toolbar.setNavigationOnClickListener(v -> host().back());
@@ -81,6 +82,7 @@ public final class SearchTutorRequestsFragment extends Fragment {
         binding.requestSearchSubject.setText(label == null || label.isEmpty()
                 ? getString(R.string.request_search_choose_subject) : label);
         binding.resetSearchFilter.setEnabled(state.authorized() && !state.selectedSubjectId().isEmpty());
+        binding.resetSearchFilter.setVisibility(state.selectedSubjectId().isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void render() {
@@ -99,13 +101,12 @@ public final class SearchTutorRequestsFragment extends Fragment {
         binding.searchRequestsCount.setVisibility(allowed && !state.loading() && !failed ? View.VISIBLE : View.GONE);
         List<TutorRequestRecord> requests = allowed ? state.requests() : java.util.Collections.emptyList();
         binding.searchRequestsCount.setText(getString(R.string.request_search_count, requests.size()));
-        binding.searchRequestsEmpty.setVisibility(allowed && !loading && !failed && requests.isEmpty() ? View.VISIBLE : View.GONE);
-        int scrollY = binding.searchRequestsScroll.getScrollY();
-        binding.searchRequestsList.removeAllViews();
+        binding.searchRequestsEmpty.setVisibility(View.GONE);
+        com.example.tmdt.ui.common.StableBindings<ItemSearchTutorRequestBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.searchRequestsList);rows.begin();
         for (TutorRequestRecord request : requests) {
             if (!request.isOpen()) continue;
-            ItemSearchTutorRequestBinding row = ItemSearchTutorRequestBinding.inflate(
-                    getLayoutInflater(), binding.searchRequestsList, false);
+            ItemSearchTutorRequestBinding row = rows.item(request.id,()->ItemSearchTutorRequestBinding.inflate(
+                    getLayoutInflater(), binding.searchRequestsList, false));
             row.searchRequestTitle.setText(request.title);
             row.searchRequestSubjectLevel.setText(getString(R.string.request_search_subject_level,
                     request.subjectName, CatalogState.level(request.level)));
@@ -113,12 +114,11 @@ public final class SearchTutorRequestsFragment extends Fragment {
             row.searchRequestSchedule.setText(getString(R.string.request_search_schedule_value, request.schedule));
             row.searchRequestDescription.setText(request.description);
             row.viewRequestDetails.setOnClickListener(v -> openDetails(request.id));
-            binding.searchRequestsList.addView(row.getRoot());
         }
-        binding.searchRequestsScroll.post(() -> {
-            if (binding != null) binding.searchRequestsScroll.scrollTo(0, scrollY);
-        });
+        rows.commit(binding.searchRequestsList);
         renderFilter();
+        com.example.tmdt.ui.common.ThemeColors.apply(binding.getRoot());
+        com.example.tmdt.ui.common.Motion.bindControls(binding.searchRequestsList);
     }
 
     private void openDetails(String id) {

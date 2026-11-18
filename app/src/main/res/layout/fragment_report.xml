@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Màn 47 – Gửi báo cáo vi phạm (UC27): chọn đối tượng, lý do, mô tả, tải minh chứng và gửi. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    tools:context="com.example.tmdt.ui.exchange.ReportFragment">
+
+    <include
+        android:id="@+id/header"
+        layout="@layout/view_ex_header" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                style="@style/ExSection"
+                android:layout_marginTop="4dp"
+                android:text="@string/ex_report_subject" />
+
+            <TextView
+                android:id="@+id/subject"
+                style="@style/ExField"
+                android:drawableStart="@drawable/ic_calendar"
+                android:hint="@string/ex_report_subject_hint" />
+
+            <TextView
+                android:id="@+id/person_title"
+                style="@style/ExSection"
+                android:text="@string/ex_report_person" />
+
+            <LinearLayout
+                android:id="@+id/person"
+                style="@style/ExCard"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <include
+                    android:id="@+id/avatar"
+                    layout="@layout/view_ex_avatar"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/person_name"
+                        style="@style/ExName" />
+
+                    <TextView
+                        android:id="@+id/person_info"
+                        style="@style/ExLabel"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                style="@style/ExSection"
+                android:text="@string/ex_report_reason" />
+
+            <TextView
+                android:id="@+id/reason"
+                style="@style/ExField"
+                android:hint="@string/ex_report_reason_hint" />
+
+            <TextView
+                style="@style/ExSection"
+                android:text="@string/ex_report_description" />
+
+            <EditText
+                android:id="@+id/description"
+                style="@style/ExMultiInput"
+                android:hint="@string/ex_report_description_hint" />
+
+            <TextView
+                android:id="@+id/counter"
+                style="@style/ExCounter" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/ExValue"
+                    android:text="@string/ex_report_evidence"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    style="@style/ExLabel"
+                    android:layout_marginStart="4dp"
+                    android:text="@string/ex_report_evidence_hint" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/add_evidence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_ex_dashed"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_ex_upload" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/ExValue"
+                        android:text="@string/ex_report_add_evidence"
+                        android:textColor="@color/chat_blue"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        style="@style/ExLabel"
+                        android:text="@string/ex_report_evidence_limit"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/processing"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:indeterminateTint="@color/chat_blue"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/files"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <CheckBox
+                android:id="@+id/confirm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:buttonTint="@color/chat_blue"
+                android:text="@string/ex_report_confirm"
+                android:textColor="@color/chat_ink"
+                android:textSize="13.5sp" />
+
+            <TextView
+                style="@style/ExNote"
+                android:layout_marginTop="2dp"
+                android:text="@string/ex_report_note" />
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/submit"
+        style="@style/ExPrimary"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="14dp"
+        android:text="@string/ex_send_report"
+        app:icon="@drawable/ic_send" />
+</LinearLayout>

@@ -45,12 +45,16 @@ final class SandboxPaymentApi {
                 if(method.equals("POST")&&path.equals("/payments"))return checkout(uid,body.optString("type"),body.optString("source_id"));
                 if(method.equals("PUT")&&path.equals("/bank")){saveBank(uid,body);return PaymentState.json("ok",true);}
                 if(method.equals("POST")&&path.equals("/admin/payroll")){admin(admin);return payroll(uid,body.optString("period"));}
+                if(method.equals("POST")&&path.equals("/wallet/withdrawals"))return requestWithdrawal(uid,body);
                 String[] parts=path.split("/");
+                if(method.equals("POST")&&parts.length==5&&parts[1].equals("wallet")&&parts[2].equals("withdrawals")){
+                    withdrawalAction(uid,parts[3],parts[4]);return PaymentState.json("ok",true);
+                }
                 if(method.equals("POST")&&parts.length>=4&&parts[1].equals("payments")){
                     String id=parts[2],action=parts[3];
                     if(parts.length==4&&action.equals("return"))return returned(uid,admin,id,body.optString("url"));
                     if(parts.length==4&&action.equals("refresh")){Map<String,Object> p=must(Tasks.await(ref("payments",id).get(Source.SERVER)));member(uid,admin,p);
-                        return PaymentState.json("ok",true,"message","Đã tải trạng thái đã lưu. Nếu đóng VNPay trước khi trả kết quả, hãy mở lại phiên thanh toán.");}
+                        return PaymentState.json("ok",true,"message","Đã tải trạng thái thanh toán.");}
                     if(parts.length==6&&action.equals("sessions")){session(uid,admin,id,Integer.parseInt(parts[4]),parts[5],body);return PaymentState.json("ok",true);}
                     if(parts.length==4&&action.equals("refund")){refund(uid,admin,id,body);return PaymentState.json("ok",true);}
                 }
@@ -59,10 +63,10 @@ final class SandboxPaymentApi {
                     if(parts[2].equals("payouts")){payoutAction(uid,parts[3],parts[4],body);return PaymentState.json("ok",true);}
                     if(parts[2].equals("refunds")){refundAction(uid,parts[3],parts[4],body);return PaymentState.json("ok",true);}
                 }
-                throw bad("Thao tác thanh toán thử chưa hợp lệ.");
+                throw bad("Thao tác thanh toán chưa hợp lệ.");
             }catch(Exception e){Throwable cause=e;while(cause.getCause()!=null&&!(cause instanceof IllegalArgumentException)&&!(cause instanceof FirebaseFirestoreException))cause=cause.getCause();
                 String message=cause instanceof IllegalArgumentException?cause.getMessage():cause instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)cause).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED?
-                        "Firebase từ chối thanh toán thử. Hãy Publish FIRESTORE_RULES_FULL.txt có các collection sandbox_ trong project.":"Không tải được thanh toán thử. Kiểm tra kết nối rồi thử lại.";
+                        "Không có quyền truy cập giao dịch.":"Không tải được thanh toán. Kiểm tra kết nối rồi thử lại.";
                 throw new PaymentApi.Failure(message);
             }
         });
@@ -91,7 +95,7 @@ final class SandboxPaymentApi {
         return new SourceInfo(map("type",type,"source_id",id,"student_id",d.get("student_id"),"tutor_id",d.get("tutor_id"),"student_name",studentName,"tutor_name",tutorName,"title",title,"amount",amount,"session_count",count,"currency","VND"),end,group);
     }
     private JSONObject checkout(String uid,String type,String sourceId)throws Exception{
-        check(gateway.ready(),"Chưa có cấu hình VNPay TEST trong vnpay.properties. Build lại sau khi điền cấu hình.");
+        check(gateway.ready(),"Chưa có cấu hình VNPay.");
         String id=PaymentState.id(type,sourceId);DocumentReference ref=ref("payments",id);long now=clock.getAsLong();
         Map<String,Object> payment=Tasks.await(db.runTransaction(tx->{
             Map<String,Object> old=data(tx.get(ref));
@@ -117,7 +121,7 @@ final class SandboxPaymentApi {
             check(Arrays.asList("WAITING","FAILED","CANCELLED","GATEWAY_REVIEW").contains(text(p,"status")),"Phiên thanh toán không còn hợp lệ.");
             // Source eligibility is checked again before a paid course becomes usable.
             if(result.status.equals("PAID")){
-                SourceInfo s=source(tx,text(p,"type"),text(p,"source_id"));check(s.values.get("student_id").equals(p.get("student_id"))&&s.values.get("tutor_id").equals(p.get("tutor_id"))&&s.values.get("amount").equals(p.get("amount")),"Đăng ký đã thay đổi. Cần admin đối soát kết quả TEST.");
+                SourceInfo s=source(tx,text(p,"type"),text(p,"source_id"));check(s.values.get("student_id").equals(p.get("student_id"))&&s.values.get("tutor_id").equals(p.get("tutor_id"))&&s.values.get("amount").equals(p.get("amount")),"Đăng ký đã thay đổi. Cần đối soát giao dịch.");
                 tx.update(ref,map("status","PAID","received_amount",num(p,"amount"),"paid_at",stamp(),"provider_transaction_no",result.transactionNo,"return_url",url,"updated_at",stamp()));
             }else tx.update(ref,map("status",result.status,"response_code",result.code,"return_url",url,"updated_at",stamp()));
             return result.status;
@@ -164,18 +168,88 @@ final class SandboxPaymentApi {
         int count=0;for(Map.Entry<String,List<DocumentReference>> entry:teachers.entrySet())for(int offset=0;offset<entry.getValue().size();offset+=100){
             List<DocumentReference> group=entry.getValue().subList(offset,Math.min(offset+100,entry.getValue().size()));DocumentReference payout=ref("tutor_payouts",UUID.randomUUID().toString());
             boolean created=Tasks.await(db.runTransaction(tx->{List<DocumentSnapshot> rows=new ArrayList<>();for(DocumentReference r:group){DocumentSnapshot row=tx.get(r);if(row.exists()&&row.get("payout_id")==null)rows.add(row);}if(rows.isEmpty())return false;
-                Map<String,Object> bank=must(tx.get(ref("payout_accounts",entry.getKey())));long total=0;for(DocumentSnapshot row:rows)total+=num(row.getData(),"amount");
-                tx.set(payout,map("is_sandbox",true,"period",period,"tutor_id",entry.getKey(),"tutor_name",rows.get(0).getString("tutor_name"),"amount",total,"session_count",rows.size(),"earning_ids",rows.stream().map(DocumentSnapshot::getId).collect(java.util.stream.Collectors.toList()),"bank",map("bank_name",bank.get("bank_name"),"account_number",bank.get("account_number"),"account_name",bank.get("account_name")),"status","READY","due_at",new Timestamp(Date.from(month.plusMonths(1).atDay(5).atStartOfDay(VN).toInstant())),"created_by",uid,"created_at",stamp(),"updated_at",stamp()));
+                Map<String,Object> teacher=must(tx.get(db.collection("users").document(entry.getKey())));
+                if(!"ACTIVE".equals(text(teacher,"trang_thai")))return false;
+                Map<String,Object> bank=data(tx.get(ref("payout_accounts",entry.getKey())));
+                long total=0;for(DocumentSnapshot row:rows)total+=num(row.getData(),"amount");
+                tx.set(payout,map("is_sandbox",true,"period",period,"tutor_id",entry.getKey(),"tutor_name",rows.get(0).getString("tutor_name"),"amount",total,"session_count",rows.size(),"earning_ids",rows.stream().map(DocumentSnapshot::getId).collect(java.util.stream.Collectors.toList()),"bank",bank==null?Collections.emptyMap():bankSnapshot(bank),"status","READY","due_at",new Timestamp(Date.from(month.plusMonths(1).atDay(5).atStartOfDay(VN).toInstant())),"created_by",uid,"created_at",stamp(),"updated_at",stamp()));
                 for(DocumentSnapshot row:rows)tx.update(row.getReference(),"payout_id",payout.getId());return true;
             }));if(created)count++;
         }return PaymentState.json("ok",true,"created",count);
     }
     private void payoutAction(String uid,String id,String action,JSONObject body)throws Exception{
+        if(action.equals("credit")){creditSalary(uid,id);return;}
         check(Arrays.asList("paid","cancel").contains(action),"Thao tác chi trả chưa hợp lệ.");
         Tasks.await(db.runTransaction(tx->{DocumentReference ref=ref("tutor_payouts",id);Map<String,Object> p=must(tx.get(ref));
             if(action.equals("paid")&&text(p,"status").equals("PAID"))return null;check(text(p,"status").equals("READY"),"Chỉ xử lý bảng chưa chi trả.");
-            if(action.equals("paid")){check(clock.getAsLong()>=millis(p.get("due_at")),"Đến ngày 5 tháng sau mới được xác nhận chi trả.");tx.update(ref,map("status","PAID","bank_reference",reason(body,3,150,"reference"),"paid_by",uid,"paid_at",stamp(),"updated_at",stamp()));}
+            if(action.equals("paid")){
+                Map<String,Object> teacher=must(tx.get(db.collection("users").document(text(p,"tutor_id"))));
+                check("ACTIVE".equals(text(teacher,"trang_thai")),"Gia sư đang bị khóa. Chưa thể xác nhận chi trả.");
+                check(clock.getAsLong()>=millis(p.get("due_at")),"Đến ngày 5 tháng sau mới được xác nhận chi trả.");tx.update(ref,map("status","PAID","bank_reference",reason(body,3,150,"reference"),"paid_by",uid,"paid_at",stamp(),"updated_at",stamp()));}
             else{String reason=reason(body,5,500,"reason");List<DocumentReference> rows=new ArrayList<>();for(Object earning:(List<?>)p.get("earning_ids")){DocumentReference er=ref("tutor_earnings",String.valueOf(earning));check(id.equals(tx.get(er).getString("payout_id")),"Bảng chi trả đã thay đổi.");rows.add(er);}for(DocumentReference er:rows)tx.update(er,"payout_id",null);tx.update(ref,map("status","CANCELLED","cancel_reason",reason,"cancelled_by",uid,"updated_at",stamp()));}return null;
+        }));
+    }
+    private static Map<String,Object> bankSnapshot(Map<String,Object> bank){return map("bank_name",bank.get("bank_name"),"account_number",bank.get("account_number"),"account_name",bank.get("account_name"));}
+    private static Map<String,Object> walletValues(String uid,Map<String,Object> existing,String operation,String reference){
+        Map<String,Object> wallet=existing==null?map("is_sandbox",true,"tutor_id",uid,"currency","VND","available_balance",0L,"reserved_balance",0L,"total_credited",0L,"total_withdrawn",0L,"created_at",stamp()):new HashMap<>(existing);
+        wallet.putAll(map("last_operation",operation,"last_reference",reference,"updated_at",stamp()));return wallet;
+    }
+    private void creditSalary(String actor,String id)throws Exception{
+        Tasks.await(db.runTransaction(tx->{
+            DocumentReference payout=ref("tutor_payouts",id);Map<String,Object> p=must(tx.get(payout));
+            if("CREDITED".equals(text(p,"status")))return null;
+            check("READY".equals(text(p,"status")),"Bảng lương đã được xử lý. Không thể trả lương lần nữa.");
+            String uid=text(p,"tutor_id");Map<String,Object> teacher=must(tx.get(db.collection("users").document(uid)));
+            DocumentReference target=ref("tutor_wallets",uid);Map<String,Object> old=data(tx.get(target));
+            check("ACTIVE".equals(text(teacher,"trang_thai")),"Gia sư đang bị khóa. Chưa thể trả lương.");
+            check(millis(p.get("due_at"))>0&&clock.getAsLong()>=millis(p.get("due_at")),"Đến ngày 5 tháng sau mới trả lương vào ví.");
+            long amount=num(p,"amount");check(amount>0,"Số tiền lương chưa hợp lệ.");
+            Map<String,Object> wallet=walletValues(uid,old,"SALARY_CREDIT",id);
+            wallet.put("available_balance",Math.addExact(num(wallet,"available_balance"),amount));
+            wallet.put("total_credited",Math.addExact(num(wallet,"total_credited"),amount));
+            tx.set(target,wallet);tx.update(payout,map("status","CREDITED","credited_by",actor,"credited_at",stamp(),"updated_at",stamp()));return null;
+        }));
+    }
+    private JSONObject requestWithdrawal(String uid,JSONObject body)throws Exception{
+        String id=body.optString("request_id");check(id.matches(java.util.regex.Pattern.quote(uid)+"_[0-9a-f-]{36}"),"Mã yêu cầu rút tiền chưa hợp lệ.");
+        Object raw=body.opt("amount");check(raw instanceof Number&&((Number)raw).doubleValue()==((Number)raw).longValue(),"Số tiền rút phải là số nguyên.");
+        long amount=((Number)raw).longValue();check(amount>=TutorWallet.MIN_WITHDRAWAL&&amount<=TutorWallet.MAX_WITHDRAWAL,"Số tiền rút từ 50.000 đ đến 100.000.000 đ.");
+        DocumentReference withdrawal=ref("wallet_withdrawals",id),target=ref("tutor_wallets",uid);
+        String status=Tasks.await(db.runTransaction(tx->{
+            DocumentSnapshot existing=tx.get(withdrawal);
+            if(existing.exists()){Map<String,Object> old=must(existing);check(uid.equals(text(old,"tutor_id"))&&num(old,"amount")==amount,"Yêu cầu đã tồn tại với nội dung khác.");return text(old,"status");}
+            Map<String,Object> teacher=must(tx.get(db.collection("users").document(uid))),old=must(tx.get(target));
+            Map<String,Object> bank=must(tx.get(ref("payout_accounts",uid)));
+            JSONObject expectedBank=body.optJSONObject("bank");
+            check(expectedBank!=null&&text(bank,"bank_name").equals(expectedBank.optString("bank_name"))&&text(bank,"account_number").equals(expectedBank.optString("account_number"))&&text(bank,"account_name").equals(expectedBank.optString("account_name")),"Tài khoản ngân hàng đã thay đổi. Vui lòng kiểm tra rồi gửi lại.");
+            check("ACTIVE".equals(text(teacher,"trang_thai"))&&Boolean.TRUE.equals(teacher.get("la_gia_su")),"Chỉ gia sư đang hoạt động được rút tiền.");
+            check(num(old,"available_balance")>=amount,"Số dư khả dụng không đủ.");
+            // This class only writes sandbox_* data; no bank transfer is made by this transaction.
+            Map<String,Object> wallet=walletValues(uid,old,"WITHDRAW_AUTO",id);
+            wallet.put("available_balance",num(old,"available_balance")-amount);wallet.put("total_withdrawn",Math.addExact(num(old,"total_withdrawn"),amount));
+            tx.set(target,wallet);tx.set(withdrawal,map("is_sandbox",true,"tutor_id",uid,"tutor_name",teacher.get("ho_ten"),"amount",amount,"currency","VND","bank",bankSnapshot(bank),"status","PAID","processing_by","","processing_at",null,"processed_by",uid,"processed_at",stamp(),"bank_reference","TEST_"+id,"review_note","","created_at",stamp(),"updated_at",stamp()));return "PAID";
+        }));return PaymentState.json("ok",true,"id",id,"status",status);
+    }
+    private void withdrawalAction(String actor,String id,String action)throws Exception{
+        check(Arrays.asList("complete","cancel").contains(action),"Thao tác rút tiền chưa hợp lệ.");
+        boolean complete=action.equals("complete");String status=complete?"PAID":"CANCELLED";
+        Tasks.await(db.runTransaction(tx->{
+            DocumentReference withdrawal=ref("wallet_withdrawals",id);Map<String,Object> w=must(tx.get(withdrawal));
+            String uid=text(w,"tutor_id");check(uid.equals(actor),"Chỉ chủ ví được xử lý yêu cầu rút tiền.");
+            String previous=text(w,"status");
+            if(status.equals(previous))return null;
+            check(TutorWallet.withdrawing(previous),"Yêu cầu rút tiền đã được xử lý.");
+            Map<String,Object> teacher=must(tx.get(db.collection("users").document(uid)));
+            DocumentReference target=ref("tutor_wallets",uid);Map<String,Object> old=must(tx.get(target));long amount=num(w,"amount");
+            check(amount>=TutorWallet.MIN_WITHDRAWAL&&amount<=TutorWallet.MAX_WITHDRAWAL,"Số tiền trong yêu cầu rút chưa hợp lệ.");
+            check(num(old,"reserved_balance")>=amount,"Khoản giữ tiền không còn hợp lệ.");
+            check("ACTIVE".equals(text(teacher,"trang_thai")),"Tài khoản chưa được kích hoạt.");
+            if(complete)check(Boolean.TRUE.equals(teacher.get("la_gia_su")),"Chỉ gia sư được rút tiền.");
+            Map<String,Object> wallet=walletValues(uid,old,complete?"WITHDRAW_PAID":"WITHDRAW_RELEASE",id);
+            wallet.put("reserved_balance",num(old,"reserved_balance")-amount);
+            if(complete)wallet.put("total_withdrawn",Math.addExact(num(old,"total_withdrawn"),amount));
+            else wallet.put("available_balance",Math.addExact(num(old,"available_balance"),amount));
+            tx.set(target,wallet);tx.update(withdrawal,map("status",status,"processed_by",actor,"processed_at",stamp(),"bank_reference",complete?"TEST_"+id:"","review_note",complete?"":"Gia sư hủy yêu cầu.","updated_at",stamp()));return null;
         }));
     }
     private void refund(String uid,boolean admin,String id,JSONObject body)throws Exception{

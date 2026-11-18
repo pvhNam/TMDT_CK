@@ -134,7 +134,7 @@
         <item
             name="strokeColor">@color/tutor_blue</item>
         <item
-            name="android:textColor">@color/tutor_blue</item>
+            name="android:textColor">@color/app_accent</item>
     </style>
     <style
         name="TutorToolbarTitle"

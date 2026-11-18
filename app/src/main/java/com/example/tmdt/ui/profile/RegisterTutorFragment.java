@@ -86,9 +86,9 @@ public final class RegisterTutorFragment extends AccountFragmentBase {
     private void renderModes(){mode(binding.online,online);mode(binding.inPerson,inPerson);}
     private void mode(MaterialButton button,boolean selected){
         button.setSelected(selected);button.setCheckable(true);button.setChecked(selected);
-        button.setBackgroundTintList(ColorStateList.valueOf(requireContext().getColor(selected?R.color.tutor_surface:android.R.color.white)));
+        button.setBackgroundTintList(ColorStateList.valueOf(requireContext().getColor(selected?R.color.tutor_surface:R.color.app_surface)));
         button.setStrokeColor(ColorStateList.valueOf(requireContext().getColor(selected?R.color.tutor_blue:R.color.tutor_border)));
-        button.setTextColor(requireContext().getColor(selected?R.color.tutor_blue:R.color.tutor_ink));
+        button.setTextColor(requireContext().getColor(selected?R.color.app_accent:R.color.tutor_ink));
     }
     private void review(){
         int years=-1;long price=-1;
