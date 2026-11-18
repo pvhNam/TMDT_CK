@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_admin_home" android:title="Tổng quan" />
+    <item android:id="@+id/nav_admin_management" android:title="Quản lý" />
+    <item android:id="@+id/nav_admin_contracts" android:title="Hợp đồng" />
+    <item android:id="@+id/nav_admin_finance" android:title="Tài chính" />
+    <item android:id="@+id/nav_admin_account" android:title="Cá nhân" />
+</menu>

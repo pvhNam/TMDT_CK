@@ -132,18 +132,6 @@
                 app:tint="@color/theme_text_081f50"
                 android:importantForAccessibility="no" />
         </LinearLayout>
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/post_tutor_request"
-            style="@style/PrimaryButton"
-            android:text="@string/request_heading" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/manage_tutor_requests"
-            style="@style/SecondaryButton"
-            android:text="@string/manage_requests_title" />
-        <TextView
-            style="@style/BodyText"
-            android:layout_marginTop="6dp"
-            android:text="@string/request_caption" />
         <TextView
             style="@style/SectionTitle"
             android:text="@string/catalog_heading" />

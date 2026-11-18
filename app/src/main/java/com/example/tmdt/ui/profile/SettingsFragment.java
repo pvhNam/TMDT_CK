@@ -38,8 +38,7 @@ public final class SettingsFragment extends AccountFragmentBase {
         binding.rowPassword.setOnClickListener(v->changePassword());
         binding.rowPrivacy.setOnClickListener(v->info("Quyền riêng tư",
                 "Họ tên, email và số điện thoại của bạn chỉ được dùng để tạo tài khoản, đặt lịch học và để gia sư liên hệ với bạn về buổi học. Bạn có thể cập nhật thông tin bất cứ lúc nào trong mục Chỉnh sửa hồ sơ."));
-        binding.rowHelp.setOnClickListener(v->info("Trung tâm trợ giúp",
-                "Nếu cần hỗ trợ về lịch học, gia sư hoặc tài khoản, hãy nhắn tin trong mục Tin nhắn. Để lấy lại mật khẩu, chọn Đổi mật khẩu trong Cài đặt."));
+        binding.rowHelp.setOnClickListener(v -> go("help_chat"));
         binding.rowTerms.setOnClickListener(v->info("Điều khoản sử dụng",
                 "Bằng việc sử dụng ứng dụng, bạn đồng ý cung cấp thông tin chính xác, tôn trọng gia sư và học viên khác, và tuân thủ lịch học đã đặt. Lịch học có thể được đổi hoặc hủy theo chính sách hiển thị trong từng buổi học."));
         binding.signOut.setOnClickListener(v->new AlertDialog.Builder(requireContext())

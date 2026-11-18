@@ -32,6 +32,8 @@ public final class PaymentState extends ViewModel {
     public final Map<String,Row> payments=new LinkedHashMap<>(),earnings=new LinkedHashMap<>(),payouts=new LinkedHashMap<>(),refunds=new LinkedHashMap<>(),sessions=new TreeMap<>();
     public final Map<String,Row> wallets=new LinkedHashMap<>(),withdrawals=new LinkedHashMap<>();
     private final Map<String,Map<String,Row>> sources=new HashMap<>();
+    private final Map<String,String> readFailures=new LinkedHashMap<>();
+    private final Set<String> loadedReads=new HashSet<>();
     private final List<ListenerRegistration> listeners=new ArrayList<>();
     private ListenerRegistration sessionListener,bankListener,walletListener;
     private String sessionOwner="",key="";private int generation;
@@ -43,9 +45,10 @@ public final class PaymentState extends ViewModel {
     public TutorPaymentsStatus tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
     public int payrollFilter;
     public int walletFilter,withdrawalFilter;
-    public boolean walletLoaded;
+    public boolean walletLoaded,incomeLoaded;
     public String selectedWithdrawal="",withdrawalOrigin="tutor_wallet";
     public String withdrawalDraft="",withdrawalRequestId="",bankOrigin="tutor_wallet";
+    public String payrollOrigin="admin_finance";
     public Map<String,Object> bank=new HashMap<>();
     public void account(AccountState account){
         UserProfile profile=account.profile();
@@ -60,9 +63,21 @@ public final class PaymentState extends ViewModel {
         tutorIncomeTab=0;
         tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
         tutorPaymentsStatus=!owner.isEmpty()&&tutor?TutorPaymentsStatus.LOADING:TutorPaymentsStatus.UNAVAILABLE;
-        payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();bank.clear();busy=false;error="";notice="";
-        wallets.clear();withdrawals.clear();walletLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
+        payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();readFailures.clear();loadedReads.clear();bank.clear();busy=false;error="";notice="";
+        wallets.clear();withdrawals.clear();walletLoaded=false;incomeLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
         if(owner.isEmpty()){selected="";changed();return;}
+        attachListeners();
+    }
+    /** Reattach failed subscriptions while retaining the visible data and current selection. */
+    public void retry(){
+        if(owner.isEmpty()||busy)return;generation++;error="";notice="";readFailures.clear();loadedReads.clear();incomeLoaded=false;
+        for(ListenerRegistration listener:listeners)listener.remove();listeners.clear();
+        if(bankListener!=null)bankListener.remove();bankListener=null;
+        if(walletListener!=null)walletListener.remove();walletListener=null;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        attachListeners();watchSessions();
+    }
+    private void attachListeners(){
         if(admin){listen("payments",db.collection(api.collection("payments")),payments);listen("payouts",db.collection(api.collection("tutor_payouts")),payouts);listen("refunds",db.collection(api.collection("refund_requests")),refunds);}
         else{
             listen("student-payments",db.collection(api.collection("payments")).whereEqualTo("student_id",owner),payments);
@@ -84,7 +99,7 @@ public final class PaymentState extends ViewModel {
                 walletLoaded=true;changed();
             });
         }
-        bankListener=db.collection(api.collection("payout_accounts")).document(owner).addSnapshotListener((doc,failure)->{
+        if(!admin)bankListener=db.collection(api.collection("payout_accounts")).document(owner).addSnapshotListener((doc,failure)->{
             if(version!=generation)return;
             if(failure!=null){failRead(failure);return;}
             bank=doc!=null&&doc.exists()?doc.getData():new HashMap<>();changed();
@@ -98,7 +113,11 @@ public final class PaymentState extends ViewModel {
             if(version!=generation)return;
             if(failure!=null){
                 if(tracksTutorPayments)tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
-                failRead(failure);return;
+                loadedReads.remove(name);incomeLoaded=loadedReads.contains("earnings")&&loadedReads.contains("payouts");
+                String message=readFailureMessage(failure);
+                if("earnings".equals(name))message="Thu nhập gia sư: "+message;
+                else if("payouts".equals(name))message="Bảng lương: "+message;
+                error=message;readFailures.put(name,message);changed();return;
             }
             if(tracksTutorPayments&&snapshot!=null){
                 tutorPaymentsStatus=snapshot.getMetadata().isFromCache()?TutorPaymentsStatus.CACHED:TutorPaymentsStatus.READY;
@@ -108,13 +127,17 @@ public final class PaymentState extends ViewModel {
             if(target==payments){for(Map.Entry<String,Map<String,Row>> source:sources.entrySet())if(source.getKey().equals("payments")||source.getKey().endsWith("-payments"))target.putAll(source.getValue());}
             else target.putAll(rows);
             if(target==wallets)walletLoaded=true;
+            loadedReads.add(name);String resolved=readFailures.remove(name);
+            if(resolved!=null&&resolved.equals(error))error=readFailures.isEmpty()?"":readFailures.values().iterator().next();
+            incomeLoaded=loadedReads.contains("earnings")&&loadedReads.contains("payouts");
             watchSessions();changed();
         }));
     }
     private void watchSessions(){
         String next=payments.containsKey(selected)?selected:"";
-        if(next.equals(sessionOwner))return;
-        if(sessionListener!=null)sessionListener.remove();sessionListener=null;sessionOwner=next;sessions.clear();
+        if(next.equals(sessionOwner)&&(sessionListener!=null||next.isEmpty()))return;
+        if(sessionListener!=null)sessionListener.remove();sessionListener=null;
+        if(!next.equals(sessionOwner))sessions.clear();sessionOwner=next;
         if(next.isEmpty())return;final int version=generation;
         sessionListener=db.collection(api.collection("payments")).document(next).collection("sessions").addSnapshotListener((snapshot,failure)->{
             if(version!=generation||!next.equals(sessionOwner))return;
@@ -122,8 +145,12 @@ public final class PaymentState extends ViewModel {
             sessions.clear();if(snapshot!=null)for(DocumentSnapshot doc:snapshot)sessions.put(doc.getId(),new Row(doc.getId(),doc.getData()));changed();
         });
     }
-    private void failRead(Exception e){error=e instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)e).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED?
-            "Chưa có quyền xem thanh toán. Vui lòng liên hệ quản trị viên để cập nhật cấu hình truy cập.":"Chưa tải được dữ liệu thanh toán. Kiểm tra kết nối và thử lại.";changed();}
+    private static String readFailureMessage(Exception e){return e instanceof FirebaseFirestoreException&&((FirebaseFirestoreException)e).getCode()==FirebaseFirestoreException.Code.PERMISSION_DENIED?
+            "Chưa có quyền xem thanh toán. Vui lòng liên hệ quản trị viên để cập nhật cấu hình truy cập.":"Chưa tải được dữ liệu thanh toán. Kiểm tra kết nối và thử lại.";}
+    private void failRead(Exception e){error=readFailureMessage(e);changed();}
+    public String incomeError(){
+        String failure=readFailures.get("earnings");if(failure==null)failure=readFailures.get("payouts");return failure==null?"":failure;
+    }
     public void open(String type,String source,String from){open(type,source,from,owner);}
     public void open(String type,String source,String from,String student){requestedType=type;requestedSource=source;requestedStudent=student;selected=id(type,source);origin=from;error="";notice="";destination="payment_detail";watchSessions();changed();}
     public void openExisting(String id,String from){selected=id;requestedType="";requestedSource="";origin=from;error="";notice="";destination="payment_detail";watchSessions();changed();}
