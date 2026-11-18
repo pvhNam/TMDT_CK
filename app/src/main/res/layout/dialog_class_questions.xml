@@ -21,7 +21,7 @@
                 style="@style/SecondaryButton" android:text="@string/class_questions_retry" android:visibility="gone" />
             <TextView android:id="@+id/class_questions_empty" style="@style/BodyText" android:text="@string/class_questions_empty"
                 android:background="@drawable/bg_pale" android:padding="16dp" android:visibility="gone" />
-            <LinearLayout android:id="@+id/class_questions_list" android:layout_width="match_parent"
+            <LinearLayout android:id="@+id/class_questions_list" android:showDividers="middle" android:divider="@drawable/thread_spacing" android:paddingVertical="8dp" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:orientation="vertical" />
             <com.google.android.material.button.MaterialButton android:id="@+id/class_questions_load_more"
                 style="@style/SecondaryButton" android:text="@string/class_questions_load_more" android:visibility="gone" />
@@ -29,14 +29,14 @@
     </ScrollView>
     <TextView android:id="@+id/class_questions_read_only" style="@style/BodyText" android:layout_marginTop="8dp"
         android:layout_marginBottom="4dp" android:accessibilityLiveRegion="polite" android:visibility="gone" />
-    <LinearLayout android:id="@+id/class_questions_composer" android:layout_width="match_parent"
+    <LinearLayout android:id="@+id/class_questions_composer" android:layout_marginBottom="8dp" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="8dp" android:visibility="gone">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
             <TextView android:id="@+id/class_question_reply_target" style="@style/FieldLabel" android:layout_width="0dp"
                 android:layout_weight="1" android:layout_marginBottom="0dp" android:maxLines="1" android:ellipsize="end" android:text="@string/class_questions_question_label" />
             <com.google.android.material.button.MaterialButton android:id="@+id/cancel_class_question_reply"
                 style="@style/TextButton" android:layout_width="wrap_content" android:minHeight="40dp"
-                android:text="@string/class_questions_new_question" android:visibility="gone" />
+                android:text="@android:string/cancel" android:visibility="gone" />
         </LinearLayout>
         <EditText android:id="@+id/class_question_input" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="2" android:maxLines="4"

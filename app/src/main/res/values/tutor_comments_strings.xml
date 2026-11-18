@@ -27,4 +27,5 @@
     <string name="tutor_comments_counter">%1$d/1.000 ký tự</string>
     <string name="tutor_comments_required">Vui lòng nhập nội dung trước khi gửi.</string>
     <string name="tutor_comments_just_sent">Vừa gửi</string>
+    <string name="thread_reply_context">Trả lời %1$s</string>
 </resources>

@@ -46,6 +46,8 @@ public abstract class QuestionThreadState extends ViewModel {
     private final List<GroupClassQuestion> questions = new ArrayList<>(), replies = new ArrayList<>();
     private ListenerRegistration parentListener, accountListener, questionsListener, repliesListener;
     private String owner, parentId = "", title = "", tutorId = "", status = "", replyToId = "";
+    // null hides the editor, an empty string targets the root, otherwise it targets a reply.
+    private String editorTarget;
     private String parentError = "", accountError = "", questionsError = "", replyError = "", actionError = "", notice = "";
     private boolean parentExists, parentLoaded, accountLoaded, accountActive, questionsLoading, replyLoading, busy;
     private boolean parentCached = true, accountCached = true, questionsCached = true, repliesCached = true;
@@ -79,7 +81,7 @@ public abstract class QuestionThreadState extends ViewModel {
     public boolean canPost() {
         return available() && signedIn() && accountLoaded && accountActive && accountError.isEmpty()
                 && writableStatus(status) && !busy && !offline() && questionsError.isEmpty()
-                && (replyToId.isEmpty() || (findQuestion(replyToId) != null && !replyLoading && replyError.isEmpty()));
+                && (replyToId.isEmpty() || (editorTarget != null && findQuestion(replyToId) != null && (editorTarget.isEmpty() || findReply(editorTarget) != null) && !replyLoading && replyError.isEmpty()));
     }
     public String error() {
         if (!actionError.isEmpty()) return actionError;
@@ -93,19 +95,30 @@ public abstract class QuestionThreadState extends ViewModel {
     public List<GroupClassQuestion> questions() { return Collections.unmodifiableList(new ArrayList<>(questions)); }
     public List<GroupClassQuestion> replies() { return Collections.unmodifiableList(new ArrayList<>(replies)); }
     public String replyToId() { return replyToId; }
-    public String replyToName() { GroupClassQuestion question = findQuestion(replyToId); return question == null ? "" : question.authorName; }
+    public String editorTarget() { return editorTarget; }
+    public String replyToName() {
+        GroupClassQuestion recipient = editorTarget == null || editorTarget.isEmpty() ? findQuestion(replyToId) : findReply(editorTarget);
+        return recipient == null ? "" : recipient.authorName;
+    }
+    private GroupClassQuestion findReply(String id) {
+        for (GroupClassQuestion reply : replies) if (reply.id.equals(id)) return reply;
+        return null;
+    }
+    private String draftTarget() {
+        return editorTarget == null || editorTarget.isEmpty() ? replyToId : replyToId + "/" + editorTarget;
+    }
     public boolean repliesLoading() { return replyLoading; }
     public String repliesError() { return replyError; }
     public boolean hasMore() { return moreQuestions; }
     public boolean hasMoreReplies() { return moreReplies; }
-    public String draft() { return currentOwner() && !uid().isEmpty() ? savedText(draftKey(parentId, replyToId)) : ""; }
+    public String draft() { return currentOwner() && !uid().isEmpty() ? savedText(draftKey(parentId, draftTarget())) : ""; }
     public void draft(String value) {
-        if (busy || !signedIn() || parentId.isEmpty()) return;
+        if (busy || !signedIn() || parentId.isEmpty() || (!replyToId.isEmpty() && editorTarget == null)) return;
         String text = value == null ? "" : value;
-        String key = draftKey(parentId, replyToId);
+        String key = draftKey(parentId, draftTarget());
         if (!text.equals(savedText(key))) {
             saved.set(prefix + key, text);
-            saved.remove(prefix + nonceKey(parentId, replyToId));
+            saved.remove(prefix + nonceKey(parentId, draftTarget()));
             actionError = ""; notice = "";
         }
     }
@@ -170,6 +183,7 @@ public abstract class QuestionThreadState extends ViewModel {
         parentId = id;
         questionLimit = savedLimit(id);
         replyToId = savedText("reply." + id);
+        editorTarget = saved.get(prefix + "editor." + id);
         replyLimit = PAGE_SIZE;
         final int token = generation;
         final String actor = uid();
@@ -250,10 +264,25 @@ public abstract class QuestionThreadState extends ViewModel {
     public void replyTo(String id) {
         bindOwner();
         if (busy || !available() || !validId(id) || findQuestion(id) == null) return;
-        if (id.equals(replyToId) && repliesListener != null && replyError.isEmpty()) return;
+        setEditorTarget(signedIn() && !readOnly() ? "" : null);
+        if (id.equals(replyToId) && repliesListener != null && replyError.isEmpty()) { changed(); return; }
         stopReplies(); replies.clear(); replyToId = id;
         saved.set(prefix + "reply." + parentId, id);
         replyLimit = PAGE_SIZE; actionError = ""; notice = ""; listenReplies(); changed();
+    }
+
+    public void replyToReply(String id) {
+        if (busy || !signedIn() || readOnly() || findReply(id) == null) return;
+        setEditorTarget(id);
+        actionError = ""; notice = ""; changed();
+    }
+    private void setEditorTarget(String id) {
+        editorTarget = id;
+        saved.set(prefix + "editor." + parentId, id);
+    }
+    public void closeReplyEditor() {
+        if (busy) return;
+        setEditorTarget(null); actionError = ""; notice = ""; changed();
     }
 
     public void cancelReply() {
@@ -261,7 +290,7 @@ public abstract class QuestionThreadState extends ViewModel {
         stopReplies(); replies.clear(); clearReplyTarget(); actionError = ""; notice = ""; changed();
     }
 
-    private void clearReplyTarget() { replyToId = ""; saved.remove(prefix + "reply." + parentId); }
+    private void clearReplyTarget() { setEditorTarget(null); replyToId = ""; saved.remove(prefix + "reply." + parentId); }
     private void listenReplies() {
         stopReplies();
         final int token = generation, query = repliesGeneration;
@@ -282,6 +311,8 @@ public abstract class QuestionThreadState extends ViewModel {
                         }
                         replies.sort(Comparator.comparingLong((GroupClassQuestion reply) -> reply.createdAtMillis).thenComparing(reply -> reply.id));
                         moreReplies = snapshot.size() >= replyLimit;
+                        if (!busy && !repliesCached && editorTarget != null && !editorTarget.isEmpty() && findReply(editorTarget) == null)
+                            setEditorTarget(null);
                     }
                     changed();
                 });
@@ -304,8 +335,10 @@ public abstract class QuestionThreadState extends ViewModel {
                     : (scope == Scope.TUTOR ? "Đang tải quyền gửi hoặc nội dung bình luận. Vui lòng đợi rồi thử lại." : "Đang tải quyền gửi hoặc nội dung câu hỏi. Vui lòng đợi rồi thử lại.");
             changed(); return;
         }
-        String nonce = savedText(nonceKey(id, target));
-        if (nonce.isEmpty()) { nonce = actor + "_" + UUID.randomUUID(); saved.set(prefix + nonceKey(id, target), nonce); }
+        final String draftRecipient = draftTarget();
+        final String nestedId = editorTarget == null ? "" : editorTarget;
+        String nonce = savedText(nonceKey(id, draftRecipient));
+        if (nonce.isEmpty()) { nonce = actor + "_" + UUID.randomUUID(); saved.set(prefix + nonceKey(id, draftRecipient), nonce); }
         final String messageId = nonce;
         final int token = generation;
         busy = true; actionError = ""; notice = ""; changed();
@@ -316,7 +349,7 @@ public abstract class QuestionThreadState extends ViewModel {
         db.runTransaction(tx -> {
             DocumentSnapshot existing = tx.get(message);
             if (existing.exists()) {
-                if (!actor.equals(existing.get("author_id")) || !content.equals(existing.get("content")))
+                if (!actor.equals(existing.get("author_id")) || !content.equals(existing.get("content")) || !nestedId.equals(text(existing.get("reply_to_id"))))
                     throw new QuestionFailure("Nội dung đã thay đổi. Vui lòng nhập lại rồi gửi.");
                 return false;
             }
@@ -333,12 +366,19 @@ public abstract class QuestionThreadState extends ViewModel {
             data.put(scope.parentField, id); data.put("author_id", actor); data.put("author_name", name);
             data.put("content", content); data.put("created_at", FieldValue.serverTimestamp());
             if (question != null) data.put(scope.replyField, target);
+            if (!nestedId.isEmpty()) {
+                DocumentSnapshot recipient = tx.get(collection.document(nestedId));
+                if (!recipient.exists()) throw new QuestionFailure("Câu trả lời này không còn khả dụng.");
+                data.put("reply_to_id", nestedId);
+                data.put("reply_to_name", recipient.getString("author_name"));
+            }
             tx.set(message, data); return true;
         }).addOnCompleteListener(task -> {
             if (token != generation || !actor.equals(uid())) return;
             busy = false;
             if (task.isSuccessful()) {
-                saved.remove(prefix + draftKey(id, target)); saved.remove(prefix + nonceKey(id, target));
+                saved.remove(prefix + draftKey(id, draftRecipient)); saved.remove(prefix + nonceKey(id, draftRecipient));
+                if (!target.isEmpty() && target.equals(replyToId)) setEditorTarget(null);
                 notice = target.isEmpty() ? (scope == Scope.TUTOR ? "Đã gửi bình luận." : "Đã gửi câu hỏi.") : "Đã gửi câu trả lời.";
             } else actionError = message(task.getException());
             changed();
@@ -353,7 +393,7 @@ public abstract class QuestionThreadState extends ViewModel {
         parentListener = null; accountListener = null; stopQuestions(); stopReplies();
     }
     private void clearParent() {
-        questions.clear(); replies.clear(); title = ""; tutorId = ""; status = ""; replyToId = "";
+        questions.clear(); replies.clear(); title = ""; tutorId = ""; status = ""; replyToId = ""; editorTarget = null;
         parentExists = false; parentLoaded = false; accountLoaded = false; accountActive = false;
         parentCached = true; accountCached = true; questionsCached = true; repliesCached = true;
         moreQuestions = false; moreReplies = false; parentError = ""; accountError = ""; questionsError = "";
