@@ -1,9 +1,7 @@
 package com.example.tmdt;
 
 import androidx.annotation.Nullable;
-import java.time.Instant;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,7 +9,6 @@ import java.util.List;
 
 /** Tuition collected for the signed-in tutor, grouped by the date of payment. */
 public final class TutorRevenue {
-    private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
 
     public final List<Transaction> transactions;
     public final long collected;
@@ -19,6 +16,14 @@ public final class TutorRevenue {
 
     /** A null month includes transactions whose payment date was not recorded. */
     public TutorRevenue(Iterable<PaymentState.Row> payments, String owner, @Nullable YearMonth month) {
+        this(payments, owner, month == null ? ReportPeriod.all() : ReportPeriod.month(month));
+    }
+
+    public static TutorRevenue forPeriod(Iterable<PaymentState.Row> payments, String owner, ReportPeriod period) {
+        return new TutorRevenue(payments, owner, period);
+    }
+
+    private TutorRevenue(Iterable<PaymentState.Row> payments, String owner, ReportPeriod period) {
         List<Transaction> matched = new ArrayList<>();
         long collected = 0;
         long refunded = 0;
@@ -27,7 +32,7 @@ public final class TutorRevenue {
                 if (!owner.equals(payment.text("tutor_id")) || !"PAID".equals(payment.text("status"))) continue;
 
                 long paidAt = payment.time("paid_at");
-                if (month != null && (paidAt <= 0 || !month.equals(paymentMonth(paidAt)))) continue;
+                if (!period.includes(paidAt)) continue;
 
                 Transaction transaction = new Transaction(payment, paidAt);
                 matched.add(transaction);
@@ -43,11 +48,7 @@ public final class TutorRevenue {
     }
 
     public static YearMonth currentMonth() {
-        return YearMonth.now(VIETNAM);
-    }
-
-    private static YearMonth paymentMonth(long paidAt) {
-        return YearMonth.from(Instant.ofEpochMilli(paidAt).atZone(VIETNAM));
+        return ReportPeriod.currentMonth();
     }
 
     public long net() {

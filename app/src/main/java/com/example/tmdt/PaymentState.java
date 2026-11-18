@@ -41,7 +41,7 @@ public final class PaymentState extends ViewModel {
     public String incomePeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString(),payrollPeriod=YearMonth.now(ZoneId.of("Asia/Ho_Chi_Minh")).minusMonths(1).toString();
     public boolean admin,tutor,busy;
     public int adminPaymentTab, tutorIncomeTab;
-    public String tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+    public ReportPeriod tutorRevenuePeriod=ReportPeriod.month(ReportPeriod.currentMonth());
     public TutorPaymentsStatus tutorPaymentsStatus=TutorPaymentsStatus.UNAVAILABLE;
     public int payrollFilter;
     public int walletFilter,withdrawalFilter;
@@ -61,7 +61,7 @@ public final class PaymentState extends ViewModel {
         if(walletListener!=null)walletListener.remove();walletListener=null;
         owner=next;admin=profile!=null&&"ADMIN".equals(profile.role);tutor=profile!=null&&profile.tutor;
         tutorIncomeTab=0;
-        tutorRevenuePeriod=TutorRevenue.currentMonth().toString();
+        tutorRevenuePeriod=ReportPeriod.month(ReportPeriod.currentMonth());
         tutorPaymentsStatus=!owner.isEmpty()&&tutor?TutorPaymentsStatus.LOADING:TutorPaymentsStatus.UNAVAILABLE;
         payments.clear();earnings.clear();payouts.clear();refunds.clear();sessions.clear();sources.clear();readFailures.clear();loadedReads.clear();bank.clear();busy=false;error="";notice="";
         wallets.clear();withdrawals.clear();walletLoaded=false;incomeLoaded=false;selectedWithdrawal="";withdrawalDraft="";withdrawalRequestId="";
