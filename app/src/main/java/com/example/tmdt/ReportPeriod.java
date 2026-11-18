@@ -29,7 +29,10 @@ public final class ReportPeriod {
     public boolean includes(long timestamp){
         if(mode==Mode.ALL)return true;
         if(timestamp<=0)return false;
-        LocalDate date=Instant.ofEpochMilli(timestamp).atZone(ZONE).toLocalDate();
+        return includes(Instant.ofEpochMilli(timestamp).atZone(ZONE).toLocalDate());
+    }
+    public boolean includes(LocalDate date){
+        if(mode==Mode.ALL)return true;
         return !date.isBefore(from)&&!date.isAfter(to);
     }
     public String label(){

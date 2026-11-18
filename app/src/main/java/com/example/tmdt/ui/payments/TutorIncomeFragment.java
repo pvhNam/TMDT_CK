@@ -9,7 +9,13 @@ import com.example.tmdt.PaymentState;
 import com.example.tmdt.R;
 import com.example.tmdt.TutorRevenue;
 import com.example.tmdt.TutorWallet;
-import com.example.tmdt.ui.admin.AdminMonthPicker;
+import com.example.tmdt.ui.admin.AdminPeriodFilter;
+import com.example.tmdt.ClassroomCloud;
+import com.example.tmdt.ReportPeriod;
+import androidx.lifecycle.ViewModelProvider;
+import android.os.Bundle;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
 import com.google.android.material.tabs.TabLayout;
@@ -24,6 +30,13 @@ import java.util.TreeSet;
 
 public final class TutorIncomeFragment extends PaymentScreen {
     private LinearLayout body;
+    private ClassroomCloud classes;
+
+    @Override public void onViewCreated(@NonNull View view, @Nullable Bundle saved) {
+        classes = new ViewModelProvider(requireActivity()).get(ClassroomCloud.class);
+        super.onViewCreated(view, saved);
+        classes.changes().observe(getViewLifecycleOwner(), ignored -> refresh());
+    }
     @Override protected View build(){
         LinearLayout root=root("Thu nhập gia sư");body=ui.page(root);render();return root;
     }
@@ -69,19 +82,28 @@ public final class TutorIncomeFragment extends PaymentScreen {
     }
 
     private void renderRevenue(StableViews rows, PaymentState state) {
-        String period = state.tutorRevenuePeriod;
-        YearMonth month = period.isEmpty() ? null : YearMonth.parse(period);
-        rows.add("revenue-period", Arrays.asList(period, state.busy), () -> {
-            LinearLayout filters = ui.column();
-            if (month == null) {
-                action(filters, "Xem theo tháng", Ui.OUTLINE,
-                        () -> selectRevenuePeriod(TutorRevenue.currentMonth().toString()));
-            } else {
-                AdminMonthPicker.add(ui, filters, period, this::selectRevenuePeriod);
-                action(filters, "Xem tất cả các tháng", Ui.OUTLINE, () -> selectRevenuePeriod(""));
+        ReportPeriod period = state.tutorRevenuePeriod;
+        rows.add("revenue-period", period, () -> AdminPeriodFilter.create(ui, period, selected -> {
+            state.tutorRevenuePeriod = selected;
+            scrollToTop();
+            refresh();
+        }), ui.dp(12));
+
+        Integer registrations = classes.registrationCount(state.owner, period);
+        String note = classes.registrationNote(state.owner);
+        rows.add("registrations", Arrays.asList(registrations, note), () -> {
+            LinearLayout card = ui.card();
+            ui.add(card, ui.text("Lượt đăng ký lớp nhóm", 17, Ui.INK, true));
+            if (registrations != null) {
+                ui.space(card, 8);
+                ui.add(card, ui.text(String.valueOf(registrations), 25, Ui.BLUE, true));
             }
-            return filters;
-        }, 0);
+            if (!note.isEmpty()) {
+                ui.space(card, 6);
+                ui.add(card, ui.text(note, 14, Ui.MUTED, false));
+            }
+            return card;
+        }, ui.dp(12));
 
         if (state.tutorPaymentsStatus == PaymentState.TutorPaymentsStatus.LOADING) {
             revenueNotice(rows, "Đang tải giao dịch đã thanh toán…");
@@ -97,7 +119,7 @@ public final class TutorIncomeFragment extends PaymentScreen {
             rows.add("revenue-cache", true, () -> ui.text("Đang hiển thị dữ liệu đã lưu.", 13, Ui.MUTED, false),
                     ui.dp(10));
         }
-        TutorRevenue revenue = new TutorRevenue(state.payments.values(), state.owner, month);
+        TutorRevenue revenue = TutorRevenue.forPeriod(state.payments.values(), state.owner, period);
         if (cached && revenue.transactions.isEmpty()) {
             revenueNotice(rows, "Chưa có giao dịch trong dữ liệu đã lưu của kỳ này.");
             return;
@@ -118,12 +140,6 @@ public final class TutorIncomeFragment extends PaymentScreen {
 
     private void revenueNotice(StableViews rows, String message) {
         rows.add("revenue-notice", message, () -> ui.text(message, 15, Ui.MUTED, false), 0);
-    }
-
-    private void selectRevenuePeriod(String period) {
-        state().tutorRevenuePeriod = period;
-        scrollToTop();
-        refresh();
     }
 
     private LinearLayout revenueTotal(TutorRevenue revenue) {

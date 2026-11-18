@@ -18,11 +18,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 /** Edits a draft period; cancel never changes the report currently displayed. */
-final class AdminPeriodFilter {
+public final class AdminPeriodFilter {
     private static final DateTimeFormatter DAY=DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private AdminPeriodFilter(){}
 
-    static View create(Ui ui,ReportPeriod period,Consumer<ReportPeriod> select){
+    public static View create(Ui ui,ReportPeriod period,Consumer<ReportPeriod> select){
         LinearLayout card=ui.card();ui.pad(card,14,12);
         ui.add(card,ui.text("Thời gian báo cáo",12,Ui.MUTED,false));ui.space(card,6);
         LinearLayout range=ui.row();range.setMinimumHeight(ui.dp(44));range.addView(ui.icon(R.drawable.ic_calendar,20,Ui.BLUE));ui.gap(range,10);

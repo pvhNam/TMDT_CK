@@ -10,6 +10,9 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.MetadataChanges;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
@@ -31,6 +34,32 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
     private final ListenerRegistration classListener;
     private String user, error = "";
     private boolean watchingRequests;
+    private boolean receivedCached, receivedFailed;
+
+    public Integer registrationCount(String tutor, ReportPeriod period) {
+        if (!Objects.equals(user,tutor) || receivedFailed || !results.containsKey("received")) return null;
+        int count = 0;
+        for (Map<String,Object> row : docs("received").values()) {
+            if (!tutor.equals(row.get("tutor_id"))) continue;
+            if (period.mode == ReportPeriod.Mode.ALL) {
+                count++;
+                continue;
+            }
+            try {
+                if (period.includes(LocalDate.parse(Docs.text(row.get("ngay_gui"))))) count++;
+            } catch (DateTimeParseException invalidDate) {
+                if (period.includes(Docs.millis(row.get("created_at")))) count++;
+            }
+        }
+        return count;
+    }
+
+    public String registrationNote(String tutor) {
+        if (!Objects.equals(user,tutor)) return "Đang tải lượt đăng ký…";
+        if (receivedFailed) return "Chưa tải được lượt đăng ký lớp.";
+        if (!results.containsKey("received")) return "Đang tải lượt đăng ký…";
+        return receivedCached ? "Dữ liệu đăng ký đã lưu trên thiết bị." : "";
+    }
 
     public ClassroomCloud() { classListener = listen("classes",db.collection(CLASSES),null); }
 
@@ -41,6 +70,7 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
         if (uid.equals(user)) return;
         for (ListenerRegistration listener : personal) listener.remove();
         personal.clear(); results.keySet().removeIf(name -> !name.equals("classes"));
+        receivedCached = false; receivedFailed = false;
         user = uid; store.user = uid; watchingRequests = false; store.requestsError = "";
         if (!uid.isEmpty()) {
             personal.add(listen("booked",db.collection(LESSONS).whereEqualTo("student_id",uid),uid));
@@ -59,15 +89,26 @@ public final class ClassroomCloud extends ViewModel implements Store.Remote {
     }
 
     private ListenerRegistration listen(String name, Query query, String owner) {
-        return query.addSnapshotListener((snapshot,failure) -> {
+        boolean received = name.equals("received");
+        return query.addSnapshotListener(received ? MetadataChanges.INCLUDE : MetadataChanges.EXCLUDE, (snapshot,failure) -> {
             if (owner != null && !owner.equals(user)) return;
+            boolean sourceChanged = false;
+            if (received) {
+                boolean cached = snapshot != null && snapshot.getMetadata().isFromCache();
+                sourceChanged = cached != receivedCached || receivedFailed != (failure != null);
+                receivedCached = cached;
+                receivedFailed = failure != null;
+            }
             // Tutor requests belong to another feature: a failure only empties the suggestions instead of interrupting the user.
             if (failure != null && name.equals("open")) { store.requestsError = message(failure); changes.setValue(changes.getValue()+1); return; }
             if (failure != null && name.equals("asked")) return;
             if (failure != null) { fail("Không tải được lịch học và lớp nhóm. "+message(failure)); return; }
             Map<String,Map<String,Object>> docs = new LinkedHashMap<>();
             for (DocumentSnapshot doc : snapshot) docs.put(doc.getId(),doc.getData());
-            if(Objects.equals(results.get(name),docs))return;
+            if (Objects.equals(results.get(name),docs)) {
+                if (sourceChanged) changes.setValue(changes.getValue()+1);
+                return;
+            }
             results.put(name,docs); rebuild();
         });
     }
