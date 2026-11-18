@@ -43,14 +43,16 @@ public final class MonthlyPayroll {
             if(ids instanceof Iterable)for(Object id:(Iterable<?>)ids)if(id instanceof String)covered.add((String)id);
         }
         for(PaymentState.Row earning:earnings.values())if(this.period.equals(earning.text("period"))){
-            earned+=earning.number("amount");earningCount++;teacherIds.add(earning.text("tutor_id"));
+            long amount=earning.number("amount");
+            earned+=amount;earningCount++;teacherIds.add(earning.text("tutor_id"));
+            if(earning.flag("is_sandbox")&&amount==0)continue;
             // The payout may arrive before the earning update, so check both sides of the link.
             if(covered.contains(earning.id))continue;
             PaymentState.Row payout=payouts.get(earning.text("payout_id"));
             if(!earning.text("payout_id").isEmpty()&&(payout==null||!"CANCELLED".equals(payout.text("status"))))continue;
             Unprepared row=unprepared.computeIfAbsent(earning.text("tutor_id"),id->new Unprepared(id,earning.text("tutor_name")));
-            row.amount+=earning.number("amount");row.sessions++;
-            unassigned+=earning.number("amount");count++;teacherIds.add(row.tutorId);
+            row.amount+=amount;row.sessions++;
+            unassigned+=amount;count++;teacherIds.add(row.tutorId);
         }
         Comparator<PaymentState.Row> byName=Comparator.comparing(p->p.text("tutor_name"),String.CASE_INSENSITIVE_ORDER);
         ready.sort(byName);paid.sort(byName);cancelled.sort((a,b)->Long.compare(b.time("updated_at"),a.time("updated_at")));
