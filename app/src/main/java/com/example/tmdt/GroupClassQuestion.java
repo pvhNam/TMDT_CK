@@ -6,7 +6,7 @@ import java.util.Map;
 
 /** Shared public question/comment or reply. It contains discussion text, never a rating. */
 public final class GroupClassQuestion {
-    public final String id, authorId, authorName, content, questionId;
+    public final String id, authorId, authorName, content, questionId, replyToName;
     public final long createdAtMillis;
 
     private GroupClassQuestion(DocumentSnapshot document) {
@@ -15,6 +15,7 @@ public final class GroupClassQuestion {
         authorId = text(data.get("author_id"));
         authorName = text(data.get("author_name"));
         content = text(data.get("content"));
+        replyToName = text(data.get("reply_to_name"));
         String parent = text(data.get("question_id"));
         questionId = parent.isEmpty() ? text(data.get("comment_id")) : parent;
         Object timestamp = document.get("created_at", DocumentSnapshot.ServerTimestampBehavior.ESTIMATE);

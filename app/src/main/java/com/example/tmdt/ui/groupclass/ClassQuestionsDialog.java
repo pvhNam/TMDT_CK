@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import androidx.annotation.NonNull;
@@ -21,6 +22,7 @@ import com.example.tmdt.R;
 import com.example.tmdt.databinding.DialogClassQuestionsBinding;
 import com.example.tmdt.databinding.ItemClassQuestionBinding;
 import com.example.tmdt.databinding.ItemClassReplyBinding;
+import com.example.tmdt.ui.common.ThreadComposer;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -32,6 +34,7 @@ public final class ClassQuestionsDialog extends DialogFragment {
     private GroupClassQuestionsState state;
     private String renderedContentKey = "";
     private TextWatcher editorWatcher;
+    private ThreadComposer composer;
 
     public ClassQuestionsDialog() { super(R.layout.dialog_class_questions); }
 
@@ -56,6 +59,7 @@ public final class ClassQuestionsDialog extends DialogFragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedState) {
         super.onViewCreated(view, savedState);
         binding = DialogClassQuestionsBinding.bind(view);
+        composer = new ThreadComposer(binding.classQuestionsComposer, binding.classQuestionInput);
         state = new ViewModelProvider(requireActivity()).get(GroupClassQuestionsState.class);
         state.watch(requireArguments().getString("class_id", ""));
         binding.classQuestionInput.setText(state.draft());
@@ -79,7 +83,7 @@ public final class ClassQuestionsDialog extends DialogFragment {
             }
             state.submit();
         });
-        binding.cancelClassQuestionReply.setOnClickListener(v -> state.cancelReply());
+        binding.cancelClassQuestionReply.setOnClickListener(v -> state.closeReplyEditor());
         binding.classQuestionsRetry.setOnClickListener(v -> state.retry());
         binding.classQuestionsLoadMore.setOnClickListener(v -> state.loadMore());
         binding.classQuestionsSignIn.setOnClickListener(v -> {
@@ -120,7 +124,6 @@ public final class ClassQuestionsDialog extends DialogFragment {
         binding.classQuestionsEmpty.setVisibility(available && !state.loading() && state.questions().isEmpty() && error.isEmpty() ? View.VISIBLE : View.GONE);
         binding.classQuestionsLoadMore.setVisibility(available && state.hasMore() ? View.VISIBLE : View.GONE);
         binding.classQuestionsLoadMore.setEnabled(!state.loading() && !state.busy() && !state.offline());
-        binding.classQuestionsComposer.setVisibility(available && state.signedIn() && !state.readOnly() ? View.VISIBLE : View.GONE);
         binding.classQuestionsSignIn.setVisibility(available && !state.signedIn() && !state.readOnly() ? View.VISIBLE : View.GONE);
         boolean readOnly = available && state.readOnly();
         String caption = "";
@@ -155,7 +158,7 @@ public final class ClassQuestionsDialog extends DialogFragment {
 
     /** Draft keystrokes and status messages never rebuild rows or steal the editor focus. */
     private void renderQuestions(boolean available) {
-        StringBuilder key = new StringBuilder().append(available).append('|').append(state.replyToId())
+        StringBuilder key = new StringBuilder().append(available).append('|').append(state.replyToId()).append('|').append(state.editorTarget())
                 .append('|').append(state.busy()).append('|').append(state.readOnly()).append('|').append(state.signedIn())
                 .append('|').append(state.tutorId()).append('|').append(state.repliesLoading()).append('|').append(state.repliesError())
                 .append('|').append(state.hasMoreReplies());
@@ -167,6 +170,7 @@ public final class ClassQuestionsDialog extends DialogFragment {
         if (nextKey.equals(renderedContentKey)) return;
         renderedContentKey = nextKey;
         com.example.tmdt.ui.common.StableBindings<ItemClassQuestionBinding> rows=com.example.tmdt.ui.common.StableBindings.at(binding.classQuestionsList);rows.begin();
+        ViewGroup selectedThread = null;
         if (available) for (GroupClassQuestion question : state.questions()) {
             ItemClassQuestionBinding row = rows.item(question.id,()->ItemClassQuestionBinding.inflate(getLayoutInflater(), binding.classQuestionsList, false));
             row.classQuestionAuthor.setText(question.authorName);
@@ -174,12 +178,23 @@ public final class ClassQuestionsDialog extends DialogFragment {
             row.classQuestionDate.setText(date(question.createdAtMillis));
             row.classQuestionContent.setText(question.content);
             boolean expanded = question.id.equals(state.replyToId());
-            row.replyToClassQuestion.setText(expanded ? R.string.class_questions_collapse_replies
-                    : state.readOnly() || !state.signedIn() ? R.string.class_questions_view_replies : R.string.class_questions_reply);
+            boolean writable = state.signedIn() && !state.readOnly();
+            row.replyToClassQuestion.setText(writable ? R.string.class_questions_reply
+                    : expanded ? R.string.class_questions_collapse_replies : R.string.class_questions_view_replies);
             row.replyToClassQuestion.setEnabled(!state.busy());
-            row.replyToClassQuestion.setOnClickListener(v -> { if (expanded) state.cancelReply(); else state.replyTo(question.id); });
+            row.replyToClassQuestion.setOnClickListener(v -> {
+                if (expanded && !writable) state.cancelReply();
+                else {
+                    state.replyTo(question.id);
+                    if (writable) composer.focusReply(row.classQuestionRepliesContainer);
+                }
+            });
+            row.collapseThread.setVisibility(expanded && writable ? View.VISIBLE : View.GONE);
+            row.collapseThread.setEnabled(!state.busy());
+            row.collapseThread.setOnClickListener(v -> state.cancelReply());
             row.classQuestionRepliesContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
             if (expanded) {
+                if ("".equals(state.editorTarget())) selectedThread = row.classQuestionRepliesContainer;
                 row.classQuestionRepliesProgress.setVisibility(state.repliesLoading() ? View.VISIBLE : View.GONE);
                 row.classQuestionRepliesError.setText(state.repliesError());
                 row.classQuestionRepliesError.setVisibility(state.repliesError().isEmpty() ? View.GONE : View.VISIBLE);
@@ -197,16 +212,29 @@ public final class ClassQuestionsDialog extends DialogFragment {
                     child.classReplyTutorBadge.setVisibility(reply.authorId.equals(state.tutorId()) ? View.VISIBLE : View.GONE);
                     child.classReplyDate.setText(date(reply.createdAtMillis));
                     child.classReplyContent.setText(reply.content);
+                    boolean addressed = !reply.replyToName.isEmpty();
+                    child.replyContext.setVisibility(addressed ? View.VISIBLE : View.GONE);
+                    if (addressed) child.replyContext.setText(getString(R.string.thread_reply_context, reply.replyToName));
+                    child.replyAction.setVisibility(writable ? View.VISIBLE : View.GONE);
+                    child.replyAction.setEnabled(!state.busy());
+                    child.replyAction.setOnClickListener(v -> {
+                        state.replyToReply(reply.id);
+                        composer.focusReply(child.replyEditorSlot);
+                    });
+                    if (reply.id.equals(state.editorTarget())) selectedThread = child.replyEditorSlot;
                 }
                 replies.commit(row.classQuestionRepliesList);
             }
         }
+        composer.setVisible(available && state.signedIn() && !state.readOnly()
+                && (state.replyToId().isEmpty() || selectedThread != null));
+        composer.placeIn(selectedThread);
         rows.commit(binding.classQuestionsList);
     }
 
     private static void appendKey(StringBuilder key, GroupClassQuestion message) {
         key.append('|').append(message.id).append('|').append(message.authorId).append('|').append(message.authorName)
-                .append('|').append(message.createdAtMillis).append('|').append(message.content);
+                .append('|').append(message.createdAtMillis).append('|').append(message.content).append('|').append(message.replyToName);
     }
 
     private String date(long timestamp) {
@@ -216,6 +244,6 @@ public final class ClassQuestionsDialog extends DialogFragment {
 
     @Override public void onDestroyView() {
         if (binding != null && editorWatcher != null) binding.classQuestionInput.removeTextChangedListener(editorWatcher);
-        super.onDestroyView(); binding = null; editorWatcher = null; renderedContentKey = "";
+        super.onDestroyView(); composer = null; binding = null; editorWatcher = null; renderedContentKey = "";
     }
 }
