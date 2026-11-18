@@ -15,6 +15,7 @@ import java.util.function.LongSupplier;
 final class SandboxPaymentApi {
     private static final ExecutorService IO=Executors.newFixedThreadPool(2);
     private static final ZoneId VN=ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final int TUTOR_PERCENT=85;
     private final FirebaseFirestore db;
     private final VnpaySandbox gateway;
     private final LongSupplier clock;
@@ -128,6 +129,9 @@ final class SandboxPaymentApi {
         }));return PaymentState.json("ok",true,"status",status);
     }
     private long share(Map<String,Object> p,int number){long count=num(p,"session_count"),amount=num(p,"amount");check(number>=1&&number<=count&&count>0,"Buổi học chưa hợp lệ.");return amount/count+(number<=amount%count?1:0);}
+    private static long tutorEarning(long sessionTuition){
+        return sessionTuition/100*TUTOR_PERCENT + sessionTuition%100*TUTOR_PERCENT/100;
+    }
     private long end(SourceInfo s,int number){
         if(s.group==null)return s.end;Map<String,Object> g=s.group;LocalDate day=LocalDate.parse(text(g,"ngay_bat_dau"));int seen=0;
         for(int i=0;i<500;i++,day=day.plusDays(1)){boolean matches=false;if(g.get("thu") instanceof List)for(Object v:(List<?>)g.get("thu"))if(v instanceof Number&&((Number)v).intValue()==dayOfWeek(day))matches=true;
@@ -137,7 +141,7 @@ final class SandboxPaymentApi {
     private static int dayOfWeek(LocalDate day){return day.getDayOfWeek().getValue();}
     private void session(String uid,boolean admin,String id,int number,String action,JSONObject body)throws Exception{
         Tasks.await(db.runTransaction(tx->{DocumentReference ref=ref("payments",id),sr=ref.collection("sessions").document(String.valueOf(number));
-            Map<String,Object> p=must(tx.get(ref));member(uid,admin,p);Map<String,Object> old=data(tx.get(sr));long value=share(p,number);
+            Map<String,Object> p=must(tx.get(ref));member(uid,admin,p);Map<String,Object> old=data(tx.get(sr));long sessionTuition=share(p,number);
             check(text(p,"status").equals("PAID"),"Học phí chưa được xác nhận hoặc đang chờ hoàn tiền.");
             if(action.equals("reopen")){admin(admin);check(old!=null&&text(old,"status").equals("DISPUTED"),"Buổi học không có phản ánh.");tx.update(sr,map("status","PROPOSED","admin_note",reason(body,5,500,"reason"),"reviewer_id",uid,"updated_at",stamp()));return null;}
             if(action.equals("dispute")){check(uid.equals(p.get("student_id"))&&old!=null&&text(old,"status").equals("PROPOSED"),"Buổi học không còn chờ học sinh xác nhận.");tx.update(sr,map("status","DISPUTED","reason",reason(body,5,500,"reason"),"updated_at",stamp()));return null;}
@@ -145,13 +149,15 @@ final class SandboxPaymentApi {
             SourceInfo s=source(tx,text(p,"type"),text(p,"source_id"));check(clock.getAsLong()>=end(s,number),"Chưa đến thời điểm xác nhận hoàn thành buổi học.");
             if(action.equals("propose")){
                 check(uid.equals(p.get("tutor_id")),"Chỉ gia sư báo hoàn thành buổi học.");if(old!=null)return null;
-                tx.set(sr,map("is_sandbox",true,"number",number,"status","PROPOSED","amount",value,"reported_at",stamp(),"created_at",stamp(),"updated_at",stamp()));
+                tx.set(sr,map("is_sandbox",true,"number",number,"status","PROPOSED","amount",sessionTuition,"reported_at",stamp(),"created_at",stamp(),"updated_at",stamp()));
             }else{
                 check(uid.equals(p.get("student_id")),"Chỉ học sinh xác nhận đã học.");if(old!=null&&text(old,"status").equals("COMPLETED"))return null;
                 check(old!=null&&text(old,"status").equals("PROPOSED"),"Gia sư cần báo hoàn thành trước.");
                 DocumentReference er=ref("tutor_earnings",id+"_"+number);check(!tx.get(er).exists(),"Buổi học đã được tính tiền.");
-                tx.set(er,map("is_sandbox",true,"payment_id",id,"session_number",number,"student_id",p.get("student_id"),"tutor_id",p.get("tutor_id"),"tutor_name",p.get("tutor_name"),"title",p.get("title"),"amount",value,"period",Instant.ofEpochMilli(clock.getAsLong()).atZone(VN).toLocalDate().toString().substring(0,7),"payout_id",null,"created_at",stamp()));
-                tx.update(sr,map("status","COMPLETED","confirmed_at",stamp(),"updated_at",stamp()));tx.update(ref,map("earned_amount",num(p,"earned_amount")+value,"updated_at",stamp()));
+                tx.set(er,map("is_sandbox",true,"payment_id",id,"session_number",number,"student_id",p.get("student_id"),"tutor_id",p.get("tutor_id"),"tutor_name",p.get("tutor_name"),"title",p.get("title"),"amount",tutorEarning(sessionTuition),"period",Instant.ofEpochMilli(clock.getAsLong()).atZone(VN).toLocalDate().toString().substring(0,7),"payout_id",null,"created_at",stamp()));
+                tx.update(sr,map("status","COMPLETED","confirmed_at",stamp(),"updated_at",stamp()));
+                // Refunds use the full tuition consumed by completed sessions.
+                tx.update(ref,map("earned_amount",num(p,"earned_amount")+sessionTuition,"updated_at",stamp()));
             }return null;
         }));
     }
@@ -160,14 +166,17 @@ final class SandboxPaymentApi {
         String bank=reason(body,2,100,"bank_name"),name=reason(body,2,100,"account_name"),number=body.optString("account_number");check(number.matches("[0-9]{6,30}"),"Số tài khoản phải gồm 6–30 chữ số.");
         Tasks.await(ref("payout_accounts",uid).set(map("is_sandbox",true,"bank_name",bank,"account_number",number,"account_name",name,"updated_at",stamp())));
     }
+    private static boolean payableEarning(DocumentSnapshot row){
+        return row.exists() && row.get("payout_id")==null && num(row.getData(),"amount")>0;
+    }
     private JSONObject payroll(String uid,String period)throws Exception{
         check(period.matches("20[0-9]{2}-(0[1-9]|1[0-2])"),"Kỳ thanh toán phải có dạng YYYY-MM.");YearMonth month=YearMonth.parse(period);
         check(month.isBefore(YearMonth.from(Instant.ofEpochMilli(clock.getAsLong()).atZone(VN))),"Chỉ lập bảng cho tháng đã kết thúc.");
         List<DocumentSnapshot> candidates=Tasks.await(db.collection(collection("tutor_earnings")).whereEqualTo("period",period).get(Source.SERVER)).getDocuments();
-        Map<String,List<DocumentReference>> teachers=new TreeMap<>();for(DocumentSnapshot row:candidates)if(row.get("payout_id")==null)teachers.computeIfAbsent(row.getString("tutor_id"),k->new ArrayList<>()).add(row.getReference());
+        Map<String,List<DocumentReference>> teachers=new TreeMap<>();for(DocumentSnapshot row:candidates)if(payableEarning(row))teachers.computeIfAbsent(row.getString("tutor_id"),k->new ArrayList<>()).add(row.getReference());
         int count=0;for(Map.Entry<String,List<DocumentReference>> entry:teachers.entrySet())for(int offset=0;offset<entry.getValue().size();offset+=100){
             List<DocumentReference> group=entry.getValue().subList(offset,Math.min(offset+100,entry.getValue().size()));DocumentReference payout=ref("tutor_payouts",UUID.randomUUID().toString());
-            boolean created=Tasks.await(db.runTransaction(tx->{List<DocumentSnapshot> rows=new ArrayList<>();for(DocumentReference r:group){DocumentSnapshot row=tx.get(r);if(row.exists()&&row.get("payout_id")==null)rows.add(row);}if(rows.isEmpty())return false;
+            boolean created=Tasks.await(db.runTransaction(tx->{List<DocumentSnapshot> rows=new ArrayList<>();for(DocumentReference r:group){DocumentSnapshot row=tx.get(r);if(payableEarning(row))rows.add(row);}if(rows.isEmpty())return false;
                 Map<String,Object> teacher=must(tx.get(db.collection("users").document(entry.getKey())));
                 if(!"ACTIVE".equals(text(teacher,"trang_thai")))return false;
                 Map<String,Object> bank=data(tx.get(ref("payout_accounts",entry.getKey())));
