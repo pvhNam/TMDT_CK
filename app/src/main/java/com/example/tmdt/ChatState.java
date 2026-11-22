@@ -303,6 +303,10 @@ public final class ChatState extends ViewModel {
         if (me == null || openId == null || content.isEmpty()) return false;
         if (content.length() > MAX_LENGTH) { notice = "Tin nhắn tối đa " + MAX_LENGTH + " ký tự."; notifyUi(); return false; }
         if (open == null || open.peerId.isEmpty()) { notice = "Đang mở cuộc trò chuyện, vui lòng thử lại."; notifyUi(); return false; }
+        if (open.blocked()) {
+            notice = open.blockedBy(me) ? "Bạn đã chặn " + open.peerName + ". Bỏ chặn để nhắn tiếp." : "Bạn không thể nhắn tin trong cuộc trò chuyện này.";
+            notifyUi(); return false;
+        }
         String id = db.collection("conversations").document(openId).collection("messages").document().getId();
         ChatMessage item = new ChatMessage(id, me, content, System.currentTimeMillis(), ChatMessage.SENDING, true);
         failed.put(id, item);  // Giữ bản cục bộ cho tới khi máy chủ xác nhận.
@@ -310,6 +314,25 @@ public final class ChatState extends ViewModel {
         write(item);
         rebuild(); notifyUi();
         return true;
+    }
+
+    /**
+     * Chặn / bỏ chặn người kia trong cuộc trò chuyện đang mở. Khi có người chặn, cả hai không gửi được tin
+     * (rules cũng chặn); chỉ người đã chặn mới bỏ chặn được.
+     */
+    public void setBlocked(boolean block) {
+        final String me = uid();
+        if (me == null || openId == null || open == null) return;
+        if (open.blockedBy(me) == block) return;
+        final String name = open.peerName;
+        Map<String, Object> update = new HashMap<>();
+        update.put("blocked_by", block ? FieldValue.arrayUnion(me) : FieldValue.arrayRemove(me));
+        update.put("updated_at", FieldValue.serverTimestamp());
+        db.collection("conversations").document(openId).update(update).addOnCompleteListener(task -> {
+            notice = task.isSuccessful() ? (block ? "Đã chặn " + name + ". Hai bên không gửi tin được cho tới khi bạn bỏ chặn."
+                    : "Đã bỏ chặn " + name + ".") : message(task.getException());
+            notifyUi();
+        });
     }
 
     /** Gửi lại tin lỗi. Kiểm tra máy chủ trước để không ghi nhận một tin hai lần. */
@@ -432,6 +455,8 @@ public final class ChatState extends ViewModel {
         item.myReadAt = millis(read.get(me));
         Map<?, ?> lesson = map(doc.get("lesson"));
         item.lessonTitle = text(lesson.get("title")); item.lessonTime = text(lesson.get("time")); item.lessonStatus = text(lesson.get("status"));
+        Object blocked = doc.get("blocked_by");
+        if (blocked instanceof List) for (Object value : (List<?>) blocked) if (value instanceof String) item.blockedBy.add((String) value);
         return item;
     }
     private static Map<?, ?> map(Object value) { return value instanceof Map ? (Map<?, ?>) value : Collections.emptyMap(); }

@@ -53,7 +53,7 @@ public final class Exchange {
 
     // Lựa chọn đang mở (giữ khi xoay máy).
     private String contractId;
-    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole, reportType, reportSubject, adminReportId;
+    private String reviewContractId, reviewsTarget, reviewsName, reviewsRole, reportType, reportSubject, reportName, adminReportId;
     private final Map<String, String> origins = new HashMap<>();
 
     Exchange(MainActivity host, Bundle state) {
@@ -70,7 +70,7 @@ public final class Exchange {
             reviewContractId = state.getString("ex.review"); adminReportId = state.getString("ex.adminReport");
             reviewsTarget = state.getString("ex.reviewsTarget"); reviewsName = state.getString("ex.reviewsName");
             reviewsRole = state.getString("ex.reviewsRole");
-            reportType = state.getString("ex.reportType"); reportSubject = state.getString("ex.reportSubject");
+            reportType = state.getString("ex.reportType"); reportSubject = state.getString("ex.reportSubject"); reportName = state.getString("ex.reportName");
             Bundle saved = state.getBundle("ex.origins");
             if (saved != null) for (String key : saved.keySet()) origins.put(key, saved.getString(key));
         }
@@ -80,7 +80,7 @@ public final class Exchange {
         out.putString("ex.review", reviewContractId); out.putString("ex.adminReport", adminReportId);
         out.putString("ex.reviewsTarget", reviewsTarget); out.putString("ex.reviewsName", reviewsName);
         out.putString("ex.reviewsRole", reviewsRole);
-        out.putString("ex.reportType", reportType); out.putString("ex.reportSubject", reportSubject);
+        out.putString("ex.reportType", reportType); out.putString("ex.reportSubject", reportSubject); out.putString("ex.reportName", reportName);
         Bundle saved = new Bundle(); for (Map.Entry<String, String> e : origins.entrySet()) saved.putString(e.getKey(), e.getValue());
         out.putBundle("ex.origins", saved);
     }
@@ -201,6 +201,14 @@ public final class Exchange {
 
     public String reportType() { return reportType; }
     public String reportSubject() { return reportSubject; }
+    /** Tên gia sư khi báo cáo từ trang hồ sơ (SUBJECT_TUTOR). */
+    public String reportName() { return reportName == null ? "" : reportName; }
+    /** Báo cáo gia sư từ trang hồ sơ. */
+    public void openTutorReport(String tutorUid, String name) {
+        if (tutorUid == null || tutorUid.isEmpty()) return;
+        reportName = name;
+        openReport(Report.SUBJECT_TUTOR, tutorUid);
+    }
     /** Màn 47; type/subjectId (CONTRACT hoặc CONVERSATION) chọn sẵn đối tượng, null để người dùng tự chọn. */
     public void openReport(String type, String subjectId) {
         reportType = type; reportSubject = subjectId;

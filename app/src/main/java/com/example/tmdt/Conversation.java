@@ -18,8 +18,12 @@ public final class Conversation {
     public long peerReadAt, myReadAt;
     /** Buổi học liên quan hiển thị trên đầu màn hình trò chuyện; có thể trống. */
     public String lessonTitle = "", lessonTime = "", lessonStatus = "";
+    /** Ai đang chặn cuộc trò chuyện (uid). Có người chặn thì cả hai không gửi tin được. */
+    public java.util.List<String> blockedBy = new java.util.ArrayList<>();
 
     public boolean hasLesson() { return !lessonTitle.isEmpty(); }
+    public boolean blocked() { return !blockedBy.isEmpty(); }
+    public boolean blockedBy(String uid) { return blockedBy.contains(uid); }
     public long sortTime() { return lastMessageAt > 0 ? lastMessageAt : createdAt; }
 
     /** Mã hội thoại xác định từ hai uid, không phụ thuộc ai mở trước. */
