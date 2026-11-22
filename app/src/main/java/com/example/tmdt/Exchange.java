@@ -257,10 +257,16 @@ public final class Exchange {
             return;
         }
         if (!needsContract(lesson)) { dialog("Chưa thể gửi hợp đồng", "Chỉ gửi hợp đồng cho lịch học đã chấp nhận (không áp dụng cho học thử)."); return; }
-        if (!agreements.signed()) {
-            new AlertDialog.Builder(host).setTitle("Ký hợp đồng cộng tác trước")
-                    .setMessage("Gia sư cần ký hợp đồng cộng tác với hệ thống trước khi gửi hợp đồng dạy cho học viên.")
-                    .setNegativeButton(R.string.cancel, null).setPositiveButton("Ký ngay", (d, w) -> openAgreement()).show();
+        if (!agreements.active()) {
+            AgreementTerm.Phase phase = agreements.phase();
+            String message = phase == AgreementTerm.Phase.EXPIRED ? "Hợp đồng cộng tác của bạn đã hết hạn. Ký lại để tiếp tục gửi hợp đồng dạy cho học viên."
+                    : phase == AgreementTerm.Phase.TERMINATED_WAIT || phase == AgreementTerm.Phase.TERMINATED_CAN_SIGN
+                    ? "Hợp đồng cộng tác đã bị hệ thống chấm dứt do vi phạm nên chưa gửi được hợp đồng dạy. Xem chi tiết trong Hợp đồng cộng tác."
+                    : phase == AgreementTerm.Phase.LEGACY ? "Hợp đồng cộng tác bạn ký trước đây chưa có thời hạn. Ký lại 1 hoặc 2 năm để gửi hợp đồng dạy."
+                    : "Gia sư cần ký hợp đồng cộng tác với hệ thống trước khi gửi hợp đồng dạy cho học viên.";
+            new AlertDialog.Builder(host).setTitle(agreements.signed() ? "Hợp đồng cộng tác chưa hiệu lực" : "Ký hợp đồng cộng tác trước")
+                    .setMessage(message)
+                    .setNegativeButton(R.string.cancel, null).setPositiveButton(phase == AgreementTerm.Phase.TERMINATED_WAIT ? "Xem" : "Ký ngay", (d, w) -> openAgreement()).show();
             return;
         }
         AgreementState.Template template = agreements.template(AgreementState.STUDENT_TUTOR);

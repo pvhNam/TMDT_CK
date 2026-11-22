@@ -7,6 +7,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import com.example.tmdt.AgreementTerm;
 import com.example.tmdt.ManageState;
 import com.example.tmdt.R;
 import com.example.tmdt.ui.common.Ui;
@@ -103,6 +104,9 @@ public final class AdminTutorsFragment extends ManageScreen {
         ui.tableRow(table, R.drawable.ic_person, "Học viên đã nhận", String.valueOf(students.size()));
         ui.tableRow(table, R.drawable.ic_field_lock, "Tài khoản", account == null ? "—" : account.banned() ? "Đã khóa" : "Hoạt động");
         ui.tableRow(table, R.drawable.ic_calendar, "Đăng ký gia sư", date(t.createdAt));
+        ManageState.Agreement agreement = admin.agreement(t.id);
+        long now = System.currentTimeMillis();
+        ui.tableRow(table, R.drawable.ic_ex_shield, "Hợp đồng cộng tác", agreementLabel(agreement, now));
         ui.add(content, table);
 
         AlertDialog[] holder = new AlertDialog[1];
@@ -114,6 +118,11 @@ public final class AdminTutorsFragment extends ManageScreen {
                     () -> confirmVisible(t, true));
         } else dialogAction(content, holder, "Xem hồ sơ chờ duyệt", Ui.OUTLINE, () -> open("admin_tutors"));
         boolean self = t.id.equals(classroom.me());
+        if (agreement != null && AgreementTerm.active(agreement.phase(now)) && !self)
+            dialogAction(content, holder, "Chấm dứt hợp đồng cộng tác (vi phạm)", Ui.DANGER, () ->
+                    askReason("Chấm dứt hợp đồng của " + t.name, "Theo điều 3 (vi phạm hợp đồng): gia sư không gửi được hợp đồng dạy mới, "
+                                    + AgreementTerm.RESIGN_WAIT_DAYS + " ngày sau mới ký lại được. Các khóa đang dạy vẫn giữ nguyên.",
+                            "Chấm dứt", true, reason -> report(admin.terminateAgreement(t.id, t.name, reason))));
         if (account != null) dialogAction(content, holder, "Xem tài khoản", Ui.OUTLINE, () -> user(account.id));
         if (account != null && !self && !account.admin()) {
             if (account.banned()) dialogAction(content, holder, "Mở khóa tài khoản", Ui.OUTLINE, () ->
@@ -124,6 +133,18 @@ public final class AdminTutorsFragment extends ManageScreen {
                             reason -> state().status(account.id, true, reason)));
         }
         holder[0] = detail(t.name.isEmpty() ? "Gia sư" : t.name, content);
+    }
+
+    /** Tình trạng hợp đồng cộng tác trong một dòng: còn hiệu lực tới đâu, hết hạn hay bị chấm dứt. */
+    private static String agreementLabel(ManageState.Agreement a, long now) {
+        if (a == null) return "Chưa ký";
+        switch (a.phase(now)) {
+            case ACTIVE: case EXPIRING: return a.years + " năm, hiệu lực đến " + date(a.end - 1);
+            case RENEWED: return "Đã gia hạn đến " + date(a.end - 1);
+            case EXPIRED: return "Hết hạn " + date(a.end - 1);
+            case LEGACY: return "Bản cũ, chưa có thời hạn";
+            default: return "Đã chấm dứt " + date(a.terminatedAt);
+        }
     }
 
     private void confirmVisible(ManageState.Tutor t, boolean visible) {

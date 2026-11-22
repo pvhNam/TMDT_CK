@@ -23,7 +23,7 @@ import com.example.tmdt.Tutor;
 public final class TutorHomeFragment extends ScreenFragment {
     @Override protected Object dataSnapshot(){
         com.example.tmdt.AgreementState agreement=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
-        return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,agreement.agreementLoaded(),agreement.signed(),agreement.outdated());
+        return com.example.tmdt.ui.common.RenderSnapshot.of(classroom,agreement.agreementLoaded(),agreement.phase());
     }
     private boolean allRequests;
     private LinearLayout requests;
@@ -207,12 +207,21 @@ public final class TutorHomeFragment extends ScreenFragment {
         ui.add(info,row); ui.weight(card,info); return card;
     }
 
-    /** UC23: gia sư chưa ký (hoặc cần ký lại) hợp đồng cộng tác với hệ thống thì thấy thẻ nhắc ở đầu trang. */
+    /** UC23: hợp đồng cộng tác chưa ký, sắp hết hạn, hết hạn hoặc bị chấm dứt thì thấy thẻ nhắc ở đầu trang. */
     private void agreementCard(LinearLayout body) {
         com.example.tmdt.AgreementState agreements=((com.example.tmdt.MainActivity)requireActivity()).exchange.agreements;
-        if(!agreements.agreementLoaded()||(agreements.signed()&&!agreements.outdated()))return;
-        LinearLayout note=ui.note(R.drawable.ic_file,agreements.signed()?"Hợp đồng cộng tác có phiên bản mới. Chạm để đọc và ký lại."
-                :"Ký hợp đồng cộng tác với hệ thống để gửi hợp đồng dạy cho học viên. Chạm để ký.",Ui.ORANGE_BG,Ui.ORANGE,Ui.INK);
+        if(!agreements.agreementLoaded())return;
+        com.example.tmdt.AgreementTerm.Phase phase=agreements.phase();
+        String text;
+        switch(phase){
+            case ACTIVE:case RENEWED:return;
+            case EXPIRING:text="Hợp đồng cộng tác sắp hết hạn. Chạm để gia hạn.";break;
+            case EXPIRED:text="Hợp đồng cộng tác đã hết hạn. Chạm để ký lại và tiếp tục gửi hợp đồng dạy.";break;
+            case TERMINATED_WAIT:case TERMINATED_CAN_SIGN:text="Hợp đồng cộng tác đã bị chấm dứt do vi phạm. Chạm để xem chi tiết.";break;
+            case LEGACY:text="Hợp đồng cộng tác cần ký lại theo thời hạn 1–2 năm. Chạm để ký.";break;
+            default:text="Ký hợp đồng cộng tác với hệ thống để gửi hợp đồng dạy cho học viên. Chạm để ký.";
+        }
+        LinearLayout note=ui.note(R.drawable.ic_file,text,Ui.ORANGE_BG,Ui.ORANGE,Ui.INK);
         ui.clickable(note,()->((com.example.tmdt.MainActivity)requireActivity()).exchange.openAgreement());
         ui.add(body,note);ui.space(body,12);
     }

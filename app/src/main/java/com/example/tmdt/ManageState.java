@@ -16,7 +16,8 @@ import java.util.Map;
  * Dữ liệu cho màn thống kê của quản trị viên: người dùng, gia sư, lớp nhóm, đăng ký lớp và lịch học 1-1.
  */
 public final class ManageState extends MemberState {
-    public static final String USERS = "users", TUTORS = "tutors", CLASSES = "classes", REGISTRATIONS = "registrations", LESSONS = "lessons";
+    public static final String USERS = "users", TUTORS = "tutors", CLASSES = "classes", REGISTRATIONS = "registrations", LESSONS = "lessons",
+            AGREEMENTS = "agreements";
 
     /** Tài khoản người dùng (users/{uid}). */
     public static final class User {
@@ -57,7 +58,15 @@ public final class ManageState extends MemberState {
         public String statusKey() { return !group() && finished ? "FINISHED" : status; }
     }
 
+    /** Hợp đồng cộng tác gia sư – hệ thống (tutor_agreements/{uid}). */
+    public static final class Agreement {
+        public String id = "", status = "", reason = ""; public int years, version;
+        public long start, end, terminatedAt;
+        public AgreementTerm.Phase phase(long now) { return AgreementTerm.phase(now, true, status, start, end, terminatedAt); }
+    }
+
     private final Map<String, ListenerRegistration> listeners = new HashMap<>();
+    private final Map<String, Agreement> agreements = new HashMap<>();
     private final Map<String, Boolean> loaded = new HashMap<>();
     private final Map<String, String> errors = new HashMap<>();
     private final List<User> users = new ArrayList<>();
@@ -77,6 +86,7 @@ public final class ManageState extends MemberState {
         listen(CLASSES, "group_classes");
         listen(REGISTRATIONS, "class_registrations");
         listen(LESSONS, "lessons");
+        listen(AGREEMENTS, "tutor_agreements");
     }
     private void listen(String key, String collection) {
         final String me = listUid;
@@ -92,7 +102,7 @@ public final class ManageState extends MemberState {
     public void stop() {
         for (ListenerRegistration l : listeners.values()) if (l != null) l.remove();
         listeners.clear(); loaded.clear(); errors.clear(); listUid = null;
-        users.clear(); tutors.clear(); classes.clear(); groupRegistrations.clear(); lessons.clear();
+        users.clear(); tutors.clear(); classes.clear(); groupRegistrations.clear(); lessons.clear(); agreements.clear();
     }
     public void retry() { stop(); start(); }
     /** Tăng mỗi khi dữ liệu đổi, để màn hình biết cần vẽ lại. */
@@ -158,6 +168,16 @@ public final class ManageState extends MemberState {
                 }
                 Collections.sort(lessons, (a, b) -> Long.compare(b.createdAt, a.createdAt));
                 break;
+            case AGREEMENTS:
+                agreements.clear();
+                for (DocumentSnapshot d : snapshot.getDocuments()) {
+                    Agreement a = new Agreement(); a.id = d.getId(); a.status = Docs.text(d, "trang_thai");
+                    a.years = (int) Docs.number(d, "thoi_han_nam"); a.version = (int) Docs.number(d, "phien_ban");
+                    a.start = time(d, "hieu_luc_tu"); a.end = time(d, "het_han"); a.terminatedAt = time(d, "cham_dut_luc");
+                    a.reason = Docs.text(d, "ly_do_cham_dut");
+                    agreements.put(a.id, a);
+                }
+                break;
             default:
         }
     }
@@ -179,6 +199,8 @@ public final class ManageState extends MemberState {
     public GroupRow groupClass(String id) { for (GroupRow c : classes) if (c.id.equals(id)) return c; return null; }
     public User user(String id) { for (User u : users) if (u.id.equals(id)) return u; return null; }
     public Tutor tutor(String id) { for (Tutor t : tutors) if (t.id.equals(id)) return t; return null; }
+    /** null khi gia sư chưa ký hợp đồng cộng tác. */
+    public Agreement agreement(String tutorId) { return agreements.get(tutorId); }
     /** Đăng ký lớp nhóm đã gắn tên lớp, môn, gia sư từ lớp tương ứng. */
     public List<Registration> groupRegistrations() {
         for (Registration r : groupRegistrations) {
@@ -244,6 +266,29 @@ public final class ManageState extends MemberState {
         update.put("nhan_lop", visible); update.put("updated_at", FieldValue.serverTimestamp());
         db.collection("tutor_profiles").document(tutor.id).update(update).addOnCompleteListener(task -> {
             if (task.isSuccessful()) done(visible ? "Đã hiện lại " + tutor.name + " trong danh sách gia sư." : "Đã ẩn " + tutor.name + " khỏi danh sách gia sư.");
+            else failed(task.getException());
+        });
+        return null;
+    }
+
+    /**
+     * Quản trị viên đơn phương chấm dứt hợp đồng cộng tác vì gia sư vi phạm (điều 3). Gia sư không gửi được hợp đồng dạy mới,
+     * 30 ngày sau mới ký lại được; các hợp đồng dạy đã ký vẫn giữ nguyên.
+     */
+    public String terminateAgreement(String tutorId, String name, String reason) {
+        String me = uid();
+        if (me == null || busy) return "Đang xử lý, vui lòng đợi.";
+        Agreement a = agreements.get(tutorId);
+        if (a == null || !AgreementTerm.active(a.phase(System.currentTimeMillis())))
+            return "Chỉ chấm dứt được hợp đồng cộng tác đang hiệu lực.";
+        String why = reason == null ? "" : reason.trim();
+        if (why.length() < MIN_REASON || why.length() > MAX_REASON) return "Lý do từ " + MIN_REASON + " đến " + MAX_REASON + " ký tự.";
+        Map<String, Object> update = new HashMap<>();
+        update.put("trang_thai", AgreementTerm.TERMINATED); update.put("ly_do_cham_dut", why);
+        update.put("cham_dut_luc", FieldValue.serverTimestamp()); update.put("cham_dut_boi", me);
+        busy = true; notifyUi();
+        db.collection("tutor_agreements").document(tutorId).update(update).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) done("Đã chấm dứt hợp đồng cộng tác của " + (name.isEmpty() ? "gia sư" : name) + ".");
             else failed(task.getException());
         });
         return null;
