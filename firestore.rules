@@ -678,15 +678,25 @@ service cloud.firestore {
           && (!(peer in changed) || (after.unread_count[peer] == before.unread_count.get(peer, 0) + 1
                                       && after.last_message_at == request.time));
       }
+      function validBlock(before, after) {
+        let me = request.auth.uid;
+        let was = before.get('blocked_by', []);
+        let now = after.blocked_by;
+        return now is list && now.size() <= 2 && before.member_ids.hasAll(now)
+          && now.toSet().difference(was.toSet()).hasOnly([me])
+          && was.toSet().difference(now.toSet()).hasOnly([me]);
+      }
       function validUpdate(before, after) {
         let changed = after.diff(before).affectedKeys();
         let me = request.auth.uid;
-        return changed.hasOnly(['members','last_message','last_sender_id','last_message_at','unread_count','read_at','lesson','updated_at'])
+        return changed.hasOnly(['members','last_message','last_sender_id','last_message_at','unread_count','read_at','lesson','blocked_by','updated_at'])
           && after.member_ids == before.member_ids
           && (!('updated_at' in changed) || after.updated_at == request.time)
           && (!('members' in changed) || (after.members.diff(before.members).affectedKeys().hasOnly([me]) && validMember(after.members[me])))
+          && (!('blocked_by' in changed) || validBlock(before, after))
           && (!(('last_message' in changed) || ('last_sender_id' in changed) || ('last_message_at' in changed))
-              || (after.last_sender_id == me && after.last_message is string
+              || (after.get('blocked_by', []).size() == 0
+                  && after.last_sender_id == me && after.last_message is string
                   && after.last_message.size() > 0 && after.last_message.size() <= 1000
                   && after.last_message_at == request.time))
           && (!('unread_count' in changed) || validUnread(before, after, before))
@@ -707,6 +717,7 @@ service cloud.firestore {
         allow read: if activeUser() && request.auth.uid in conversationBefore().member_ids;
         allow create: if notBanned()
           && request.auth.uid in conversationAfter().member_ids
+          && conversationAfter().get('blocked_by', []).size() == 0
           && conversationAfter().last_message_at == request.time
           && request.resource.data.keys().hasAll(['sender_id','client_message_id','content','sent_at'])
           && request.resource.data.keys().hasOnly(['sender_id','client_message_id','content','sent_at'])
@@ -742,20 +753,67 @@ service cloud.firestore {
 
     match /tutor_agreements/{uid} {
       function platformTemplate() { return get(/databases/$(database)/documents/contract_templates/GIA_SU_HE_THONG).data; }
+      function validSigning() {
+        let d = request.resource.data;
+        let keys = ['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at',
+                    'thoi_han_nam','hieu_luc_tu','het_han','dieu_khoan','lan_gia_han'];
+        return d.keys().hasAll(keys) && d.keys().hasOnly(keys)
+          && d.user_id == uid
+          && d.ho_ten is string && d.ho_ten.size() > 0 && d.ho_ten.size() <= 100
+          && d.tieu_de == platformTemplate().tieu_de
+          && d.noi_dung == platformTemplate().noi_dung
+          && d.phien_ban == platformTemplate().phien_ban
+          && d.trang_thai == 'DA_KY'
+          && d.signed_at == request.time
+          && d.thoi_han_nam in [1, 2]
+          && d.hieu_luc_tu is timestamp && d.het_han is timestamp
+          && d.het_han == d.hieu_luc_tu + duration.value(d.thoi_han_nam * 365, 'd')
+          && d.dieu_khoan is string && d.dieu_khoan.size() >= 100 && d.dieu_khoan.size() <= 4000
+          && d.lan_gia_han is int;
+      }
+      function startsNow() {
+        let d = request.resource.data;
+        return d.hieu_luc_tu > request.time - duration.value(10, 'm')
+          && d.hieu_luc_tu < request.time + duration.value(10, 'm')
+          && d.lan_gia_han == 0;
+      }
+      function canSignAgain() {
+        let r = resource.data;
+        return !('het_han' in r)
+          || (r.trang_thai == 'DA_KY' && request.time >= r.het_han)
+          || (r.trang_thai == 'CHAM_DUT' && request.time >= r.cham_dut_luc + duration.value(30, 'd'));
+      }
+      function renewal() {
+        let r = resource.data;
+        let d = request.resource.data;
+        return 'het_han' in r && r.trang_thai == 'DA_KY'
+          && request.time >= r.het_han - duration.value(30, 'd') && request.time < r.het_han
+          && r.hieu_luc_tu <= request.time
+          && d.hieu_luc_tu == r.het_han && d.lan_gia_han == r.lan_gia_han + 1;
+      }
+      function terminated() {
+        let d = request.resource.data;
+        return 'het_han' in resource.data && resource.data.trang_thai == 'DA_KY' && request.time < resource.data.het_han
+          && changed(['trang_thai','ly_do_cham_dut','cham_dut_luc','cham_dut_boi'])
+          && d.trang_thai == 'CHAM_DUT'
+          && d.ly_do_cham_dut is string && d.ly_do_cham_dut.size() >= 5 && d.ly_do_cham_dut.size() <= 500
+          && d.cham_dut_luc == request.time && d.cham_dut_boi == request.auth.uid;
+      }
       allow get: if signedIn() && (request.auth.uid == uid || admin());
       allow list: if admin();
-      allow create, update: if signedIn() && request.auth.uid == uid && notBanned() && verifiedTutor(uid)
-        && request.resource.data.keys().hasAll(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
-        && request.resource.data.keys().hasOnly(['user_id','ho_ten','tieu_de','noi_dung','phien_ban','trang_thai','signed_at'])
-        && request.resource.data.user_id == uid
-        && request.resource.data.ho_ten is string && request.resource.data.ho_ten.size() > 0 && request.resource.data.ho_ten.size() <= 100
-        && request.resource.data.tieu_de == platformTemplate().tieu_de
-        && request.resource.data.noi_dung == platformTemplate().noi_dung
-        && request.resource.data.phien_ban == platformTemplate().phien_ban
-        && (resource == null || resource.data.phien_ban < request.resource.data.phien_ban)
-        && request.resource.data.trang_thai == 'DA_KY'
-        && request.resource.data.signed_at == request.time;
+      allow create: if signedIn() && request.auth.uid == uid && notBanned() && verifiedTutor(uid)
+        && validSigning() && startsNow();
+      allow update: if (signedIn() && request.auth.uid == uid && notBanned() && verifiedTutor(uid)
+          && validSigning() && ((canSignAgain() && startsNow()) || renewal()))
+        || (admin() && terminated());
       allow delete: if false;
+      match /lich_su/{entry} {
+        allow get, list: if signedIn() && (request.auth.uid == uid || admin());
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data == get(/databases/$(database)/documents/tutor_agreements/$(uid)).data
+          && getAfter(/databases/$(database)/documents/tutor_agreements/$(uid)).data.signed_at == request.time;
+        allow update, delete: if false;
+      }
     }
 
     match /contracts/{contractId} {
@@ -774,6 +832,7 @@ service cloud.firestore {
           && me == d.tutor_id && d.proposed_by == me
           && verifiedTutor(d.tutor_id)
           && get(/databases/$(database)/documents/tutor_agreements/$(d.tutor_id)).data.trang_thai == 'DA_KY'
+          && get(/databases/$(database)/documents/tutor_agreements/$(d.tutor_id)).data.het_han > request.time
           && d.lesson_id is string
           && lesson.tutor_id == d.tutor_id && lesson.student_id == d.student_id
           && lesson.trang_thai == 'CONFIRMED' && lesson.hoc_thu == false
@@ -1141,8 +1200,10 @@ service cloud.firestore {
                                  'subject_type','subject_id','subject_label','reason','description','evidence_count','status',
                                  'admin_note','outcome','conclusion','refund_amount','created_at','updated_at'])
           && d.reporter_id == me && d.target_id != me
-          && d.subject_type in ['CONTRACT', 'CONVERSATION', 'LESSON'] && d.subject_id is string
-          && subjectMembers(d).hasAll([me, d.target_id])
+          && d.subject_type in ['CONTRACT', 'CONVERSATION', 'LESSON', 'TUTOR'] && d.subject_id is string
+          && (d.subject_type == 'TUTOR'
+            ? (d.subject_id == d.target_id && d.target_role == 'TUTOR' && verifiedTutor(d.target_id))
+            : subjectMembers(d).hasAll([me, d.target_id]))
           && d.reason is string && d.reason.size() >= 3 && d.reason.size() <= 120
           && d.description is string && d.description.size() >= 10 && d.description.size() <= 500
           && d.evidence_count is int && d.evidence_count >= 0 && d.evidence_count <= 5

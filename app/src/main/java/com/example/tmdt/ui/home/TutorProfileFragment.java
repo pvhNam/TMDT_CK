@@ -137,6 +137,8 @@ public final class TutorProfileFragment extends Fragment {
 
         // Favorite Button
         setupFavorite(host, finalTeacher);
+        // UC27 (Thành viên 4): nút ⋮ "Báo cáo gia sư".
+        com.example.tmdt.ui.exchange.TutorReportAction.bind(this, binding.ibReport, finalTeacher.userId, finalTeacher.name);
 
         // Footer Action Buttons
         binding.btnMessage.setOnClickListener(v -> host.classroom.message(finalTeacher.name));

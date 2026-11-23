@@ -10,6 +10,8 @@ public final class Report {
     public static final String OUTCOME_WARN = "CANH_CAO", OUTCOME_BAN = "KHOA_TAI_KHOAN", OUTCOME_REFUND = "HOAN_TIEN",
             OUTCOME_DISMISS = "BAC_BO", OUTCOME_NEED_INFO = "YEU_CAU_BO_SUNG";
     public static final String SUBJECT_CONTRACT = "CONTRACT", SUBJECT_CONVERSATION = "CONVERSATION", SUBJECT_LESSON = "LESSON";
+    /** Báo cáo một gia sư từ trang hồ sơ: subject_id = target_id = uid gia sư. */
+    public static final String SUBJECT_TUTOR = "TUTOR";
     public static final int MAX_DESCRIPTION = 500, MAX_EVIDENCE = 5;
     public static final String[] REASONS = {
             "Buổi học không diễn ra", "Gia sư/học viên đến muộn hoặc vắng mặt", "Đề nghị giao dịch ngoài nền tảng",

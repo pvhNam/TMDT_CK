@@ -89,7 +89,7 @@ public final class ContractTemplatesFragment extends ScreenFragment {
         ui.addAction(body, ui.action(state.busy() ? "Đang lưu…" : current == null ? "Lưu mẫu (phiên bản 1)" : "Lưu phiên bản " + (current.version + 1),
                 0, ready ? Ui.PRIMARY : Ui.DISABLED, ready ? () -> save(state, kind) : null), 48);
         ui.space(body, 8);
-        ui.add(body, ui.text("Hợp đồng đã gửi và hợp đồng cộng tác đã ký giữ nguyên nội dung cũ. Gia sư sẽ được nhắc ký lại khi mẫu cộng tác có phiên bản mới.", 13, Ui.MUTED, false));
+        ui.add(body, ui.text("Hợp đồng đã gửi và hợp đồng cộng tác đã ký giữ nguyên nội dung cũ. Gia sư đang trong thời hạn hợp đồng (1–2 năm) không phải ký lại; mẫu cộng tác mới chỉ áp dụng khi gia sư ký mới hoặc gia hạn.", 13, Ui.MUTED, false));
         return root;
     }
 

@@ -60,8 +60,17 @@ public final class ChatFragment extends Fragment {
         binding.back.setOnClickListener(v -> host.back());
         binding.video.setOnClickListener(v -> snack(getString(R.string.chat_video_info)));
         binding.attach.setOnClickListener(this::showTemplates);
-        // Nút ⋮ ẩn: hợp đồng dạy (UC23) đi theo luồng đặt lịch học; Xem đánh giá (UC26), Báo cáo (UC27) sẽ bật khi push các UC đó.
-        binding.more.setVisibility(View.GONE);
+        // Bấm avatar, tên hoặc nút ⋮: xem thông tin người kia, báo cáo cuộc trò chuyện, chặn / bỏ chặn.
+        View.OnClickListener peer = v -> showPeer();
+        binding.more.setOnClickListener(peer);
+        binding.avatarInitials.setOnClickListener(peer);
+        binding.avatarPhoto.setOnClickListener(peer);
+        binding.name.setOnClickListener(peer);
+        binding.status.setOnClickListener(peer);
+        binding.blockedBanner.setOnClickListener(v -> {
+            Conversation c = chat.conversation();
+            if (c != null && c.blockedBy(chat.myId())) confirmBlock(c, false);
+        });
 
         binding.input.setText(chat.draft());
         binding.input.addTextChangedListener(new TextWatcher() {
@@ -90,6 +99,61 @@ public final class ChatFragment extends Fragment {
         boolean ready = binding.input.getText() != null && !binding.input.getText().toString().trim().isEmpty();
         binding.send.setEnabled(ready);
         binding.send.setAlpha(ready ? 1f : 0.45f);
+    }
+
+    /** Thông tin người đang trò chuyện và các thao tác: xem hồ sơ gia sư, báo cáo cuộc trò chuyện, chặn / bỏ chặn. */
+    private void showPeer() {
+        Conversation c = chat.conversation();
+        if (c == null || binding == null) return;
+        MainActivity host = (MainActivity) requireActivity();
+        boolean tutor = "TUTOR".equals(c.peerRole);
+        boolean blockedByMe = c.blockedBy(chat.myId());
+        StringBuilder info = new StringBuilder(getString(tutor ? R.string.chat_role_tutor : R.string.chat_role_student));
+        info.append(" · ").append(binding.status.getText());
+        if (c.hasLesson()) info.append("\nBuổi học liên quan: ").append(c.lessonTitle).append(c.lessonTime.isEmpty() ? "" : " · " + c.lessonTime);
+        if (blockedByMe) info.append("\n\nBạn đang chặn người này: hai bên không gửi tin được.");
+        else if (c.blocked()) info.append("\n\nNgười này đã chặn cuộc trò chuyện.");
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.List<Runnable> actions = new java.util.ArrayList<>();
+        if (tutor) { labels.add("Xem hồ sơ gia sư"); actions.add(() -> host.classroom.openTutor(c.peerId, c.peerName, "chat")); }
+        labels.add("Báo cáo cuộc trò chuyện");
+        actions.add(() -> host.exchange.openReport(com.example.tmdt.Report.SUBJECT_CONVERSATION, c.id));
+        labels.add(blockedByMe ? "Bỏ chặn " + c.peerName : "Chặn " + c.peerName);
+        actions.add(() -> confirmBlock(c, !blockedByMe));
+        android.content.Context context = requireContext();
+        float dp = getResources().getDisplayMetrics().density;
+        android.widget.LinearLayout content = new android.widget.LinearLayout(context);
+        content.setOrientation(android.widget.LinearLayout.VERTICAL);
+        content.setPadding((int) (24 * dp), (int) (8 * dp), (int) (24 * dp), 0);
+        android.widget.TextView text = new android.widget.TextView(context);
+        text.setText(info.toString()); text.setTextSize(14); text.setTextColor(context.getColor(R.color.chat_muted));
+        text.setPadding(0, 0, 0, (int) (8 * dp));
+        content.addView(text);
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle(c.peerName).setView(content).setNegativeButton(R.string.cancel, null).create();
+        android.util.TypedValue ripple = new android.util.TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
+        for (int i = 0; i < labels.size(); i++) {
+            final Runnable action = actions.get(i);
+            android.widget.TextView row = new android.widget.TextView(context);
+            row.setText(labels.get(i)); row.setTextSize(16);
+            row.setTextColor(context.getColor(i == labels.size() - 1 && !blockedByMe ? R.color.chat_red : R.color.app_accent));
+            row.setMinHeight((int) (48 * dp)); row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setBackgroundResource(ripple.resourceId);
+            row.setOnClickListener(v -> { dialog.dismiss(); action.run(); });
+            content.addView(row);
+        }
+        dialog.show();
+    }
+
+    private void confirmBlock(Conversation c, boolean block) {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(block ? "Chặn " + c.peerName + "?" : "Bỏ chặn " + c.peerName + "?")
+                .setMessage(block ? "Hai bên sẽ không gửi tin nhắn được trong cuộc trò chuyện này cho tới khi bạn bỏ chặn. "
+                        + "Tin nhắn cũ vẫn giữ nguyên. Nếu người này vi phạm, bạn nên gửi báo cáo cho quản trị viên."
+                        : "Hai bên sẽ nhắn tin lại được như bình thường.")
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(block ? "Chặn" : "Bỏ chặn", (d, w) -> chat.setBlocked(block)).show();
     }
 
     /** Nút (+): chèn mẫu câu để trao đổi mục tiêu, bài tập, lịch học. */
@@ -128,6 +192,14 @@ public final class ChatFragment extends Fragment {
         else status = getString("TUTOR".equals(conversation.peerRole) ? R.string.chat_role_tutor : R.string.chat_role_student);
         binding.status.setText(status);
         binding.status.setTextColor(requireContext().getColor(online ? R.color.chat_green : R.color.chat_muted));
+
+        // Bị chặn: thay ô soạn thảo bằng dòng giải thích (người đã chặn chạm để bỏ chặn).
+        boolean blocked = conversation.blocked();
+        binding.composer.setVisibility(blocked ? View.GONE : View.VISIBLE);
+        binding.blockedBanner.setVisibility(blocked ? View.VISIBLE : View.GONE);
+        if (blocked) binding.blockedBanner.setText(conversation.blockedBy(chat.myId())
+                ? "Bạn đã chặn " + conversation.peerName + ". Chạm để bỏ chặn."
+                : "Bạn không thể nhắn tin trong cuộc trò chuyện này.");
 
         // Buổi học liên quan
         binding.lessonCard.setVisibility(conversation.hasLesson() ? View.VISIBLE : View.GONE);

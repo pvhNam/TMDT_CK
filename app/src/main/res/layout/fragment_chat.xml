@@ -243,7 +243,21 @@
         android:layout_height="1dp"
         android:background="@color/chat_border" />
 
+    <TextView
+        android:id="@+id/blocked_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minHeight="56dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:textColor="@color/chat_muted"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
     <LinearLayout
+        android:id="@+id/composer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"

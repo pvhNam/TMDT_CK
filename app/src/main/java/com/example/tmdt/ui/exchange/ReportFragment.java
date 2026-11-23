@@ -90,6 +90,12 @@ public final class ReportFragment extends Fragment {
             list.add(new ReportState.Subject(Report.SUBJECT_CONTRACT, c.id, "Hợp đồng " + c.code + " · " + c.subject,
                     other, c.otherName(me), other.equals(c.tutorId) ? Review.TUTOR : Review.STUDENT));
         }
+        // Báo cáo gia sư (mở từ trang hồ sơ gia sư): chỉ có khi được chọn sẵn.
+        if (Report.SUBJECT_TUTOR.equals(exchange.reportType()) && exchange.reportSubject() != null && !me.equals(exchange.reportSubject())) {
+            String name = exchange.reportName().isEmpty() ? "Gia sư" : exchange.reportName();
+            list.add(new ReportState.Subject(Report.SUBJECT_TUTOR, exchange.reportSubject(), "Hồ sơ gia sư " + name,
+                    exchange.reportSubject(), name, Review.TUTOR));
+        }
         ChatState chat = ((MainActivity) requireActivity()).chat;
         for (Conversation c : chat.conversations())
             list.add(new ReportState.Subject(Report.SUBJECT_CONVERSATION, c.id, "Trò chuyện với " + c.peerName,
