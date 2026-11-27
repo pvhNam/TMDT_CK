@@ -190,6 +190,7 @@ public final class Store {
         if (item.tutorId.equals(student)) return "Bạn là gia sư của lớp này.";
         if (item.cancelled()) return "Lớp đã bị gia sư hủy.";
         if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh.";
+        if (item.started()) return "Lớp đã khai giảng nên không nhận thêm học viên.";
         if (item.full()) return "Lớp đã đủ chỗ.";
         if (item.members.contains(student)) return "Bạn đã là thành viên của lớp này.";
         if (item.registrationOf(student) != null) return "Bạn đã gửi đăng ký lớp này và đang chờ gia sư duyệt.";
@@ -215,6 +216,7 @@ public final class Store {
     public String accept(GroupClass item, GroupClass.Registration registration) {
         if (!GroupClass.OPEN.equals(item.status)) return "Lớp đã đóng tuyển sinh, không thể duyệt thêm.";
         if (!registration.pending()) return "Đăng ký này đã được xử lý.";
+        if (item.started()) return "Lớp đã khai giảng, không thể duyệt thêm học viên.";
         if (item.full()) return "Lớp đã đủ "+item.capacity+" học viên. Không thể duyệt thêm.";
         registration.status = Lesson.CONFIRMED; item.members.add(registration.studentId);
         remote.save(item, Collections.singletonList(registration)); return null;
@@ -325,7 +327,8 @@ public final class Store {
     }
 
     /**
-     * Follows the clock: a class whose last session is over has ended (UC17). A class that no longer
+     * Follows the clock: a class whose last session is over has ended (UC17), and an open class whose first
+     * session has begun stops recruiting. A class that no longer
      * recruits closes the registrations still waiting, which frees the students' time slots.
      * A proposal members can no longer answer becomes part of the schedule, or is dropped when someone was busy.
      * Only the class's tutor may write it, and only once per class or proposal, so a refused write is not retried in a loop.
@@ -334,11 +337,16 @@ public final class Store {
         for (GroupClass item : classes) {
             boolean ended = item.active() && item.over();
             if (ended) item.status = GroupClass.ENDED;
-            List<GroupClass.Registration> closed = GroupClass.OPEN.equals(item.status) ? Collections.emptyList() : closeWaiting(item);
             boolean mine = item.tutorId.equals(user);
+            boolean begun = mine && GroupClass.OPEN.equals(item.status) && item.started();
+            if (begun) item.status = GroupClass.RUNNING;
+            List<GroupClass.Registration> closed = GroupClass.OPEN.equals(item.status) ? Collections.emptyList() : closeWaiting(item);
             boolean moved = mine && item.proposal != null && !item.proposalOpen() && settled.add(item.id+"#"+item.proposal.key()) && item.settleProposal();
-            boolean changed = (ended || !closed.isEmpty()) && mine && settled.add(item.id);
-            if (changed || moved) remote.save(item, closed);
+            boolean changed = (ended || begun || !closed.isEmpty()) && mine && settled.add(item.id+"#"+item.status);
+            // An ended or cancelled class can no longer be written, so only its waiting registrations are closed.
+            if (!changed && !moved) continue;
+            if (ended || begun || moved) remote.save(item, closed);
+            else for (GroupClass.Registration registration : closed) remote.save(registration);
         }
     }
     private static List<GroupClass.Registration> closeWaiting(GroupClass item) {

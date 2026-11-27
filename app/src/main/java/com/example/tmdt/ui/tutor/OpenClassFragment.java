@@ -29,6 +29,8 @@ public final class OpenClassFragment extends ScreenFragment {
     /** Students who posted the same need, when the form was opened from "Gợi ý ghép nhóm". */
     private GroupMatch.Group draft;
     private boolean started;
+    /** The class already has accepted students, so its fee and schedule stay as they signed up for. */
+    private boolean locked;
     private String subject = "Toán", mode = "Trực tuyến";
     private int capacity = 5, sessions = 4, hour = 19, minute = 0, minutes = 60;
     private int[] days = {6};
@@ -40,7 +42,7 @@ public final class OpenClassFragment extends ScreenFragment {
 
     /** A new class starts from the defaults or from a group of students; an edited one (UC17) from its saved values. */
     private void start() {
-        started = true; editing = classroom.store.groupClass(classroom.classId);
+        started = true; editing = classroom.store.groupClass(classroom.classId); locked = editing != null && editing.termsLocked();
         draft = editing == null ? classroom.classDraft : null; classroom.classDraft = null;
         if (draft != null) {
             subject = draft.subject; capacity = Math.max(2,Math.min(10,draft.size()));
@@ -63,6 +65,10 @@ public final class OpenClassFragment extends ScreenFragment {
             ui.space(body,12);
         }
 
+        if (locked) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Lớp đã có "+editing.members.size()+" học viên nên giữ nguyên học phí và lịch học. Muốn dời một buổi, dùng Đổi lịch ở Lịch dạy.",Ui.PALE,Ui.BLUE,Ui.INK));
+            ui.space(body,12);
+        }
         LinearLayout info = group(body,"Thông tin lớp");
         ui.label(info,"Tên lớp *"); name = ui.entry("Ví dụ: Ôn Toán lớp 12",false);
         name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(60)}); ui.add(info,name); ui.space(info,12);
@@ -87,17 +93,23 @@ public final class OpenClassFragment extends ScreenFragment {
         capacityValue = ui.text("",17,Ui.INK,true);
         ui.add(plan,stepper("Số thành viên tối đa","Từ 2 đến 10 học viên",capacityValue,()->{if(capacity>2)capacity--;render();},()->{if(capacity<10)capacity++;render();}));
         ui.space(plan,10);
+        LinearLayout schedule = ui.column(); ui.add(plan,schedule);
         sessionsValue = ui.text("",17,Ui.INK,true);
-        ui.add(plan,stepper("Số buổi","Tối đa 12 buổi",sessionsValue,()->{if(sessions>1)sessions--;render();},()->{if(sessions<12)sessions++;render();}));
-        ui.space(plan,14);
-        ui.label(plan,"Ngày học trong tuần *"); weekdays = ui.row(); ui.add(plan,weekdays); ui.space(plan,14);
+        ui.add(schedule,stepper("Số buổi","Tối đa 12 buổi",sessionsValue,()->{if(sessions>1)sessions--;render();},()->{if(sessions<12)sessions++;render();}));
+        ui.space(schedule,14);
+        ui.label(schedule,"Ngày học trong tuần *"); weekdays = ui.row(); ui.add(schedule,weekdays); ui.space(schedule,14);
         time = new TimeRange(ui,FIRST_HOUR,LAST_END,30,Integer.MAX_VALUE,30,30,hour,minute,minutes,(h,mi,m)->{hour=h;minute=mi;minutes=m;showHint();});
         hour = time.hour(); minute = time.minute(); minutes = time.minutes();
-        ui.add(plan,time.view("Thời gian dạy *")); ui.space(plan,14);
-        ui.label(plan,"Ngày khai giảng *");
+        ui.add(schedule,time.view("Thời gian dạy *")); ui.space(schedule,14);
+        ui.label(schedule,"Ngày khai giảng *");
         HorizontalScrollView scroll = new HorizontalScrollView(classroom.context()); scroll.setHorizontalScrollBarEnabled(false);
-        dates = ui.row(); scroll.addView(dates); ui.add(plan,scroll); ui.space(plan,6);
-        startHint = ui.text("",13,Ui.MUTED,false); ui.add(plan,startHint);
+        dates = ui.row(); scroll.addView(dates); ui.add(schedule,scroll); ui.space(schedule,6);
+        startHint = ui.text("",13,Ui.MUTED,false); ui.add(schedule,startHint);
+        if (locked) {
+            schedule.setVisibility(View.GONE);
+            ui.add(plan,ui.fact(R.drawable.ic_calendar,editing.scheduleLabel(),18,15,Ui.INK,false));
+            ui.add(plan,ui.fact(R.drawable.ic_file,"Khai giảng "+editing.startLabel()+" · "+editing.sessions+" buổi",18,15,Ui.INK,false));
+        }
 
         LinearLayout fee = group(body,"Học phí");
         LinearLayout priceBox = ui.row(); priceBox.setPadding(ui.dp(12),0,ui.dp(12),0); priceBox.setMinimumHeight(ui.dp(46)); ui.fieldSurface(priceBox,0xFFF8FAFF,Ui.BORDER);
@@ -107,7 +119,7 @@ public final class OpenClassFragment extends ScreenFragment {
         price.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
         price.setContentDescription("Học phí mỗi học viên, đồng một khóa");
         ui.weight(priceBox,price); priceBox.addView(ui.text("đ / khóa",15,Ui.MUTED,true)); ui.add(fee,priceBox); ui.space(fee,6);
-        ui.add(fee,ui.text("Mỗi học viên, từ 50.000đ đến 10.000.000đ cho cả khóa.",13,Ui.MUTED,false));
+        ui.add(fee,ui.text(locked?"Học phí giữ nguyên vì lớp đã có học viên được duyệt.":"Mỗi học viên, từ 50.000đ đến 10.000.000đ cho cả khóa.",13,Ui.MUTED,false));
         if (draft != null && draft.budget() > 0) {
             ui.space(fee,4); ui.add(fee,ui.text("Gợi ý theo ngân sách khoảng "+Tutor.money((int) draft.budget())+" / buổi của nhóm.",13,Ui.BLUE,false));
         }
@@ -123,6 +135,7 @@ public final class OpenClassFragment extends ScreenFragment {
             name.setText(draft.title()); description.setText(draft.description());
             if (draft.price(sessions) > 0) price.setText(String.valueOf(draft.price(sessions)));
         }
+        if (locked) { price.setEnabled(false); price.setTextColor(Ui.MUTED); }
         counter.setText(description.length()+"/200");
         render();
         return root;
@@ -156,7 +169,7 @@ public final class OpenClassFragment extends ScreenFragment {
         }
         dates.removeAllViews();
         LocalDate date = nextClassDay(LocalDate.now().plusDays(1));
-        if (start.isBefore(date)) start = date;
+        if (!locked && start.isBefore(date)) start = date;
         for (int i = 0; i < 8; i++, date = date.plusWeeks(1)) {
             LocalDate value = date; if (i > 0) ui.gap(dates,8);
             dates.addView(dateCell(value,value.equals(start),()->{start=value;render();}),ui.lp(64,70));
@@ -199,17 +212,18 @@ public final class OpenClassFragment extends ScreenFragment {
         String title = name.getText().toString().trim(), place = address.getText().toString().trim(), about = description.getText().toString().trim();
         int fee;
         try { fee = Integer.parseInt(price.getText().toString().trim()); } catch (NumberFormatException invalid) { fee = 0; }
+        if (locked) fee = editing.price;
         if (title.isEmpty()) { name.setError("Vui lòng nhập tên lớp"); name.requestFocus(); return; }
         if (mode.equals("Tại nhà") && place.isEmpty()) { address.setError("Vui lòng nhập địa điểm học"); address.requestFocus(); return; }
-        if (fee < 50000 || fee > 10000000) { price.setError("Học phí từ 50.000đ đến 10.000.000đ"); price.requestFocus(); return; }
+        if (!locked && (fee < 50000 || fee > 10000000)) { price.setError("Học phí từ 50.000đ đến 10.000.000đ"); price.requestFocus(); return; }
         if (about.isEmpty()) { description.setError("Vui lòng mô tả lớp học"); description.requestFocus(); return; }
-        if (!start.isAfter(LocalDate.now())) { classroom.dialog("Ngày bắt đầu chưa hợp lệ","Ngày bắt đầu cần sau hôm nay."); return; }
+        if (!locked && !start.isAfter(LocalDate.now())) { classroom.dialog("Ngày bắt đầu chưa hợp lệ","Ngày bắt đầu cần sau hôm nay."); return; }
         boolean onClassDay = false; for (int day : days) onClassDay |= start.getDayOfWeek().getValue()==day;
-        if (!onClassDay) { classroom.dialog("Ngày bắt đầu chưa khớp lịch","Ngày bắt đầu cần rơi vào "+label().split(" · ")[0]+"."); return; }
+        if (!locked && !onClassDay) { classroom.dialog("Ngày bắt đầu chưa khớp lịch","Ngày bắt đầu cần rơi vào "+label().split(" · ")[0]+"."); return; }
         if (editing != null && capacity < editing.members.size()) {
             classroom.dialog("Số thành viên chưa hợp lệ","Lớp đã có "+editing.members.size()+" học viên, không thể giảm giới hạn xuống "+capacity+"."); return;
         }
-        String clash = classroom.store.classClash(classroom.me(),days,hour*60+minute,minutes,start,sessions,editing==null?"":editing.id);
+        String clash = locked ? null : classroom.store.classClash(classroom.me(),days,hour*60+minute,minutes,start,sessions,editing==null?"":editing.id);
         if (clash != null) { classroom.dialog("Lịch học bị trùng",clash); return; }
 
         GroupClass item = editing != null ? editing : new GroupClass(classroom.store.newId("group_classes"),classroom.me(),classroom.tutorName());

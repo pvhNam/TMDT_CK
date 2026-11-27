@@ -13,6 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:clipToPadding="false"
         android:padding="20dp">
         <LinearLayout
             android:layout_width="match_parent"
@@ -94,52 +95,35 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:background="@drawable/bg_pale"
-            android:foreground="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="56dp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_users"
-                app:tint="@color/theme_text_0866f5"
-                android:importantForAccessibility="no" />
-            <LinearLayout
+            android:layout_marginStart="-6dp"
+            android:layout_marginEnd="-6dp"
+            android:paddingHorizontal="6dp"
+            android:paddingTop="4dp"
+            android:clipToPadding="false"
+            android:orientation="vertical" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical">
+            <TextView
+                style="@style/SectionTitle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:orientation="vertical">
-                <TextView
-                    style="@style/FieldLabel"
-                    android:layout_marginBottom="2dp"
-                    android:text="@string/group_classes_heading" />
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/theme_text_4d6287"
-                    android:text="@string/group_classes_caption" />
-            </LinearLayout>
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:src="@drawable/ic_right"
-                app:tint="@color/theme_text_081f50"
-                android:importantForAccessibility="no" />
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="@string/catalog_heading" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/refresh"
+                style="@style/TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:minHeight="40dp"
+                android:paddingHorizontal="8dp"
+                android:text="@string/refresh_short"
+                android:contentDescription="@string/refresh_catalog" />
         </LinearLayout>
-        <TextView
-            style="@style/SectionTitle"
-            android:text="@string/catalog_heading" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/refresh"
-            style="@style/TextButton"
-            android:text="@string/refresh_catalog"
-            android:contentDescription="@string/refresh_catalog" />
         <ProgressBar
             android:id="@+id/progress"
             android:layout_width="32dp"
@@ -172,7 +156,54 @@
             android:id="@+id/results"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_marginBottom="120dp"
+            android:paddingHorizontal="4dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="4dp"
+            android:orientation="vertical">
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/results_pager"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <LinearLayout
+                android:id="@+id/pager_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="6dp"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:id="@+id/pager_prev"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="10dp"
+                    android:rotation="180"
+                    android:background="@drawable/bg_pale"
+                    android:src="@drawable/ic_right"
+                    app:tint="@color/theme_text_0866f5"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/previous_tutors" />
+                <LinearLayout
+                    android:id="@+id/pager_dots"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:importantForAccessibility="no" />
+                <ImageView
+                    android:id="@+id/pager_next"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_pale"
+                    android:src="@drawable/ic_right"
+                    app:tint="@color/theme_text_0866f5"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/next_tutors" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -13,7 +13,6 @@ import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
 import com.google.android.material.tabs.TabLayout;
 import com.example.tmdt.GroupClass;
-import com.example.tmdt.GroupMatch;
 import com.example.tmdt.Tutor;
 
 /** Screen 35 · Lớp đã mở (UC17): the tutor's classes by status, with review, edit and close actions. */
@@ -54,23 +53,21 @@ public final class OpenedClassesFragment extends ScreenFragment {
         for(int i=0;i<3;i++)tabs.getTabAt(i).setText(labels[i]+" ("+mine(STATUSES[i]).size()+")");
         if(tabs.getSelectedTabPosition()!=classroom.classTab)tabs.getTabAt(classroom.classTab).select();
         StableViews rows=StableViews.at(listContainer);rows.begin();
-        int groups=GroupMatch.groups(classroom.store.openRequests,classroom.me()).size();
-        if(classroom.classTab==0&&groups>0)rows.add("matches",groups,()->matchLink(groups),ui.dp(12));
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
+        if(list.isEmpty())rows.add("empty/"+classroom.classTab,true,this::empty,ui.dp(11));
         rows.commit();
     }
 
-    private View matchLink(int groups){
-        LinearLayout row=ui.row();row.setPadding(ui.dp(14),ui.dp(11),ui.dp(10),ui.dp(11));
-        ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);row.addView(ui.icon(R.drawable.ic_users,22,Ui.BLUE));ui.gap(row,12);
-        LinearLayout copy=ui.column();ui.add(copy,ui.text("Gợi ý ghép nhóm",16,Ui.INK,true));ui.space(copy,2);
-        ui.add(copy,ui.text(groups+" nhóm học viên cùng nhu cầu",13,Ui.MUTED,false));ui.weight(row,copy);ui.gap(row,8);
-        row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));row.setContentDescription("Gợi ý ghép nhóm, "+groups+" nhóm học viên");
-        ui.clickable(row,()->classroom.show("matches"));return row;
-    }
-
     @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}
+
+    private View empty(){
+        switch(classroom.classTab){
+            case 0:return classroom.emptyState(R.drawable.ic_users,"Chưa có lớp đang tuyển","Mở lớp mới để học viên tìm thấy và đăng ký.","＋ Mở lớp",()->classroom.openClass(null,"openClass"));
+            case 1:return classroom.emptyState(R.drawable.ic_video,"Chưa có lớp đang học","Lớp chuyển sang đây khi đóng tuyển sinh hoặc đến ngày khai giảng.",null,null);
+            default:return classroom.emptyState(R.drawable.ic_file,"Chưa có lớp đã kết thúc","Lớp đã học xong hoặc đã hủy sẽ hiện ở đây.",null,null);
+        }
+    }
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();

@@ -6,8 +6,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.tmdt.ui.booking.BookingFragment;
@@ -28,6 +34,7 @@ import com.example.tmdt.ui.tutor.TeachingScheduleFragment;
 import com.example.tmdt.ui.tutor.TutorHomeFragment;
 import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -76,6 +83,8 @@ public final class Classroom {
     public GroupMatch.Group classDraft;
     /** Where the open class form was opened from, so back returns there. */
     private String openClassOrigin="classes";
+    /** Where a class was opened from to view or join it: the home screen or the class search. */
+    private String classOrigin="groups";
 
     Classroom(MainActivity host,Bundle state){
         this.host=host;ui=new Ui(host);
@@ -92,6 +101,7 @@ public final class Classroom {
             tutorProfileOrigin=state.getString("tutorProfileOrigin","home");
             registrationsOrigin=state.getString("registrationsOrigin","groups");registrationFilter=state.getInt("registrationFilter",0);
             openClassOrigin=state.getString("openClassOrigin","classes");
+            classOrigin=state.getString("classOrigin","groups");
         }
         cloud.user(host.account.signedIn()?host.account.uid():"");
         cloud.changes().observe(host,ignored->changed());
@@ -103,6 +113,7 @@ public final class Classroom {
         out.putString("tutorProfileOrigin",tutorProfileOrigin);
         out.putString("registrationsOrigin",registrationsOrigin);out.putInt("registrationFilter",registrationFilter);
         out.putString("openClassOrigin",openClassOrigin);
+        out.putString("classOrigin",classOrigin);
         if(bookingDraft!=null)out.putBundle("booking",bookingDraft);
     }
 
@@ -268,7 +279,7 @@ public final class Classroom {
             case "trial":return "booking";
             case "lesson":return "schedule";
             case "confirm":case "cancel":case "reschedule":return "lesson";
-            case "join":case "full":return "groups";
+            case "join":case "full":return classOrigin;
             case "openClass":return openClassOrigin;
             case "review":return "classes";
             case "matches":return "tutorHome";
@@ -282,6 +293,7 @@ public final class Classroom {
     // Actions used by the screens ------------------------------------------------------------------
 
     public Context context(){return host;}
+    public androidx.lifecycle.LiveData<Integer> changes(){return cloud.changes();}
     public void show(String destination){host.show(destination);}
     public void back(){host.back();}
     public void hideKeyboard(){host.hideKeyboard();}
@@ -317,6 +329,7 @@ public final class Classroom {
     public void openClass(GroupClass item,String destination){
         classId=item==null?"":item.id;
         if("openClass".equals(destination)){openClassOrigin="classes";classDraft=null;}
+        if(("join".equals(destination)||"full".equals(destination))&&!"join".equals(host.screen)&&!"full".equals(host.screen))classOrigin="home".equals(host.screen)?"home":"groups";
         show(destination);
     }
     /** Opens the new class form filled in for a group of students who posted the same need. */
@@ -343,9 +356,107 @@ public final class Classroom {
     /** A group class has one room for its tutor and members, open around each session. */
     public void openClassRoom(GroupClass item){
         if(!item.tutorId.equals(me())&&!item.members.contains(me())){dialog("Phòng học trực tuyến","Chỉ gia sư và học viên của lớp mới vào được phòng học.");return;}
+        if(!classPaid(item)){
+            ui.dialog().setTitle("Phòng học trực tuyến").setMessage("Bạn cần thanh toán học phí lớp \""+item.title+"\" trước khi vào học.")
+                    .setNegativeButton("Để sau",null).setPositiveButton("Thanh toán",(dialog,which)->payClass(item)).show();
+            return;
+        }
         if(!item.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
         openUrl(item.roomUrl());
     }
+    /** A member studies once the course is paid through VNPay; the class's tutor always may. */
+    public boolean classPaid(GroupClass item){
+        if(item.tutorId.equals(me()))return true;
+        PaymentState.Row payment=host.payments.paymentFor("GROUP",item.id+"_"+me());
+        String status=payment==null?"":payment.text("status");
+        return "PAID".equals(status)||"PAID_REVIEW".equals(status);
+    }
+    public void payClass(GroupClass item){host.openPayment("GROUP",item.id+"_"+me());}
+
+    /** A card for a list with nothing in it: what is missing and, when there is one, what to do next. */
+    public View emptyState(int icon,String title,String message,String action,Runnable click){
+        LinearLayout card=ui.column();card.setGravity(Gravity.CENTER_HORIZONTAL);card.setPadding(ui.dp(20),ui.dp(22),ui.dp(20),ui.dp(20));
+        ui.cardSurface(card,Ui.WHITE,Ui.BORDER);
+        FrameLayout badge=new FrameLayout(host);ui.surface(badge,Ui.PALE,28,0);
+        badge.addView(ui.icon(icon,26,Ui.BLUE),new FrameLayout.LayoutParams(ui.dp(26),ui.dp(26),Gravity.CENTER));
+        card.addView(badge,ui.lp(56,56));ui.space(card,12);
+        TextView head=ui.text(title,16,Ui.INK,true);head.setGravity(Gravity.CENTER);ui.add(card,head);ui.space(card,4);
+        TextView text=ui.text(message,14,Ui.MUTED,false);text.setGravity(Gravity.CENTER);ui.add(card,text);
+        if(action!=null){ui.space(card,12);card.addView(ui.link(action,15,click),ui.lp(-2,-2));}
+        return card;
+    }
+
+    /** One line of Thông báo and the screen it opens. */
+    private static final class Alert{
+        final int icon;final String title,detail;final Runnable open;
+        Alert(int icon,String title,String detail,Runnable open){this.icon=icon;this.title=title;this.detail=detail;this.open=open;}
+    }
+    /** Thông báo: what needs the user now, read from their own lessons and group classes. */
+    public void showNotifications(){
+        List<Alert> alerts=tutorMode()?tutorAlerts():studentAlerts();
+        LinearLayout list=ui.column();list.setPadding(ui.dp(23),ui.dp(4),ui.dp(23),ui.dp(4));
+        ScrollView scroll=new ScrollView(host);scroll.addView(list);
+        AlertDialog dialog=ui.dialog().setTitle("Thông báo").setView(scroll).setPositiveButton("Đóng",null).create();
+        if(alerts.isEmpty())ui.add(list,ui.text("Chưa có thông báo mới.",15,Ui.MUTED,false));
+        for(Alert alert:alerts){
+            LinearLayout row=ui.row();row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(ui.dp(12),ui.dp(11),ui.dp(10),ui.dp(11));
+            ui.fieldSurface(row,Ui.PALE,0);
+            row.addView(ui.icon(alert.icon,22,Ui.BLUE));ui.gap(row,12);
+            LinearLayout text=ui.column();ui.add(text,ui.text(alert.title,15,Ui.INK,true));ui.space(text,2);
+            TextView detail=ui.text(alert.detail,13,Ui.MUTED,false);detail.setMaxLines(2);detail.setEllipsize(android.text.TextUtils.TruncateAt.END);ui.add(text,detail);
+            ui.weight(row,text);ui.gap(row,6);row.addView(ui.icon(R.drawable.ic_right,18,Ui.MUTED));
+            row.setContentDescription(alert.title+". "+alert.detail);
+            ui.clickable(row,()->{dialog.dismiss();alert.open.run();});
+            ui.add(list,row);ui.space(list,8);
+        }
+        dialog.show();
+    }
+    private List<Alert> tutorAlerts(){
+        List<Alert> list=new ArrayList<>();LocalDate today=LocalDate.now();
+        for(GroupClass item:store.classes)if(item.tutorId.equals(me()))
+            for(GroupClass.Registration registration:item.registrations)if(registration.pending())
+                list.add(new Alert(R.drawable.ic_users,"Đăng ký lớp mới",registration.studentName+" muốn vào lớp \""+item.title+"\".",()->openClass(item,"review")));
+        for(Lesson lesson:lessons){
+            if(!lesson.tutorId.equals(me()))continue;
+            if(lesson.pending()&&!lesson.started())
+                list.add(new Alert(R.drawable.ic_mail,"Yêu cầu đặt lịch mới",lesson.studentName+" · "+lesson.title+" · "+lesson.dateLabel()+" "+lesson.timeLabel(),()->show("tutorHome")));
+            if(lesson.replied()&&!replySeen(lesson))
+                list.add(new Alert(R.drawable.ic_calendar,"Phản hồi đổi lịch",lesson.replyText(),()->teachOn(LocalDate.parse(lesson.date))));
+            if(lesson.confirmed()&&lesson.date.equals(today.toString())&&!lesson.ended())
+                list.add(new Alert(R.drawable.ic_clock,"Buổi dạy hôm nay",lesson.title+" · "+lesson.timeLabel()+" · "+lesson.studentName,()->teachOn(today)));
+        }
+        for(GroupClass item:store.classes)if(item.tutorId.equals(me())&&item.active())
+            for(GroupClass.Session session:item.sessionList())if(session.date.equals(today)&&LocalDateTime.now().isBefore(session.end()))
+                list.add(new Alert(R.drawable.ic_clock,"Buổi dạy hôm nay","Lớp \""+item.title+"\" · "+session.label(),()->teachOn(today)));
+        return list;
+    }
+    private List<Alert> studentAlerts(){
+        List<Alert> list=new ArrayList<>();LocalDate today=LocalDate.now();
+        for(GroupClass item:store.classes){
+            if(item.tutorId.equals(me())||!item.active())continue;
+            boolean member=item.members.contains(me());
+            if(member&&!classPaid(item))
+                list.add(new Alert(R.drawable.ic_wallet,"Thanh toán học phí","Gia sư đã nhận bạn vào lớp \""+item.title+"\". Thanh toán để vào phòng học.",()->openClass(item,"join")));
+            for(GroupClass.Registration registration:item.registrations)
+                if(!member&&registration.studentId.equals(me())&&Lesson.REJECTED.equals(registration.status))
+                    list.add(new Alert(R.drawable.ic_info,"Đăng ký chưa được nhận","Gia sư chưa nhận bạn vào lớp \""+item.title+"\".",()->openClass(item,"join")));
+            if(member)for(GroupClass.Session session:item.sessionList())if(session.date.equals(today)&&LocalDateTime.now().isBefore(session.end()))
+                list.add(new Alert(R.drawable.ic_clock,"Buổi học hôm nay","Lớp \""+item.title+"\" · "+session.label(),()->openClass(item,"join")));
+        }
+        for(Lesson lesson:lessons){
+            if(!lesson.studentId.equals(me()))continue;
+            if(lesson.proposal()&&lesson.confirmed()&&!lesson.started())
+                list.add(new Alert(R.drawable.ic_calendar,"Gia sư đề xuất đổi lịch",lesson.title+": "+lesson.proposalLabel(),()->openLesson(lesson)));
+            if(lesson.needsConfirmation())
+                list.add(new Alert(R.drawable.ic_calendar,"Xác nhận buổi học",lesson.title+" · "+lesson.dateLabel()+" đã kết thúc. Xác nhận hoàn thành.",()->openLesson(lesson)));
+            if(lesson.confirmed()&&lesson.date.equals(today.toString())&&!lesson.ended())
+                list.add(new Alert(R.drawable.ic_clock,"Buổi học hôm nay",lesson.title+" · "+lesson.timeLabel(),()->openLesson(lesson)));
+        }
+        for(Map.Entry<GroupClass,GroupMatch.Request> entry:suggestions().entrySet())
+            list.add(new Alert(R.drawable.ic_users,"Lớp hợp với tin đăng của bạn","\""+entry.getKey().title+"\" khớp tin đăng \""+entry.getValue().title+"\".",()->openClass(entry.getKey(),"join")));
+        return list;
+    }
+    private void teachOn(LocalDate day){teachingDay=day;teachingMonth=false;show("teaching");}
     private void openUrl(String url){
         try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}
         catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+url);}
