@@ -25,7 +25,7 @@ import com.example.tmdt.GroupMatch;
 
 /** Screen 37 · Tìm lớp học nhóm (UC19): search and filter open group classes. */
 public final class GroupSearchFragment extends ScreenFragment {
-    private LinearLayout filters, results, history;
+    private LinearLayout filters, results;
     private EditText search;
     private static final String[] MODES = {"Mọi hình thức","Trực tuyến","Tại nhà"};
     /** Empty subject or mode means no filter. */
@@ -46,7 +46,6 @@ public final class GroupSearchFragment extends ScreenFragment {
         search.setOnEditorActionListener((v,id,event)->{classroom.hideKeyboard();return true;});
         ui.weight(box,search); ui.add(body,box); ui.space(body,13);
         filters = ui.row(); ui.add(body,filters); ui.space(body,13);
-        history=ui.column();ui.add(body,history); ui.space(body,13);
         results = ui.column(); ui.add(body,results);
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
@@ -96,12 +95,6 @@ public final class GroupSearchFragment extends ScreenFragment {
     }
 
     private void renderResults() {
-        StableViews historyRows=StableViews.at(history);historyRows.begin();
-        int sent=0,waiting=0;
-        for(GroupClass item:classroom.store.classes)for(GroupClass.Registration registration:item.registrations)
-            if(registration.studentId.equals(classroom.me())){sent++;if(registration.pending())waiting++;}
-        final int sentCount=sent,waitingCount=waiting;
-        historyRows.add("history",new int[]{sent,waiting},()->historyLink(sentCount,waitingCount),0);historyRows.commit();
         StableViews rows=StableViews.at(results);rows.begin();
         String query = normalized(search.getText().toString());
         // Ghép nhóm có cùng yêu cầu: classes that suit the student's own tutor requests come first while nothing is searched.
@@ -123,17 +116,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         rows.commit();
     }
 
-    private View historyLink(int sent,int waiting) {
-        LinearLayout row=ui.row();ui.pad(row,14,12);ui.cardSurface(row,Ui.WHITE,Ui.BORDER);
-        row.addView(ui.icon(R.drawable.ic_file,22,Ui.BLUE));ui.gap(row,12);
-        LinearLayout copy=ui.column();ui.add(copy,ui.text("Lớp đã đăng ký",15,Ui.INK,true));ui.space(copy,4);
-        ui.add(copy,ui.text(sent+" đăng ký"+(waiting>0?" · "+waiting+" chờ duyệt":""),13,Ui.MUTED,false));
-        ui.weight(row,copy);ui.gap(row,8);row.addView(ui.icon(R.drawable.ic_right,20,Ui.BLUE));
-        row.setContentDescription("Lớp đã đăng ký, "+sent+" đăng ký, "+waiting+" chờ duyệt");
-        ui.clickable(row,classroom::openRegistrations);return row;
-    }
-
-    @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;history=null;search=null;}
+    @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;search=null;}
 
     /** A class card; a suggested one names the student's request it suits. */
     private View card(GroupClass item, GroupMatch.Request request) {
