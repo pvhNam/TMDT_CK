@@ -122,7 +122,7 @@ public final class JoinClassFragment extends ScreenFragment {
                     String error = classroom.store.register(item,classroom.me(),classroom.myName(),objective,
                             learner == null ? "" : learner.id, learner == null ? "" : learner.name);
                     if (error != null) { classroom.dialog("Chưa gửi được đăng ký",error); return; }
-                    classroom.show("groups"); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
+                    classroom.back(); classroom.notice("Đã gửi đăng ký lớp \""+item.title+"\". Chờ gia sư duyệt.");
                 }).show();
     }
 }
