@@ -45,8 +45,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         // "Tìm lớp tương tự" on screen 60 opens this list filtered to the same subject and to classes that still have seats.
         if (classroom.similarSubject != null) { subject = classroom.similarSubject; seats = true; classroom.similarSubject = null; }
         LinearLayout root = ui.column();
-        ui.title(root,"Lớp học nhóm",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
+        ui.title(root,"Lớp học nhóm",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",classroom::showNotifications));
         LinearLayout body = ui.page(root);
         LinearLayout box = ui.row(); box.setPadding(ui.dp(12),0,ui.dp(6),0); ui.fieldSurface(box,Ui.PALE,Ui.BORDER);
         box.addView(ui.icon(R.drawable.ic_search,22,Ui.MUTED));
@@ -115,16 +114,30 @@ public final class GroupSearchFragment extends ScreenFragment {
                 rows.add("suggestion/"+entry.getKey().id,java.util.Arrays.asList(entry.getKey(),entry.getValue()),()->card(entry.getKey(),entry.getValue()),ui.dp(13));
             rows.add("all",true,()->ui.text("Tất cả lớp",18,Ui.INK,true),ui.dp(10));
         }
+        List<GroupClass> found = new ArrayList<>();
         for (GroupClass item : classroom.store.classes) {
-            if (!item.active()) continue;
+            if (!listed(item)) continue;
             if (!subject.isEmpty() && !item.subject.equals(subject)) continue;
             if (!mode.isEmpty() && !item.mode.equals(mode)) continue;
             if (seats && !item.recruiting()) continue;
             if (!normalized(item.title+" "+item.subject+" "+item.level+" "+item.tutorName).contains(query)) continue;
-            rows.add("class/"+item.id,item,()->card(item,null),ui.dp(13));
+            found.add(item);
         }
+        found.sort(Comparator.comparing(GroupClass::started).thenComparing((GroupClass item) -> item.startDate).thenComparingInt(GroupClass::begin));
+        for (GroupClass item : found) rows.add("class/"+item.id,item,()->card(item,null),ui.dp(13));
+        boolean filtered = !query.isEmpty() || !subject.isEmpty() || !mode.isEmpty() || seats;
+        if (found.isEmpty()) rows.add("empty/"+filtered,true,()->filtered
+                ? classroom.emptyState(R.drawable.ic_search,"Không tìm thấy lớp phù hợp","Thử từ khóa khác hoặc bỏ bớt bộ lọc.","Xóa bộ lọc",this::clearFilters)
+                : classroom.emptyState(R.drawable.ic_users,"Chưa có lớp đang tuyển sinh","Khi gia sư mở lớp mới, lớp sẽ hiện ở đây.",null,null),ui.dp(13));
         rows.commit();
     }
+
+    /** Classes still taking students, plus the ones the student already joined or applied to; never the user's own classes. */
+    private boolean listed(GroupClass item) {
+        if (!item.active() || item.tutorId.equals(classroom.me())) return false;
+        return item.attends(classroom.me()) || (GroupClass.OPEN.equals(item.status) && !item.started());
+    }
+    private void clearFilters() { subject = ""; mode = ""; seats = false; search.setText(""); renderFilters(); renderResults(); }
 
     @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;search=null;}
 

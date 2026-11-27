@@ -64,7 +64,8 @@ public final class JoinClassFragment extends ScreenFragment {
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());
         boolean closed = !GroupClass.OPEN.equals(item.status) || item.started();
-        if (!member && sent == null && !item.cancelled() && !closed) {
+        boolean mine = item.tutorId.equals(classroom.me());
+        if (!mine && !member && sent == null && !item.cancelled() && !closed) {
             com.example.tmdt.ui.exchange.LearnerPicker.add(ui,body,learners(),learnerId,id->{keepGoal();learnerId=id;refresh();},
                     ()->{keepGoal();((com.example.tmdt.MainActivity)requireActivity()).exchange.openLearners();});
             ui.space(body,14);
@@ -77,7 +78,10 @@ public final class JoinClassFragment extends ScreenFragment {
         price.addView(ui.icon(R.drawable.ic_coin,22,Ui.INK)); ui.gap(price,17); price.addView(ui.text(item.priceLabel(),22,Ui.INK,true));
         ui.add(body,price); ui.space(body,20);
 
-        if (item.cancelled()) {
+        if (mine) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Đây là lớp do bạn dạy. Quản lý lớp ở mục Lớp đã mở trong chế độ gia sư.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(body,16);
+            ui.addAction(body,ui.action("Lớp của bạn",0,Ui.DISABLED,null),52);
+        } else if (item.cancelled()) {
             ui.add(body,ui.note(R.drawable.ic_info,"Gia sư đã hủy lớp · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
             ui.addAction(body,ui.action("Lớp đã hủy",0,Ui.DISABLED,null),52);
         } else if (member && !classroom.classPaid(item)) {

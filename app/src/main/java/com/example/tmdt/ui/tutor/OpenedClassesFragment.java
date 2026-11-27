@@ -55,10 +55,19 @@ public final class OpenedClassesFragment extends ScreenFragment {
         StableViews rows=StableViews.at(listContainer);rows.begin();
         List<GroupClass> list=mine(STATUSES[classroom.classTab]);
         for(GroupClass item:list)rows.add("class/"+item.id,item,()->card(item),ui.dp(11));
+        if(list.isEmpty())rows.add("empty/"+classroom.classTab,true,this::empty,ui.dp(11));
         rows.commit();
     }
 
     @Override public void onDestroyView(){super.onDestroyView();listContainer=null;tabs=null;}
+
+    private View empty(){
+        switch(classroom.classTab){
+            case 0:return classroom.emptyState(R.drawable.ic_users,"Chưa có lớp đang tuyển","Mở lớp mới để học viên tìm thấy và đăng ký.","＋ Mở lớp",()->classroom.openClass(null,"openClass"));
+            case 1:return classroom.emptyState(R.drawable.ic_video,"Chưa có lớp đang học","Lớp chuyển sang đây khi đóng tuyển sinh hoặc đến ngày khai giảng.",null,null);
+            default:return classroom.emptyState(R.drawable.ic_file,"Chưa có lớp đã kết thúc","Lớp đã học xong hoặc đã hủy sẽ hiện ở đây.",null,null);
+        }
+    }
 
     private List<GroupClass> mine(String status) {
         List<GroupClass> list = new ArrayList<>();

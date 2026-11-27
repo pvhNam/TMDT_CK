@@ -51,7 +51,7 @@ public final class TutorHomeFragment extends ScreenFragment {
         mode.setContentDescription("Chế độ gia sư. Chạm để chuyển về chế độ học viên"); hello.addView(mode,ui.lp(-2,27));
         ui.weight(top,hello);
         top.addView(ui.iconButton(R.drawable.ic_wallet,Ui.BLUE,"Ví gia sư",()->classroom.show("tutor_wallet")));
-        top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
+        top.addView(ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",classroom::showNotifications));
         ui.add(body,top); ui.space(body,10);
         agreementCard(body);
 
@@ -92,6 +92,8 @@ public final class TutorHomeFragment extends ScreenFragment {
         sectionTitle(body,"Lịch dạy hôm nay",()->{classroom.teachingDay=LocalDate.now();classroom.show("teaching");});
         for (Lesson lesson : today) { ui.add(body,todayCard(lesson)); ui.space(body,10); }
         for (GroupClass.Session session : classesToday) { ui.add(body,classTodayCard(session)); ui.space(body,10); }
+        if (today.isEmpty() && classesToday.isEmpty())
+            ui.add(body,classroom.emptyState(R.drawable.ic_calendar,"Hôm nay không có buổi dạy","Các buổi dạy và buổi học nhóm trong ngày sẽ hiện ở đây.",null,null));
         return root;
     }
 
@@ -153,6 +155,12 @@ public final class TutorHomeFragment extends ScreenFragment {
         requestsToggle.setText(allRequests?"Thu gọn":"Xem tất cả");
         requestsToggle.setContentDescription(allRequests?"Thu gọn yêu cầu mới":"Xem tất cả yêu cầu mới");
         requests.removeAllViews(); int shown = 0;
+        if (pending.isEmpty() && waitingRegistrations() == 0) {
+            requestsToggle.setVisibility(View.GONE);
+            ui.add(requests,classroom.emptyState(R.drawable.ic_mail,"Chưa có yêu cầu mới","Yêu cầu đặt lịch và đăng ký lớp của học viên sẽ hiện ở đây.",null,null));
+            ui.space(requests,10); return;
+        }
+        requestsToggle.setVisibility(View.VISIBLE);
         for (Lesson lesson : pending) {
             if (!allRequests && shown == 1) break;
             ui.add(requests,requestCard(lesson.studentId,lesson.studentName,lesson.title,
@@ -168,6 +176,12 @@ public final class TutorHomeFragment extends ScreenFragment {
                 ui.space(requests,10); shown++;
             }
         }
+    }
+
+    private int waitingRegistrations() {
+        int count = 0;
+        for (GroupClass item : classroom.store.classes) if (item.tutorId.equals(classroom.me())) count += item.pendingCount();
+        return count;
     }
 
     private View requestCard(String userId, String name, String title, String when, String status, String action, Runnable click) {

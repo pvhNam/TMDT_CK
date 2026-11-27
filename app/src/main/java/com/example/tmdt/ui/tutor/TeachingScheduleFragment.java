@@ -29,8 +29,7 @@ public final class TeachingScheduleFragment extends ScreenFragment {
 
     @Override protected View build() {
         LinearLayout root = ui.column();
-        ui.title(root,"Lịch dạy",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",
-                ()->classroom.dialog("Thông báo","Chức năng này hiện chưa khả dụng.")));
+        ui.title(root,"Lịch dạy",ui.iconButton(R.drawable.ic_bell,Ui.INK,"Thông báo",classroom::showNotifications));
         LinearLayout body = ui.page(root);
         content = ui.column(); ui.add(body,content); render();
         return root;
