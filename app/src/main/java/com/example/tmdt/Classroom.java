@@ -76,6 +76,8 @@ public final class Classroom {
     public GroupMatch.Group classDraft;
     /** Where the open class form was opened from, so back returns there. */
     private String openClassOrigin="classes";
+    /** Where a class was opened from to view or join it: the home screen or the class search. */
+    private String classOrigin="groups";
 
     Classroom(MainActivity host,Bundle state){
         this.host=host;ui=new Ui(host);
@@ -92,6 +94,7 @@ public final class Classroom {
             tutorProfileOrigin=state.getString("tutorProfileOrigin","home");
             registrationsOrigin=state.getString("registrationsOrigin","groups");registrationFilter=state.getInt("registrationFilter",0);
             openClassOrigin=state.getString("openClassOrigin","classes");
+            classOrigin=state.getString("classOrigin","groups");
         }
         cloud.user(host.account.signedIn()?host.account.uid():"");
         cloud.changes().observe(host,ignored->changed());
@@ -103,6 +106,7 @@ public final class Classroom {
         out.putString("tutorProfileOrigin",tutorProfileOrigin);
         out.putString("registrationsOrigin",registrationsOrigin);out.putInt("registrationFilter",registrationFilter);
         out.putString("openClassOrigin",openClassOrigin);
+        out.putString("classOrigin",classOrigin);
         if(bookingDraft!=null)out.putBundle("booking",bookingDraft);
     }
 
@@ -268,7 +272,7 @@ public final class Classroom {
             case "trial":return "booking";
             case "lesson":return "schedule";
             case "confirm":case "cancel":case "reschedule":return "lesson";
-            case "join":case "full":return "groups";
+            case "join":case "full":return classOrigin;
             case "openClass":return openClassOrigin;
             case "review":return "classes";
             case "matches":return "tutorHome";
@@ -282,6 +286,7 @@ public final class Classroom {
     // Actions used by the screens ------------------------------------------------------------------
 
     public Context context(){return host;}
+    public androidx.lifecycle.LiveData<Integer> changes(){return cloud.changes();}
     public void show(String destination){host.show(destination);}
     public void back(){host.back();}
     public void hideKeyboard(){host.hideKeyboard();}
@@ -317,6 +322,7 @@ public final class Classroom {
     public void openClass(GroupClass item,String destination){
         classId=item==null?"":item.id;
         if("openClass".equals(destination)){openClassOrigin="classes";classDraft=null;}
+        if(("join".equals(destination)||"full".equals(destination))&&!"join".equals(host.screen)&&!"full".equals(host.screen))classOrigin="home".equals(host.screen)?"home":"groups";
         show(destination);
     }
     /** Opens the new class form filled in for a group of students who posted the same need. */

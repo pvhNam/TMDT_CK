@@ -7,10 +7,15 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +25,10 @@ import com.example.tmdt.R;
 import com.example.tmdt.ui.common.ScreenFragment;
 import com.example.tmdt.ui.common.Ui;
 import com.example.tmdt.ui.common.StableViews;
+import com.example.tmdt.ui.common.ThemeColors;
+import com.example.tmdt.Classroom;
+import com.example.tmdt.Lesson;
+import com.example.tmdt.Tutor;
 import com.example.tmdt.GroupClass;
 import com.example.tmdt.GroupMatch;
 
@@ -45,8 +54,9 @@ public final class GroupSearchFragment extends ScreenFragment {
         search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         search.setOnEditorActionListener((v,id,event)->{classroom.hideKeyboard();return true;});
         ui.weight(box,search); ui.add(body,box); ui.space(body,13);
-        filters = ui.row(); ui.add(body,filters); ui.space(body,13);
-        results = ui.column(); ui.add(body,results);
+        filters = ui.row(); ui.add(body,filters); ui.space(body,16);
+        results = ui.column(); results.setClipChildren(false); ui.add(body,results);
+        body.setClipChildren(false); body.setClipToPadding(false);
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
             public void onTextChanged(CharSequence s,int start,int before,int count) { renderResults(); }
@@ -118,25 +128,89 @@ public final class GroupSearchFragment extends ScreenFragment {
 
     @Override public void onDestroyView(){super.onDestroyView();filters=null;results=null;search=null;}
 
-    /** A class card; a suggested one names the student's request it suits. */
+    /** A class card; a suggested one names the student's request it suits. The whole card opens the class. */
     private View card(GroupClass item, GroupMatch.Request request) {
-        LinearLayout card = ui.bordered(); card.setPadding(ui.dp(9),ui.dp(12),ui.dp(10),ui.dp(10));
+        LinearLayout card = ui.column(); ui.pad(card,14,14); raise(ui,card,3);
         if (request != null) {
-            String title = request.title.length() > 36 ? request.title.substring(0,35).trim()+"…" : request.title;
-            ui.add(card,ui.note(R.drawable.ic_file,"Khớp tin đăng \""+title+"\"",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(card,10);
+            TextView match = ui.pill("Khớp tin đăng \""+request.title+"\"",13,Ui.GREEN,Ui.GREEN_BG);
+            match.setEllipsize(TextUtils.TruncateAt.END); card.addView(match,ui.lp(-2,-2)); ui.space(card,12);
         }
         LinearLayout top = ui.row(); top.setGravity(Gravity.TOP);
-        top.addView(ui.photo(item.art(),null,99,133,14)); ui.gap(top,13);
-        LinearLayout info = ui.column(); ui.add(info,ui.text(item.title,22,Ui.INK,true)); ui.space(info,6);
-        LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,43)); ui.gap(teacher,12);
-        ui.weight(teacher,ui.text(item.tutorName,16,Ui.INK,false)); ui.add(info,teacher); ui.space(info,6);
-        ui.add(info,ui.fact(item.mode.equals("Tại nhà")?R.drawable.ic_home_soft:R.drawable.ic_video,item.sessions+" buổi · "+item.mode,19,16,Ui.INK,false));
-        ui.add(info,ui.fact(R.drawable.ic_calendar,item.scheduleLabel(),19,16,Ui.INK,false));
-        ui.add(info,ui.fact(R.drawable.ic_coin,item.priceLabel(),19,16,Ui.INK,true)); ui.space(info,3);
-        info.addView(availability(item),ui.lp(-2,28)); ui.weight(top,info); ui.add(card,top); ui.space(card,8);
-        ClassQuestionEntry.add(this,ui,card,item.id);
-        ui.addAction(card,ui.action("Xem lớp",0,Ui.OUTLINE,()->classroom.openClass(item,item.full()?"full":"join")),41);
+        top.addView(ui.photo(item.art(),null,84,84,18)); ui.gap(top,12);
+        LinearLayout info = ui.column();
+        TextView title = ui.text(item.title,18,Ui.INK,true); title.setMaxLines(2); title.setEllipsize(TextUtils.TruncateAt.END); ui.add(info,title); ui.space(info,6);
+        LinearLayout teacher = ui.row(); teacher.addView(ui.avatar(item.tutorId,item.tutorName,24)); ui.gap(teacher,8);
+        ui.weight(teacher,line(ui.text(item.tutorName,14,Ui.MUTED,false))); ui.add(info,teacher); ui.space(info,8);
+        info.addView(availability(item),ui.lp(-2,-2)); ui.weight(top,info); ui.add(card,top); ui.space(card,12);
+        ui.add(card,ui.fact(R.drawable.ic_calendar,"Khai giảng "+item.startLabel()+" · "+item.scheduleLabel(),18,14,Ui.INK,false));
+        ui.add(card,ui.fact(item.online()?R.drawable.ic_video:R.drawable.ic_home_soft,item.sessions+" buổi · "+item.mode,18,14,Ui.INK,false));
+        ui.space(card,10); ui.line(card); ui.space(card,12);
+        LinearLayout bottom = ui.row(); LinearLayout price = ui.column();
+        ui.add(price,line(ui.text(Tutor.money(item.price),17,Ui.BLUE,true))); ui.space(price,2);
+        ui.add(price,line(ui.text(item.perSession?"mỗi buổi":"trọn khóa",12,Ui.MUTED,false))); ui.weight(bottom,price);
+        FrameLayout ask = new FrameLayout(requireContext()); ui.surface(ask,Ui.PALE,22,0);
+        ask.addView(ui.icon(R.drawable.ic_chat,20,Ui.BLUE),new FrameLayout.LayoutParams(ui.dp(20),ui.dp(20),Gravity.CENTER));
+        ask.setContentDescription(getString(R.string.class_questions_title)); ui.clickable(ask,()->ClassQuestionsDialog.open(this,item.id));
+        bottom.addView(ask,ui.lp(44,44)); ui.gap(bottom,8);
+        View open = ui.action("Xem lớp",0,Ui.PRIMARY,()->open(classroom,item)); open.setMinimumHeight(0);
+        open.setElevation(ui.dp(4)); open.setOutlineAmbientShadowColor(0x550866F5); open.setOutlineSpotShadowColor(0x770866F5);
+        bottom.addView(open,ui.lp(108,44)); ui.add(card,bottom);
+        ui.clickable(card,()->open(classroom,item)); card.setContentDescription(item.title+", "+item.tutorName);
         return card;
+    }
+
+    /** Up to five classes still taking students that start from today, soonest first, for the student home screen. */
+    public static void upcoming(Classroom classroom, LinearLayout parent) {
+        Ui ui = classroom.ui; String today = LocalDate.now().toString();
+        List<GroupClass> list = new ArrayList<>();
+        for (GroupClass item : classroom.store.classes)
+            if (GroupClass.OPEN.equals(item.status) && item.startDate != null && item.startDate.compareTo(today) >= 0) list.add(item);
+        list.sort(Comparator.comparing((GroupClass item) -> item.startDate).thenComparingInt(GroupClass::begin));
+        StableViews rows = StableViews.at(parent); rows.begin();
+        rows.add("heading",true,()->{
+            LinearLayout heading = ui.row();
+            ui.weight(heading,ui.text("Lớp học nhóm sắp khai giảng",18,Ui.INK,true)); ui.gap(heading,8);
+            heading.addView(ui.link("Xem thêm ›",14,()->classroom.show("groups")));
+            return heading;
+        },ui.dp(6));
+        if (list.isEmpty()) rows.add("empty",true,()->{
+            LinearLayout empty = ui.row(); ui.pad(empty,14,14); raise(ui,empty,2);
+            empty.addView(ui.icon(R.drawable.ic_users,24,Ui.BLUE)); ui.gap(empty,12);
+            ui.weight(empty,ui.text("Chưa có lớp nào sắp khai giảng. Bấm Xem thêm để tìm lớp học nhóm.",14,Ui.MUTED,false));
+            ui.clickable(empty,()->classroom.show("groups")); return empty;
+        },ui.dp(4));
+        for (GroupClass item : list.subList(0,Math.min(5,list.size())))
+            rows.add("class/"+item.id,Arrays.asList(item,classroom.me()),()->row(classroom,item),ui.dp(10));
+        rows.commit();
+    }
+
+    /** A compact card: photo, title, tutor, start date and time, price and seats. */
+    private static View row(Classroom classroom, GroupClass item) {
+        Ui ui = classroom.ui;
+        LinearLayout card = ui.row(); card.setPadding(ui.dp(10),ui.dp(10),ui.dp(12),ui.dp(10)); raise(ui,card,2);
+        card.addView(ui.photo(item.art(),null,76,76,16)); ui.gap(card,12);
+        LinearLayout info = ui.column();
+        ui.add(info,line(ui.text(item.title,16,Ui.INK,true))); ui.space(info,3);
+        ui.add(info,line(ui.text(item.tutorName+" · "+item.subject+" "+item.level,13,Ui.MUTED,false))); ui.space(info,5);
+        LinearLayout when = ui.row(); when.addView(ui.icon(R.drawable.ic_calendar,15,Ui.BLUE)); ui.gap(when,6);
+        ui.weight(when,line(ui.text("Khai giảng "+LocalDate.parse(item.startDate).format(DAY)+" · "+Lesson.range(item.hour,item.minute,item.minutes),13,Ui.INK,false)));
+        ui.add(info,when); ui.space(info,5);
+        LinearLayout bottom = ui.row();
+        ui.weight(bottom,line(ui.text(item.priceLabel(),14,Ui.BLUE,true))); ui.gap(bottom,6);
+        boolean full = item.full();
+        bottom.addView(ui.text(full?"Đã đủ chỗ":"Còn "+item.seatsLeft()+" chỗ",12,full?Ui.ORANGE:Ui.GREEN,true));
+        ui.add(info,bottom); ui.weight(card,info);
+        ui.clickable(card,()->open(classroom,item)); card.setContentDescription(item.title+", "+item.tutorName);
+        return card;
+    }
+
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM");
+    private static void open(Classroom classroom, GroupClass item) { classroom.openClass(item,item.full()?"full":"join"); }
+    private static TextView line(TextView view) { view.setMaxLines(1); view.setEllipsize(TextUtils.TruncateAt.END); return view; }
+    /** A white card with a soft blue shadow instead of a border; dark mode keeps the border since a shadow does not show there. */
+    private static void raise(Ui ui, View view, int elevation) {
+        ui.cardSurface(view,Ui.WHITE,ThemeColors.dark(ui.context)?Ui.BORDER:0);
+        view.setElevation(ui.dp(elevation)); view.setOutlineAmbientShadowColor(0x226583AD); view.setOutlineSpotShadowColor(0x446583AD);
     }
 
     private TextView availability(GroupClass item) {

@@ -5,6 +5,7 @@
     <string name="page_teaching">Lịch dạy</string>
     <string name="book_lesson">Đặt lịch học</string>
     <string name="choose_subject">Chọn môn muốn học</string>
-    <string name="group_classes_heading">Lớp học nhóm</string>
-    <string name="group_classes_caption">Học cùng bạn, chia sẻ học phí</string>
+    <string name="refresh_short">Làm mới</string>
+    <string name="previous_tutors">Trang gia sư trước</string>
+    <string name="next_tutors">Trang gia sư sau</string>
 </resources>
