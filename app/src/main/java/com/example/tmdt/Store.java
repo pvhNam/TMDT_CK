@@ -338,7 +338,10 @@ public final class Store {
             boolean mine = item.tutorId.equals(user);
             boolean moved = mine && item.proposal != null && !item.proposalOpen() && settled.add(item.id+"#"+item.proposal.key()) && item.settleProposal();
             boolean changed = (ended || !closed.isEmpty()) && mine && settled.add(item.id);
-            if (changed || moved) remote.save(item, closed);
+            // An ended or cancelled class can no longer be written, so only its waiting registrations are closed.
+            if (!changed && !moved) continue;
+            if (ended || moved) remote.save(item, closed);
+            else for (GroupClass.Registration registration : closed) remote.save(registration);
         }
     }
     private static List<GroupClass.Registration> closeWaiting(GroupClass item) {
