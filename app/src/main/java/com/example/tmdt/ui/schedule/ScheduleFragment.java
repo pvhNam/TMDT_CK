@@ -2,10 +2,16 @@ package com.example.tmdt.ui.schedule;
 
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ScrollView;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,6 +39,12 @@ public final class ScheduleFragment extends ScreenFragment {
     private TabLayout tabs;
     private ScrollView scroll;
     private int renderedTab=-1;
+    /** Each tab lists its cards three to a page, swiped left and right inside one frame. */
+    private static final int PER_PAGE=3;
+    private final Pages pages=new Pages();
+    private LinearLayout frame,bar,dots;
+    private ViewPager2 pager;
+    private View previous,following;
 
     @Override protected View build() {
         LinearLayout root=ui.column();
@@ -44,7 +56,7 @@ public final class ScheduleFragment extends ScreenFragment {
         tabs.getTabAt(classroom.scheduleTab).select();ui.add(root,tabs);ui.line(root);
         body=ui.page(root);scroll=(ScrollView)body.getParent();ui.space(body,6);
         history=ui.column();ui.add(body,history);ui.space(body,12);
-        list=ui.column();ui.add(body,list);
+        list=ui.column();ui.add(body,list);frame=pagerFrame();
         tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){
             @Override public void onTabSelected(TabLayout.Tab tab){
                 if(classroom.scheduleTab==tab.getPosition())return;
@@ -75,7 +87,8 @@ public final class ScheduleFragment extends ScreenFragment {
             if(include)visible.add(new Entry("lesson/"+lesson.id,lesson.start(),
                     Arrays.asList(lesson.toMap(),lesson.statusLabel(),lesson.needsConfirmation()),()->lessonCard(lesson)));
         }
-        // Group classes: registrations wait under "Chờ xác nhận"; members see every session under "Sắp tới" or "Đã học".
+        // Group classes: registrations wait under "Chờ xác nhận"; members see the next session of each class under "Sắp tới"
+        // (plus one the tutor asks to move) and every past session under "Đã học".
         for(GroupClass item:classroom.store.classes) {
             Object groupSnapshot=item.toMap();
             if(tab==1) {
@@ -97,12 +110,19 @@ public final class ScheduleFragment extends ScreenFragment {
                             ui.pill("Đã hủy",14,Ui.RED,0xFFFFE9EC),"Gia sư đã hủy lớp. Lý do: "+item.cancelReason+".")));
                     continue;
                 }
-                for(GroupClass.Session session:item.sessionList()) {
-                    if(tab==2?!session.ended():session.ended()||!item.active())continue;
+                List<GroupClass.Session> sessions=item.sessionList(),ahead=new ArrayList<>();
+                for(GroupClass.Session session:sessions) {
+                    if(!session.ended()){ahead.add(session);continue;}
+                    if(tab!=2)continue;
                     visible.add(new Entry("session/"+item.id+"/"+session.number,session.start(),
-                            Arrays.asList(groupSnapshot,session.start(),tab,item.online()&&session.roomOpen(),item.proposalOpen()),()->classCard(item,session.label(),
-                            ui.pill("Buổi "+session.number+"/"+item.sessions,14,tab==2?Ui.MUTED:Ui.GREEN,tab==2?0xFFEEF2F7:Ui.GREEN_BG),
-                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",item.online()&&session.roomOpen(),tab==0?moveNote(item,session):null)));
+                            Arrays.asList(groupSnapshot,session.start(),tab),()->classCard(item,session.label(),
+                            ui.pill("Buổi "+session.number+"/"+item.sessions,14,Ui.MUTED,0xFFEEF2F7),"Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.")));
+                }
+                if(tab!=0||!item.active()||ahead.isEmpty())continue;
+                visible.add(upcoming(item,ahead.get(0),ahead,groupSnapshot));
+                if(item.proposalOpen()&&item.proposal.number<=sessions.size()) {
+                    GroupClass.Session asked=sessions.get(item.proposal.number-1);
+                    if(asked!=ahead.get(0)&&!asked.ended())visible.add(upcoming(item,asked,ahead,groupSnapshot));
                 }
             }
         }
@@ -116,18 +136,143 @@ public final class ScheduleFragment extends ScreenFragment {
             }));
         }
         cards.retain(ids);
-        boolean changed=renderedTab!=tab||list.getChildCount()!=next.size();
-        if(!changed)for(int i=0;i<next.size();i++)if(list.getChildAt(i)!=next.get(i)){changed=true;break;}
-        if(!changed)return;
-        if(renderedTab!=-1)Motion.change(body);
-        Set<View> retained=new HashSet<>(next);
-        for(int i=list.getChildCount()-1;i>=0;i--)if(!retained.contains(list.getChildAt(i)))list.removeViewAt(i);
-        for(int i=0;i<next.size();i++){
-            View card=next.get(i);if(list.getChildAt(i)==card)continue;
-            if(card.getParent()==list)list.removeView(card);
-            LinearLayout.LayoutParams params=ui.lp(-1,-2);params.bottomMargin=ui.dp(11);list.addView(card,i,params);
+        List<List<View>> split=new ArrayList<>();
+        for(int i=0;i<next.size();i+=PER_PAGE)split.add(new ArrayList<>(next.subList(i,Math.min(next.size(),i+PER_PAGE))));
+        boolean switched=renderedTab!=tab;
+        if(!switched&&split.equals(pages.pages))return;
+        pages.pages.clear();pages.pages.addAll(split);pages.notifyDataSetChanged();
+        View shown=next.isEmpty()?empty(tab):frame;
+        if(list.getChildCount()!=1||list.getChildAt(0)!=shown){list.removeAllViews();list.addView(shown,ui.lp(-1,-2));}
+        pager.setCurrentItem(switched?0:Math.min(pager.getCurrentItem(),Math.max(0,split.size()-1)),false);
+        if(switched&&renderedTab!=-1)Motion.reveal(list);
+        renderedTab=tab;renderBar();fitPager();
+    }
+
+    private View empty(int tab){
+        if(tab==1)return classroom.emptyState(R.drawable.ic_clock,"Không có gì chờ xác nhận","Yêu cầu đặt lịch và đăng ký lớp đang chờ gia sư duyệt sẽ hiện ở đây.",null,null);
+        if(tab==2)return classroom.emptyState(R.drawable.ic_file,"Chưa có buổi đã học","Các buổi học đã kết thúc sẽ hiện ở đây.",null,null);
+        return classroom.emptyState(R.drawable.ic_calendar,"Chưa có buổi học sắp tới","Buổi học đã xác nhận và lớp nhóm bạn tham gia sẽ hiện ở đây.",null,null);
+    }
+
+    /** A white frame like Gia sư đang nhận lớp: the pages, then arrows and dots to move between them. */
+    private LinearLayout pagerFrame(){
+        LinearLayout frame=ui.column();frame.setPadding(ui.dp(10),ui.dp(10),ui.dp(10),ui.dp(10));
+        ui.cardSurface(frame,Ui.WHITE,ThemeColors.dark(requireContext())?Ui.BORDER:0);
+        frame.setElevation(ui.dp(3));frame.setOutlineAmbientShadowColor(0x226583AD);frame.setOutlineSpotShadowColor(0x446583AD);
+        pager=new ViewPager2(requireContext());pager.setAdapter(pages);pager.setOffscreenPageLimit(1);
+        pager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback(){
+            @Override public void onPageSelected(int position){if(pager!=null){renderBar();fitPager();}}
+        });
+        frame.addView(pager,ui.lp(-1,-2));
+        bar=ui.row();bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(ui.dp(2),ui.dp(10),ui.dp(2),0);
+        previous=arrow(true);following=arrow(false);dots=ui.row();dots.setGravity(Gravity.CENTER);
+        bar.addView(previous,ui.lp(36,36));ui.weight(bar,dots);bar.addView(following,ui.lp(36,36));
+        frame.addView(bar,ui.lp(-1,-2));
+        return frame;
+    }
+    private View arrow(boolean back){
+        FrameLayout button=new FrameLayout(requireContext());ui.surface(button,Ui.PALE,18,0);
+        ImageView icon=ui.icon(R.drawable.ic_right,16,Ui.BLUE);if(back)icon.setRotation(180);
+        button.addView(icon,new FrameLayout.LayoutParams(ui.dp(16),ui.dp(16),Gravity.CENTER));
+        button.setContentDescription(back?"Trang trước":"Trang sau");
+        ui.clickable(button,()->pager.setCurrentItem(pager.getCurrentItem()+(back?-1:1)));
+        return button;
+    }
+    private void renderBar(){
+        int count=pages.getItemCount(),current=pager.getCurrentItem();
+        bar.setVisibility(count>1?View.VISIBLE:View.GONE);
+        previous.setEnabled(current>0);previous.setAlpha(current>0?1f:.35f);
+        following.setEnabled(current<count-1);following.setAlpha(current<count-1?1f:.35f);
+        dots.removeAllViews();bar.setContentDescription("Trang "+(current+1)+" trên "+count);
+        if(count>7){dots.addView(ui.text((current+1)+" / "+count,14,Ui.MUTED,true));return;}
+        for(int i=0;i<count;i++){
+            View dot=new View(requireContext());ui.surface(dot,i==current?Ui.BLUE:0xFFC9D8EE,3,0);
+            LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(ui.dp(i==current?18:6),ui.dp(6));
+            params.leftMargin=params.rightMargin=ui.dp(3);
+            int page=i;ui.clickable(dot,()->pager.setCurrentItem(page));dots.addView(dot,params);
         }
-        renderedTab=tab;
+    }
+    /** The pager is as tall as the page on screen, so a short last page leaves no gap. */
+    private void fitPager(){
+        pager.post(()->{
+            if(pager==null||pages.pages.isEmpty())return;
+            int width=pager.getWidth()>0?pager.getWidth():list.getWidth()-frame.getPaddingLeft()-frame.getPaddingRight();
+            if(width<=0)return;
+            List<View> shown=pages.pages.get(Math.min(pager.getCurrentItem(),pages.pages.size()-1));
+            int height=0;
+            for(int i=0;i<shown.size();i++){
+                shown.get(i).measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+                height+=shown.get(i).getMeasuredHeight()+(i<shown.size()-1?ui.dp(11):0);
+            }
+            ViewGroup.LayoutParams params=pager.getLayoutParams();
+            if(params.height!=height){params.height=height;pager.setLayoutParams(params);}
+        });
+    }
+    private final class Pages extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
+        final List<List<View>> pages=new ArrayList<>();
+        @Override public int getItemCount(){return pages.size();}
+        @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){
+            LinearLayout page=new LinearLayout(parent.getContext());page.setOrientation(LinearLayout.VERTICAL);
+            page.setLayoutParams(new RecyclerView.LayoutParams(-1,-1));
+            return new RecyclerView.ViewHolder(page){};
+        }
+        @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder,int position){
+            LinearLayout page=(LinearLayout)holder.itemView;page.removeAllViews();
+            List<View> shown=pages.get(position);
+            for(int i=0;i<shown.size();i++){
+                View card=shown.get(i);
+                if(card.getParent()!=null)((ViewGroup)card.getParent()).removeView(card);
+                LinearLayout.LayoutParams params=ui.lp(-1,-2);if(i<shown.size()-1)params.bottomMargin=ui.dp(11);page.addView(card,params);
+            }
+        }
+    }
+
+    /** One coming session of a class; the soonest one also lists the sessions after it. */
+    private Entry upcoming(GroupClass item,GroupClass.Session session,List<GroupClass.Session> ahead,Object snapshot) {
+        boolean next=session==ahead.get(0);int later=next?ahead.size()-1:0;
+        boolean live=item.online()&&session.roomOpen();
+        return new Entry("session/"+item.id+"/"+session.number,session.start(),
+                Arrays.asList(snapshot,session.start(),live,item.proposalOpen(),later),()->{
+                    View move=moveNote(item,session);
+                    LinearLayout extra=null;
+                    if(move!=null||later>0){
+                        extra=ui.column();
+                        if(move!=null)ui.add(extra,move);
+                        if(move!=null&&later>0)ui.space(extra,8);
+                        if(later>0)extra.addView(ui.link("Xem "+later+" buổi tiếp theo ›",14,()->laterSessions(item,ahead)),ui.lp(-2,-2));
+                    }
+                    return classCard(item,session.label(),ui.pill("Buổi "+session.number+"/"+item.sessions,14,Ui.GREEN,Ui.GREEN_BG),
+                            "Buổi "+session.number+" trên tổng số "+item.sessions+" buổi.",live,extra);
+                });
+    }
+    /** The sessions after the next one: a header for the class, then one framed line per session. */
+    private void laterSessions(GroupClass item,List<GroupClass.Session> ahead) {
+        LinearLayout view=ui.column();view.setPadding(ui.dp(18),ui.dp(18),ui.dp(18),ui.dp(14));
+        LinearLayout head=ui.row();head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(ui.dp(12),ui.dp(12),ui.dp(12),ui.dp(12));
+        ui.cardSurface(head,Ui.PALE,0);
+        head.addView(ui.photo(item.art(),null,58,58,14));ui.gap(head,12);
+        LinearLayout heading=ui.column();
+        TextView title=ui.text(item.title,18,Ui.INK,true);title.setMaxLines(2);title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        ui.add(heading,title);ui.space(heading,3);ui.add(heading,ui.text(item.tutorName+" · "+item.mode,13,Ui.MUTED,false));ui.space(heading,7);
+        heading.addView(ui.pill((ahead.size()-1)+" buổi tiếp theo",13,Ui.WHITE,Ui.BLUE),ui.lp(-2,-2));
+        ui.weight(head,heading);ui.add(view,head);ui.space(view,14);
+        for(GroupClass.Session session:ahead.subList(1,ahead.size())) {
+            LinearLayout row=ui.row();row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(ui.dp(10),ui.dp(9),ui.dp(12),ui.dp(9));
+            ui.fieldSurface(row,Ui.WHITE,Ui.BORDER);
+            TextView number=ui.text(String.valueOf(session.number),15,Ui.BLUE,true);number.setGravity(Gravity.CENTER);ui.surface(number,Ui.PALE,19,0);
+            row.addView(number,ui.lp(38,38));ui.gap(row,12);
+            LinearLayout text=ui.column();
+            ui.add(text,ui.text(GroupClass.DAYS[session.date.getDayOfWeek().getValue()-1]+", "+session.date.format(Lesson.DATE),15,Ui.INK,true));ui.space(text,2);
+            ui.add(text,ui.text(session.timeLabel()+" · Buổi "+session.number+"/"+item.sessions,13,Ui.MUTED,false));
+            ui.weight(row,text);
+            if(session.moved()){ui.gap(row,6);row.addView(ui.pill("Đã đổi lịch",12,Ui.GREEN,Ui.GREEN_BG),ui.lp(-2,-2));}
+            ui.add(view,row);ui.space(view,8);
+        }
+        ui.space(view,6);
+        AlertDialog dialog=ui.dialog().create();
+        ui.addAction(view,ui.action("Đóng",0,Ui.PRIMARY,dialog::dismiss),46);
+        ScrollView scroll=new ScrollView(classroom.context());scroll.addView(view);
+        dialog.setView(scroll);dialog.show();
     }
 
     /** Shortcut to Lịch sử đăng ký lớp học with the number of registrations still waiting. */
@@ -267,7 +412,8 @@ public final class ScheduleFragment extends ScreenFragment {
 
     @Override public void onDestroyView(){
         if(body!=null)android.transition.TransitionManager.endTransitions(body);
-        cards.clear();body=null;list=null;tabs=null;scroll=null;history=null;tutorSwitch=null;renderedTab=-1;
+        cards.clear();pages.pages.clear();body=null;list=null;tabs=null;scroll=null;history=null;tutorSwitch=null;renderedTab=-1;
+        frame=null;bar=null;dots=null;pager=null;previous=null;following=null;
         super.onDestroyView();
     }
 
