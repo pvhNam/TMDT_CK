@@ -222,7 +222,11 @@ public final class GroupClass {
 
     public int seatsLeft() { return Math.max(0, capacity - members.size()); }
     public boolean full() { return seatsLeft() == 0; }
-    public boolean recruiting() { return OPEN.equals(status) && !full(); }
+    public boolean recruiting() { return OPEN.equals(status) && !full() && !started(); }
+    /** True once the first session has begun; the class then takes no new students. */
+    public boolean started() { List<Session> list = sessionList(); return !list.isEmpty() && list.get(0).started(); }
+    /** Accepted students keep the fee, schedule and start date they signed up for. */
+    public boolean termsLocked() { return !members.isEmpty(); }
     public int pendingCount() { int count=0; for (Registration r : registrations) if (r.pending()) count++; return count; }
     public Registration registrationOf(String student) {
         for (Registration r : registrations) if (r.studentId.equals(student) && !Lesson.REJECTED.equals(r.status)) return r;

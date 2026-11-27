@@ -63,7 +63,8 @@ public final class JoinClassFragment extends ScreenFragment {
 
         GroupClass.Registration sent = item.registrationOf(classroom.me());
         boolean member = item.members.contains(classroom.me());
-        if (!member && sent == null && !item.cancelled()) {
+        boolean closed = !GroupClass.OPEN.equals(item.status) || item.started();
+        if (!member && sent == null && !item.cancelled() && !closed) {
             com.example.tmdt.ui.exchange.LearnerPicker.add(ui,body,learners(),learnerId,id->{keepGoal();learnerId=id;refresh();},
                     ()->{keepGoal();((com.example.tmdt.MainActivity)requireActivity()).exchange.openLearners();});
             ui.space(body,14);
@@ -79,6 +80,9 @@ public final class JoinClassFragment extends ScreenFragment {
         if (item.cancelled()) {
             ui.add(body,ui.note(R.drawable.ic_info,"Gia sư đã hủy lớp · Lý do: "+item.cancelReason,0xFFFFE9EC,Ui.RED,Ui.INK)); ui.space(body,16);
             ui.addAction(body,ui.action("Lớp đã hủy",0,Ui.DISABLED,null),52);
+        } else if (member && !classroom.classPaid(item)) {
+            ui.add(body,ui.note(R.drawable.ic_info,"Gia sư đã nhận bạn vào lớp. Thanh toán học phí qua VNPay để vào phòng học.",Ui.PALE,Ui.BLUE,Ui.INK)); ui.space(body,16);
+            ui.addAction(body,ui.action("Thanh toán học phí",R.drawable.ic_wallet,Ui.PRIMARY,()->classroom.payClass(item)),52);
         } else if (member) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã là thành viên của lớp này.",Ui.GREEN_BG,Ui.GREEN,Ui.INK)); ui.space(body,16);
             ui.addAction(body,item.roomOpen()?ui.action("Vào phòng học",R.drawable.ic_video,Ui.PRIMARY,()->classroom.openClassRoom(item))
@@ -86,6 +90,9 @@ public final class JoinClassFragment extends ScreenFragment {
         } else if (sent != null) {
             ui.add(body,ui.note(R.drawable.ic_info,"Bạn đã gửi đăng ký ngày "+LocalDate.parse(sent.date).format(Lesson.DATE)+". Đăng ký đang chờ gia sư duyệt.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,16); ui.addAction(body,ui.action("Đã gửi đăng ký",0,Ui.DISABLED,null),52);
+        } else if (closed) {
+            ui.add(body,ui.note(R.drawable.ic_info,item.started()?"Lớp đã khai giảng nên không nhận thêm học viên.":"Lớp đã đóng tuyển sinh.",0xFFEEF2F7,Ui.MUTED,Ui.INK));
+            ui.space(body,16); ui.addAction(body,ui.action("Đã đóng đăng ký",0,Ui.DISABLED,null),52);
         } else {
             ui.add(body,ui.note(R.drawable.ic_info,"Gửi đăng ký để gia sư duyệt trước. Khi được chấp nhận, bạn thanh toán toàn bộ khóa cho hệ thống qua VNPay.",Ui.PALE,Ui.BLUE,Ui.INK));
             ui.space(body,24); ui.addAction(body,ui.action("Tiếp tục đăng ký →",0,Ui.PRIMARY,this::submit),52);

@@ -217,6 +217,7 @@ public final class GroupSearchFragment extends ScreenFragment {
         if (item.members.contains(classroom.me())) return ui.pill("Đã tham gia",14,Ui.GREEN,Ui.GREEN_BG);
         if (item.registrationOf(classroom.me()) != null) return ui.pill("Đã gửi đăng ký",14,Ui.BLUE,Ui.PALE);
         if (item.full()) return ui.pill("Đã đủ "+item.capacity+"/"+item.capacity+" chỗ",14,Ui.ORANGE,Ui.ORANGE_BG);
+        if (item.started()) return ui.pill("Đã khai giảng",14,Ui.MUTED,0xFFEEF2F7);
         if (!GroupClass.OPEN.equals(item.status)) return ui.pill("Đã đóng tuyển sinh",14,Ui.MUTED,0xFFEEF2F7);
         return ui.pill("Còn "+item.seatsLeft()+"/"+item.capacity+" chỗ",14,Ui.GREEN,Ui.GREEN_BG);
     }

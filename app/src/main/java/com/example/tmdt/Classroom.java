@@ -349,9 +349,22 @@ public final class Classroom {
     /** A group class has one room for its tutor and members, open around each session. */
     public void openClassRoom(GroupClass item){
         if(!item.tutorId.equals(me())&&!item.members.contains(me())){dialog("Phòng học trực tuyến","Chỉ gia sư và học viên của lớp mới vào được phòng học.");return;}
+        if(!classPaid(item)){
+            ui.dialog().setTitle("Phòng học trực tuyến").setMessage("Bạn cần thanh toán học phí lớp \""+item.title+"\" trước khi vào học.")
+                    .setNegativeButton("Để sau",null).setPositiveButton("Thanh toán",(dialog,which)->payClass(item)).show();
+            return;
+        }
         if(!item.roomOpen()){dialog("Phòng học trực tuyến","Phòng học mở trước giờ bắt đầu 10 phút và đóng khi buổi học kết thúc.");return;}
         openUrl(item.roomUrl());
     }
+    /** A member studies once the course is paid through VNPay; the class's tutor always may. */
+    public boolean classPaid(GroupClass item){
+        if(item.tutorId.equals(me()))return true;
+        PaymentState.Row payment=host.payments.paymentFor("GROUP",item.id+"_"+me());
+        String status=payment==null?"":payment.text("status");
+        return "PAID".equals(status)||"PAID_REVIEW".equals(status);
+    }
+    public void payClass(GroupClass item){host.openPayment("GROUP",item.id+"_"+me());}
     private void openUrl(String url){
         try{host.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}
         catch(ActivityNotFoundException missing){dialog("Phòng học trực tuyến","Không tìm thấy trình duyệt để mở phòng học.\n"+url);}
